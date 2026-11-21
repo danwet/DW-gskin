@@ -8,8 +8,30 @@ import type { AgentMeta, MailAssessment } from "@/lib/agent/types";
 import { Avatar, Card, CardHeading } from "./ui";
 import { useApp } from "./AppProvider";
 
+export type PendingMessage = {
+  conversationId: string;
+  subject: string;
+  from: string;
+  fromEmail: string;
+  receivedAt: string;
+  snippet: string;
+  messages: number;
+};
+
+export type InboxProgress = {
+  phase: "idle" | "importing" | "triaging" | "done" | "error";
+  imported: number;
+  total: number | null;
+  threadsImported: number;
+  triaged: number;
+  pending: number;
+  lastError: string | null;
+};
+
 type InboxPayload = {
   items: MailAssessment[];
+  pending?: PendingMessage[];
+  progress?: InboxProgress | null;
   meta: AgentMeta;
   model: string;
   error?: string | null;
@@ -65,6 +87,8 @@ function formatDate(iso: string | undefined): string {
 export function useInbox() {
   const { syncNonce } = useApp();
   const [items, setItems] = useState<MailAssessment[]>([]);
+  const [pending, setPending] = useState<PendingMessage[]>([]);
+  const [progress, setProgress] = useState<InboxProgress | null>(null);
   const [meta, setMeta] = useState<AgentMeta | null>(null);
   const [model, setModel] = useState("rule");
   const [loading, setLoading] = useState(true);
@@ -84,6 +108,8 @@ export function useInbox() {
       }
       const data = (await response.json()) as InboxPayload;
       setItems(data.items);
+      setPending(data.pending ?? []);
+      setProgress(data.progress ?? null);
       setMeta(data.meta);
       setModel(data.model);
       if (data.error) setError(data.error);
@@ -200,7 +226,7 @@ export function useInbox() {
     }
   }, []);
 
-  return { items, meta, model, loading, error, reload, toggleHandled, snoozeItem, declareInvoice, saveItem };
+  return { items, pending, progress, meta, model, loading, error, reload, toggleHandled, snoozeItem, declareInvoice, saveItem };
 }
 
 export function InboxListCard({

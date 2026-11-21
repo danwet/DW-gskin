@@ -3,11 +3,11 @@ import "server-only";
 import { buildAssessment, groupByConversation } from "./build";
 import { classifyConversation } from "./classify";
 import { loadAgentConfig, type AgentConfig, type ProviderId } from "./config";
-import { fetchInboxMessages, resolveMailSource } from "./mail-source";
-import { archiveGmailMessages } from "./gmail-archive";
+import { fetchInboxMessages, gmailConfigured, resolveMailSource, storedGmailConnection } from "./mail-source";
 import { isShipmentRelated } from "./shipment";
 import { appendRun, readAssessments, readMeta, updateMeta, upsertAssessments } from "./store";
 import type { InboundMessage, MailAssessment } from "./types";
+import { syncStep } from "../gmail/sync";
 
 export type RunResult = {
   ok: boolean;
@@ -38,7 +38,72 @@ function modelLabelFor(provider: ProviderId, model?: string): string {
 
 export async function runMailAgent(now = new Date(), options?: { force?: boolean }): Promise<RunResult> {
   const config = await loadAgentConfig();
-  const source = resolveMailSource(config);
+  const connection = await storedGmailConnection();
+  const source = resolveMailSource(config, Boolean(connection) || gmailConfigured(config));
+
+  if (source === "gmail") {
+    const { provider, apiKey, model } = activeProvider(config);
+    const useModel = Boolean(apiKey);
+    const label = useModel ? modelLabelFor(provider, model) : "rule";
+
+    if (!connection) {
+      await updateMeta({
+        lastRunAt: now.toISOString(),
+        lastError: "Gmail is niet gekoppeld.",
+        source,
+        model: useModel ? provider : "rule",
+      });
+      await appendRun({
+        at: now.toISOString(),
+        ok: false,
+        source,
+        model: useModel ? provider : "rule",
+        conversations: 0,
+        messages: 0,
+        error: "Gmail is niet gekoppeld.",
+      });
+      return {
+        ok: false,
+        source,
+        model: label,
+        processed: 0,
+        messagesSeen: 0,
+        conversations: 0,
+        errors: ["Gmail is niet gekoppeld."],
+        note: "Koppel Gmail opnieuw in Instellingen → Verbindingen.",
+      };
+    }
+
+    const step = await syncStep(connection.userId, connection.refreshToken);
+    await updateMeta({
+      lastRunAt: now.toISOString(),
+      lastSuccessfulRunAt: step.ok ? now.toISOString() : undefined,
+      lastError: step.ok ? null : step.error ?? "Synchronisatie mislukt.",
+      source,
+      model: useModel ? provider : "rule",
+      conversationsProcessed: step.progress.imported,
+      messagesSeen: step.progress.imported,
+    });
+    await appendRun({
+      at: now.toISOString(),
+      ok: step.ok,
+      source,
+      model: useModel ? provider : "rule",
+      conversations: step.progress.threadsImported,
+      messages: step.progress.imported,
+      error: step.ok ? null : step.error ?? "Synchronisatie mislukt.",
+    });
+    return {
+      ok: step.ok,
+      source,
+      model: label,
+      processed: step.triaged,
+      messagesSeen: step.progress.imported,
+      conversations: step.progress.threadsImported,
+      errors: step.error ? [step.error] : [],
+    };
+  }
+
   const fetchResult = await fetchInboxMessages(config);
   if (!fetchResult.ok) {
     const { provider, apiKey, model } = activeProvider(config);
@@ -137,28 +202,8 @@ export async function runMailAgentOnMessages(
     await upsertAssessments(updates);
   }
 
-  // Order/shipment status updates are archived in Gmail once the agent has read
-  // them. Only possible with a gmail.modify refresh token; otherwise this is a
-  // no-op that leaves the mailbox untouched.
-  let archived = 0;
-  if (source === "gmail") {
-    const shipmentIds = messages.filter((message) => isShipmentRelated(message)).map((message) => message.id);
-    const assessments = await readAssessments();
-    const archiveIdsFromAssessments = assessments
-      .filter((assessment) => {
-        if (assessment.source === "scan" || !assessment.sourceMessageId) return false;
-        if (assessment.invoice && assessment.handledByUser === true && assessment.declaration !== "pending") return true;
-        if (assessment.savedAt && assessment.handledByUser === true) return true;
-        return false;
-      })
-      .map((assessment) => assessment.sourceMessageId as string);
-    const invoiceIds = archiveIdsFromAssessments;
-    const archiveIds = Array.from(new Set([...shipmentIds, ...invoiceIds]));
-    if (archiveIds.length > 0) {
-      const result = await archiveGmailMessages(archiveIds, config?.gmailRefreshToken);
-      archived = result.archived;
-    }
-  }
+  // Phase 1 is read-only: never archive, label or modify anything in Gmail.
+  const archived = 0;
 
   const success = errors.length === 0;
   await updateMeta({

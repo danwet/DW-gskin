@@ -6,7 +6,18 @@ import { markSent, readAssessments, saveDraft } from "@/lib/agent/store";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-export async function POST(request: Request) {
+export async function POST() {
+  // Phase 1 is read-only: never send, draft or modify anything in Gmail.
+  return Response.json(
+    {
+      ok: false,
+      error: "Gmail is alleen-lezen gekoppeld. Versturen wordt in deze fase niet uitgevoerd; keur het voorstel goed om je beslissing vast te leggen.",
+    },
+    { status: 409 },
+  );
+}
+
+async function legacySend(request: Request) {
   const user = await sessionUser();
   if (!user) return unauthorized();
 

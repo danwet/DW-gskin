@@ -5,7 +5,20 @@ import { performOneClickUnsubscribe, validateUnsubscribeUrl } from "@/lib/agent/
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-export async function POST(request: Request) {
+export async function POST() {
+  // Phase 1 is read-only: an approval only stores a decision, it must never
+  // trigger an external unsubscribe request. The proposal dialog replaces the
+  // old one-click button.
+  return Response.json(
+    {
+      ok: false,
+      message: "Gmail is alleen-lezen gekoppeld. Een afmelding wordt in deze fase niet uitgevoerd; gebruik het voorstel.",
+    },
+    { status: 409 },
+  );
+}
+
+async function legacyUnsubscribe(request: Request) {
   const user = await sessionUser();
   if (!user) return unauthorized();
 

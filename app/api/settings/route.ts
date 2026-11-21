@@ -1,11 +1,14 @@
 import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { loadAgentConfig, saveAgentConfig, type MailSource, type ProviderId } from "@/lib/agent/config";
 import { supabaseProbe, supabaseScanBucketReady } from "@/lib/supabase/kv";
+import { getGmailConnection } from "@/lib/gmail/connection";
+import { GMAIL_READONLY_SCOPE, gmailCallbackUri, gmailOAuthConfigured } from "@/lib/gmail/oauth";
 
 export const dynamic = "force-dynamic";
 
-async function status() {
+async function status(userId: string, origin: string) {
   const config = await loadAgentConfig();
+  const connection = await getGmailConnection(userId).catch(() => null);
   const googleClient = Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET);
   const providers: Record<string, { apiKeySet: boolean; model: string; enabled: boolean }> = {};
   for (const [id, provider] of Object.entries(config.providers)) {
@@ -20,7 +23,18 @@ async function status() {
     defaultProvider: config.defaultProvider,
     gmail: {
       refreshTokenSet: Boolean(config.gmailRefreshToken),
-      clientConfigured: Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET),
+      clientConfigured: gmailOAuthConfigured(),
+      scope: GMAIL_READONLY_SCOPE,
+      redirectUri: gmailCallbackUri(origin),
+      connection: connection
+        ? {
+            email: connection.email,
+            status: connection.status,
+            scopes: connection.scopes,
+            connectedAt: connection.connectedAt,
+            lastCheckedAt: connection.lastCheckedAt,
+          }
+        : null,
     },
     calendar: {
       configured: Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET),
@@ -42,10 +56,10 @@ async function status() {
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await sessionUser();
   if (!user) return unauthorized();
-  return Response.json(await status());
+  return Response.json(await status(user.id, new URL(request.url).origin));
 }
 
 export async function PUT(request: Request) {
@@ -93,5 +107,5 @@ export async function PUT(request: Request) {
   }
 
   await saveAgentConfig(patch);
-  return Response.json({ ok: true, ...(await status()) });
+  return Response.json({ ok: true, ...(await status(user.id, new URL(request.url).origin)) });
 }

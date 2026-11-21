@@ -83,6 +83,13 @@ export type MailAssessment = {
   scanMime?: string;
   /** When the user manually marked a scanned invoice as paid. */
   paidAt?: string;
+  /** Proposal summary attached by the inbox API (not stored in the assessment). */
+  proposal?: {
+    id: string;
+    action: "archive" | "trash" | "reply" | "unsubscribe";
+    status: "pending" | "approved" | "rejected";
+    version: number;
+  };
   /** Detected newsletter unsubscribe option, when present. */
   unsubscribe?: UnsubscribeInfo;
   /** Plain-text body, retained for the newsletter easy-reader view. */

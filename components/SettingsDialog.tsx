@@ -14,7 +14,19 @@ type ProviderConfig = {
 type ServerSettings = {
   providers: Record<string, ProviderConfig>;
   defaultProvider: string;
-  gmail: { refreshTokenSet: boolean; clientConfigured: boolean };
+  gmail: {
+    refreshTokenSet: boolean;
+    clientConfigured: boolean;
+    scope?: string;
+    redirectUri?: string;
+    connection: {
+      email: string;
+      status: "connected" | "needs_reconnect";
+      scopes: string[];
+      connectedAt: string;
+      lastCheckedAt: string | null;
+    } | null;
+  };
   calendar: { configured: boolean };
   supabase: {
     configured: boolean;
@@ -452,7 +464,7 @@ function ConnectionsSection({
   onSaveGmail: () => void;
   onSaveSignature: () => void;
 }) {
-  const gmailConnected = server?.gmail.refreshTokenSet === true && server?.gmail.clientConfigured === true;
+  const connection = server?.gmail.connection ?? null;
   return (
     <section>
       <SectionTitle title="Verbindingen" hint="Google Agenda loopt via je Google-login. Gmail op de achtergrond heeft een apart server-token nodig." />
@@ -474,32 +486,47 @@ function ConnectionsSection({
 
         <div className="rounded-2xl border border-[var(--line)] px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <p className="text-[14px] font-medium">Gmail</p>
-              <p className="mt-0.5 text-[13px] text-[var(--muted)]">Achtergrondlezen van je inbox.</p>
+              <p className="mt-0.5 truncate text-[13px] text-[var(--muted)]">
+                {connection ? connection.email : "Alleen-lezen koppeling met je Gmail-inbox."}
+              </p>
             </div>
-            <Status dot={server?.gmail?.refreshTokenSet === true && server?.gmail?.clientConfigured === true} label={server?.gmail?.refreshTokenSet && server?.gmail?.clientConfigured ? "Gekoppeld" : "Niet gekoppeld"} />
+            <Status
+              dot={connection?.status === "connected"}
+              label={
+                connection
+                  ? connection.status === "connected"
+                    ? "Gekoppeld"
+                    : "Opnieuw koppelen"
+                  : "Niet gekoppeld"
+              }
+            />
           </div>
-          <div className="mt-3">
-            <Field label="Gmail refresh token">
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  value={gmailToken}
-                  onChange={(event) => setGmailToken(event.target.value)}
-                  placeholder={server?.gmail?.refreshTokenSet ? "••••••••••••" : "1//…"}
-                  autoComplete="off"
-                  className={inputClass}
-                />
-                <button type="button" onClick={onSaveGmail} disabled={saving} className={primaryClass}>
-                  Opslaan
-                </button>
-              </div>
-            </Field>
-            <p className="mt-2 text-[12px] leading-5 text-[var(--muted)]">
-              Vereist de scope <span className="font-mono">gmail.readonly</span> en een server-side refresh token. De token blijft op de server.
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <a
+              href="/api/gmail/connect"
+              className={`${primaryClass} inline-block text-center no-underline`}
+            >
+              {connection ? "Opnieuw koppelen" : "Gmail koppelen"}
+            </a>
+            <span className="text-[12px] text-[var(--muted)]">scope: gmail.readonly</span>
+          </div>
+
+          <p className="mt-2 text-[12px] leading-5 text-[var(--muted)]">
+            Alleen lezen. De refresh token wordt versleuteld op de server bewaard en nooit naar de browser gestuurd.
+          </p>
+          {server?.gmail.redirectUri ? (
+            <p className="mt-1 break-all text-[11px] leading-5 text-[var(--muted)]">
+              Redirect URI: <span className="font-mono">{server.gmail.redirectUri}</span>
             </p>
-          </div>
+          ) : null}
+          {connection?.status === "needs_reconnect" ? (
+            <p className="mt-2 text-[12px] leading-5 text-[var(--danger)]">
+              De toestemming is ingetrokken of de verbinding werkt niet meer. Koppel opnieuw om verder te gaan.
+            </p>
+          ) : null}
         </div>
 
         <div className="rounded-2xl border border-[var(--line)] px-4 py-3">
