@@ -10,8 +10,16 @@ import "server-only";
  * verification harness) never has to load `@supabase/supabase-js`.
  */
 
+export function supabaseUrl(): string | undefined {
+  return process.env.SUPABASE_URL?.trim() || process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || undefined;
+}
+
+export function supabaseServiceKey(): string | undefined {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || undefined;
+}
+
 export function supabaseAvailable(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return Boolean(supabaseUrl() && supabaseServiceKey());
 }
 
 /**
@@ -21,7 +29,7 @@ export function supabaseAvailable(): boolean {
 export function requireSupabase(): void {
   if (!supabaseAvailable()) {
     throw new Error(
-      "Supabase is niet geconfigureerd. Zet NEXT_PUBLIC_SUPABASE_URL en SUPABASE_SERVICE_ROLE_KEY in .env.local én in Vercel.",
+      "Supabase is niet geconfigureerd. Zet NEXT_PUBLIC_SUPABASE_URL (of SUPABASE_URL) en SUPABASE_SERVICE_ROLE_KEY in .env.local én in Vercel.",
     );
   }
 }
@@ -92,8 +100,8 @@ export type SupabaseProbe = {
 /** Checks which credentials are missing and whether the three JSON tables are reachable. */
 export async function supabaseProbe(): Promise<SupabaseProbe> {
   const missing: string[] = [];
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()) missing.push("NEXT_PUBLIC_SUPABASE_URL");
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl()) missing.push("NEXT_PUBLIC_SUPABASE_URL (of SUPABASE_URL)");
+  if (!supabaseServiceKey()) missing.push("SUPABASE_SERVICE_ROLE_KEY");
   if (missing.length > 0) {
     return {
       configured: false,

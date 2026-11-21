@@ -11,7 +11,8 @@ export async function GET() {
   return Response.json({
     ok: true,
     env: {
-      nextPublicSupabaseUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()),
+      supabaseUrlFromServer: Boolean(process.env.SUPABASE_URL?.trim()),
+      supabaseUrlFromPublic: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()),
       supabaseServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()),
       cronSecret: Boolean(process.env.CRON_SECRET?.trim()),
       authSecret: Boolean(process.env.AUTH_SECRET?.trim()),
