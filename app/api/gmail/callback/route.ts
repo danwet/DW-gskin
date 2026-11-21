@@ -38,19 +38,25 @@ export async function GET(request: Request) {
   if (!code || !state) return back(origin, "state_error");
   if (stored !== `${user.id}:${state}`) return back(origin, "state_error");
 
+  let tokens: Awaited<ReturnType<typeof exchangeGmailCode>>;
   try {
-    const tokens = await exchangeGmailCode(origin, code);
+    tokens = await exchangeGmailCode(origin, code);
+  } catch (error) {
+    console.error("[gmail] token exchange failed:", error instanceof Error ? error.message : error);
+    return back(origin, "exchange_error");
+  }
 
-    // Refuse broader Gmail grants, even when Google returns previously
-    // granted scopes alongside the read-only one.
-    const scope = checkGmailScopes(tokens.scopes);
-    if (!scope.ok) return back(origin, "scope_rejected", scope.reason);
+  // Refuse broader Gmail grants, even when Google returns previously
+  // granted scopes alongside the read-only one.
+  const scope = checkGmailScopes(tokens.scopes);
+  if (!scope.ok) return back(origin, "scope_rejected", scope.reason);
 
-    if (!tokens.refreshToken) return back(origin, "no_refresh_token");
+  if (!tokens.refreshToken) return back(origin, "no_refresh_token");
 
-    const email = await fetchGmailProfileEmail(tokens.refreshToken);
-    if (!email) return back(origin, "profile_error");
+  const email = await fetchGmailProfileEmail(tokens.refreshToken);
+  if (!email) return back(origin, "profile_error");
 
+  try {
     await saveGmailConnection({
       userId: user.id,
       email,
@@ -60,9 +66,14 @@ export async function GET(request: Request) {
 
     // Queue the first full inbox import; the dashboard runner picks it up.
     await startImport(user.id);
-
-    return back(origin, "connected");
-  } catch {
-    return back(origin, "exchange_error");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    console.error("[gmail] storing the connection failed:", message);
+    if (/does not exist|schema cache|PGRST205|42P01/i.test(message)) {
+      return back(origin, "db_missing");
+    }
+    return back(origin, "save_error", message.slice(0, 180));
   }
+
+  return back(origin, "connected");
 }

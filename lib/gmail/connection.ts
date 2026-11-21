@@ -76,7 +76,8 @@ export async function saveGmailConnection(input: {
     .select("*")
     .single();
 
-  if (error || !data) throw new Error("Gmail-koppeling kon niet worden opgeslagen.");
+  if (error) throw new Error(`Gmail-koppeling kon niet worden opgeslagen: ${error.message} (${error.code ?? "?"})`);
+  if (!data) throw new Error("Gmail-koppeling kon niet worden opgeslagen: geen rij terug.");
   return toConnection(data as Row);
 }
 

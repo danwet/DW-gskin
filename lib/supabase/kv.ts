@@ -105,7 +105,15 @@ export type SupabaseProbe = {
   agentStateReady: boolean;
   userStateReady: boolean;
   settingsReady: boolean;
+  gmailReady: boolean;
 };
+
+async function tableReady(table: string): Promise<boolean> {
+  const client = await loadClient();
+  if (!client) return false;
+  const { error } = await client.from(table).select("*").limit(1);
+  return !error;
+}
 
 /** Checks which credentials are missing and whether the three JSON tables are reachable. */
 export async function supabaseProbe(): Promise<SupabaseProbe> {
@@ -119,19 +127,26 @@ export async function supabaseProbe(): Promise<SupabaseProbe> {
       agentStateReady: false,
       userStateReady: false,
       settingsReady: false,
+      gmailReady: false,
     };
   }
-  const [agent, user, settings] = await Promise.all([
-    supabaseReadJson("dw_agent_state", "id", "singleton"),
-    supabaseReadJson("dw_user_state", "user_id", "__probe__"),
-    supabaseReadJson("dw_agent_settings", "id", "singleton"),
-  ]);
+  const [agent, user, settings, gmailConnections, gmailMessages, gmailImports, actionProposals] =
+    await Promise.all([
+      supabaseReadJson("dw_agent_state", "id", "singleton"),
+      supabaseReadJson("dw_user_state", "user_id", "__probe__"),
+      supabaseReadJson("dw_agent_settings", "id", "singleton"),
+      tableReady("dw_gmail_connections"),
+      tableReady("dw_gmail_messages"),
+      tableReady("dw_gmail_imports"),
+      tableReady("dw_action_proposals"),
+    ]);
   return {
     configured: true,
     missing: [],
     agentStateReady: agent.ok,
     userStateReady: user.ok,
     settingsReady: settings.ok,
+    gmailReady: gmailConnections && gmailMessages && gmailImports && actionProposals,
   };
 }
 

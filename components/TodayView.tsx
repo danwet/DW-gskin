@@ -20,6 +20,11 @@ const GMAIL_NOTICES: Record<string, { tone: "ok" | "warn"; text: string }> = {
   profile_error: { tone: "warn", text: "Het Gmail-adres kon niet worden opgehaald. Koppel opnieuw." },
   state_error: { tone: "warn", text: "De koppelpoging is verlopen. Koppel opnieuw." },
   exchange_error: { tone: "warn", text: "De koppeling met Google is mislukt. Probeer het opnieuw." },
+  db_missing: {
+    tone: "warn",
+    text: "De Supabase-tabellen voor Gmail ontbreken nog. Voer supabase/migrate-gmail.sql uit in de Supabase SQL-editor en koppel daarna opnieuw.",
+  },
+  save_error: { tone: "warn", text: "De koppeling kon niet worden opgeslagen." },
   not_configured: { tone: "warn", text: "Google OAuth is niet geconfigureerd (AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET)." },
 };
 

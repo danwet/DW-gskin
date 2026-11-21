@@ -34,6 +34,7 @@ type ServerSettings = {
     agentStateReady: boolean;
     userStateReady: boolean;
     settingsReady: boolean;
+    gmailReady: boolean;
     scanBucketReady: boolean;
   };
   auth: { secretSet: boolean; url: string | null };
@@ -614,6 +615,10 @@ function ServerSection({
           ) : null}
           <Status dot={server?.supabase.settingsReady === true} label="Tabel dw_agent_settings" />
           <Status dot={server?.supabase.agentStateReady === true} label="Tabel dw_agent_state" />
+          <Status
+            dot={server?.supabase.gmailReady === true}
+            label={server?.supabase.gmailReady ? "Gmail-tabellen (migrate-gmail.sql)" : "Gmail-tabellen ontbreken (migrate-gmail.sql)"}
+          />
           <Status dot={server?.supabase.userStateReady === true} label="Tabel dw_user_state" />
           <Status dot={server?.supabase.scanBucketReady === true} label="Bucket voor scans" />
           {server && server.supabase.configured && !server.supabase.agentStateReady ? (

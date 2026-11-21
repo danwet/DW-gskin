@@ -78,7 +78,7 @@ export async function getImportState(userId: string): Promise<ImportState | null
 
 export async function startImport(userId: string): Promise<void> {
   const supabase = await dbClient();
-  await supabase.from("dw_gmail_imports").upsert(
+  const { error } = await supabase.from("dw_gmail_imports").upsert(
     {
       user_id: userId,
       phase: "importing",
@@ -93,6 +93,7 @@ export async function startImport(userId: string): Promise<void> {
     },
     { onConflict: "user_id" },
   );
+  if (error) throw new Error(`Importstatus kon niet worden opgeslagen: ${error.message} (${error.code ?? "?"})`);
 }
 
 export async function updateImportState(userId: string, patch: Partial<ImportState>): Promise<void> {
