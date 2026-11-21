@@ -3,6 +3,13 @@ import type { InboundMessage, MailAssessment } from "./types";
 import { detectUnsubscribe } from "./unsubscribe";
 import { detectShipment } from "./shipment";
 
+/** Subjects always start with a capital letter. */
+export function capitalizeSubject(value: string): string {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return "(geen onderwerp)";
+  return trimmed.charAt(0).toLocaleUpperCase("nl-NL") + trimmed.slice(1);
+}
+
 export function conversationKey(message: InboundMessage): string {
   if (message.threadId?.trim()) return message.threadId.trim();
   const subject = message.subject
@@ -65,7 +72,7 @@ export function buildAssessment(
   return {
     mailbox,
     conversationId: conversationKey(latest),
-    subject: latest.subject,
+    subject: capitalizeSubject(latest.subject),
     from: counterparty.from,
     fromEmail: counterparty.fromEmail,
     link: latest.link,
