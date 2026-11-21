@@ -730,10 +730,22 @@ export function InboxModal({
           </div>
         ) : null}
 
-        {(item.unsubscribe || item.classification === "info" || item.classification === "unclassified") && item.body ? (
+        {(item.unsubscribe ||
+          item.classification === "info" ||
+          item.classification === "unclassified" ||
+          // A reply needs the original text above the concept, otherwise you
+          // are writing blind.
+          Boolean(item.draftReply)) &&
+        item.body ? (
           <section className="mt-5">
-            <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">Bericht</p>
-            <div className="mt-2 space-y-3 text-[14px] leading-6 text-[var(--ink)]">
+            <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">
+              {item.draftReply ? "Oorspronkelijk bericht" : "Bericht"}
+            </p>
+            <div
+              className={`mt-2 space-y-3 text-[14px] leading-6 text-[var(--ink)] ${
+                item.draftReply ? "max-h-[220px] overflow-y-auto rounded-2xl bg-[var(--bg)] px-4 py-3" : ""
+              }`}
+            >
               {item.body.split(/\n{2,}/).map((paragraph, index) => (
                 <p key={index} className="whitespace-pre-line">{paragraph.trim()}</p>
               ))}
