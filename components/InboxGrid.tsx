@@ -51,8 +51,10 @@ export function InboxGrid({
   const urgent: MailAssessment[] = [];
   const later: MailAssessment[] = [];
   for (const item of ordered) {
-    const tone = urgencyFor(item, now, timeZone).tone;
-    if (tone === "red" || tone === "orange") urgent.push(item);
+    // "Moet" = something is expected from you, regardless of whether the
+    // sender set a hard deadline. "Mag" is the rest (waiting etc.).
+    const needsAction = item.classification === "action_needed" || item.classification === "reply_needed";
+    if (needsAction) urgent.push(item);
     else later.push(item);
   }
 

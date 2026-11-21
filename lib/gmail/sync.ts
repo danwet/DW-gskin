@@ -214,7 +214,10 @@ export async function syncStep(
   let imported = 0;
   let error: string | undefined;
 
-  if (!state || state.phase === "idle" || state.phase === "importing") {
+  const morePages = Boolean(state?.pageToken);
+  // A pending page token means the mailbox is not fully walked yet, even when
+  // the phase says "done" — resume the import in that case.
+  if (!state || state.phase === "idle" || state.phase === "importing" || morePages) {
     const step = await importStep(userId, refreshToken);
     imported = step.processed;
     if (!step.ok) error = step.error;
