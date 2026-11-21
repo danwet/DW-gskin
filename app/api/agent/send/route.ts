@@ -1,23 +1,17 @@
 import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { loadAgentConfig } from "@/lib/agent/config";
+import { getGmailRefreshToken } from "@/lib/gmail/connection";
 import { sendGmailReply, type Attachment } from "@/lib/agent/gmail-send";
 import { markSent, readAssessments, saveDraft } from "@/lib/agent/store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-export async function POST() {
-  // Phase 1 is read-only: never send, draft or modify anything in Gmail.
-  return Response.json(
-    {
-      ok: false,
-      error: "Gmail is alleen-lezen gekoppeld. Versturen wordt in deze fase niet uitgevoerd; keur het voorstel goed om je beslissing vast te leggen.",
-    },
-    { status: 409 },
-  );
+export async function POST(request: Request) {
+  return sendReply(request);
 }
 
-async function legacySend(request: Request) {
+async function sendReply(request: Request) {
   const user = await sessionUser();
   if (!user) return unauthorized();
 
@@ -46,9 +40,13 @@ async function legacySend(request: Request) {
   }
 
   const config = await loadAgentConfig();
+  const refreshToken = (await getGmailRefreshToken(user.id)) ?? config.gmailRefreshToken;
+  if (!refreshToken) {
+    return Response.json({ ok: false, error: "Gmail is niet gekoppeld." }, { status: 409 });
+  }
   const subject = /^re:/i.test(item.subject) ? item.subject : `Re: ${item.subject}`;
   const result = await sendGmailReply({
-    refreshToken: config.gmailRefreshToken,
+    refreshToken,
     from: user.email,
     to: item.fromEmail,
     subject,

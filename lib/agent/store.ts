@@ -435,13 +435,15 @@ export function markSent(conversationId: string): Promise<MailAssessment | null>
     const existing = state.assessments[conversationId];
     if (!existing) return null;
     const now = new Date().toISOString();
-    existing.sentAt = now;
-    existing.handledByUser = true;
-    existing.handledAt = now;
+    // Sent is a user decision, so it belongs in their layer.
+    const user = (state.userState[conversationId] ??= {});
+    user.sentAt = now;
+    user.handledByUser = true;
+    user.handledAt = now;
     existing.needsAttention = false;
     existing.attentionReason = undefined;
     await writeState(state);
-    return existing;
+    return withUserState(existing, user);
   });
 }
 

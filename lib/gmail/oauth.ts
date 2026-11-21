@@ -4,6 +4,8 @@ import { refreshGoogleAccessToken } from "../google-token";
 
 /** Read plus archive/trash. No sending, no permanent delete. */
 export const GMAIL_MODIFY_SCOPE = "https://www.googleapis.com/auth/gmail.modify";
+/** Sending replies. Kept separate so it can be reviewed on its own. */
+export const GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
 /** Kept for older connections; read only. */
 export const GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 export const GMAIL_CALLBACK_PATH = "/api/gmail/callback";
@@ -29,7 +31,7 @@ export function gmailAuthUrl(origin: string, state: string): string {
     client_id: process.env.AUTH_GOOGLE_ID ?? "",
     redirect_uri: gmailCallbackUri(origin),
     response_type: "code",
-    scope: GMAIL_MODIFY_SCOPE,
+    scope: `${GMAIL_MODIFY_SCOPE} ${GMAIL_SEND_SCOPE}`,
     access_type: "offline",
     prompt: "consent",
     include_granted_scopes: "false",
@@ -46,13 +48,17 @@ export type ScopeCheck = { ok: true } | { ok: false; reason: string };
  */
 export function checkGmailScopes(granted: string[]): ScopeCheck {
   const gmailScopes = granted.filter((scope) => GMAIL_SCOPE_PREFIXES.some((prefix) => scope.startsWith(prefix)));
-  const allowed = gmailScopes.includes(GMAIL_MODIFY_SCOPE) || gmailScopes.includes(GMAIL_READONLY_SCOPE);
+  const allowed =
+    gmailScopes.includes(GMAIL_MODIFY_SCOPE) ||
+    gmailScopes.includes(GMAIL_READONLY_SCOPE) ||
+    gmailScopes.includes(GMAIL_SEND_SCOPE);
   if (!allowed) {
     return { ok: false, reason: "De Gmail-scope (gmail.modify of gmail.readonly) is niet verleend." };
   }
   // Full mailbox access and send rights are more than this app needs.
   const tooWide = gmailScopes.filter(
-    (scope) => scope !== GMAIL_MODIFY_SCOPE && scope !== GMAIL_READONLY_SCOPE,
+    (scope) =>
+      scope !== GMAIL_MODIFY_SCOPE && scope !== GMAIL_READONLY_SCOPE && scope !== GMAIL_SEND_SCOPE,
   );
   if (tooWide.length > 0) {
     return { ok: false, reason: `Er zijn ruimere Gmail-rechten verleend: ${tooWide.join(", ")}.` };

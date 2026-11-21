@@ -612,6 +612,31 @@ export function InboxModal({
 
   const [busyAction, setBusyAction] = useState<"archive" | "trash" | null>(null);
 
+  // Sending is a deliberate click on Verstuur; no extra confirmation step.
+  const sendReply = async () => {
+    if (sending || !draft.trim()) return;
+    setSending(true);
+    try {
+      const form = new FormData();
+      form.set("conversationId", item.conversationId);
+      form.set("body", draft);
+      for (const file of attachments) form.append("files", file);
+
+      const response = await fetch("/api/agent/send", { method: "POST", body: form });
+      const data = (await response.json().catch(() => null)) as { ok?: boolean; error?: string; item?: MailAssessment } | null;
+      if (!response.ok || !data?.ok) {
+        onError?.(data?.error ?? "Versturen mislukt.");
+        return;
+      }
+      onReload?.();
+      onClose();
+    } catch {
+      onError?.("Versturen mislukt: geen verbinding.");
+    } finally {
+      setSending(false);
+    }
+  };
+
   // This one does reach Gmail: archive removes the INBOX label, trash moves it
   // to the prullenbak (recoverable for 30 days).
   // Optimistic: close and drop the card at once; Gmail syncs in the background.
@@ -886,11 +911,11 @@ export function InboxModal({
             <>
               <button
                 type="button"
-                onClick={openReplyProposal}
-                disabled={!item.proposal || !onOpenProposal}
-                className="btn-primary relative rounded-full px-4 py-2 text-[13px] font-medium"
+                onClick={() => void sendReply()}
+                disabled={sending || !draft.trim()}
+                className="btn-primary relative rounded-full px-4 py-2 text-[13px] font-medium disabled:opacity-60"
               >
-                Verstuur
+                {sending ? "Versturen…" : "Verstuur"}
               </button>
               <button
                 type="button"
