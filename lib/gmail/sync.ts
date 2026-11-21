@@ -45,7 +45,9 @@ async function readProgress(userId: string): Promise<SyncProgress> {
     return { phase: "idle", imported: 0, total: null, threadsImported: 0, triaged: 0, pending: 0, lastError: null };
   }
   return {
-    phase: state.phase,
+    // A leftover page token means the mailbox was not fully walked; report it
+    // as importing so the runner resumes instead of showing "done".
+    phase: state.phase === "done" && state.pageToken ? "importing" : state.phase,
     imported: state.importedCount,
     total: state.totalEstimate,
     threadsImported: state.importedThreads,
@@ -69,12 +71,14 @@ export async function importStep(userId: string, refreshToken: string): Promise<
   if (!state) {
     return { ok: false, step: "error", processed: 0, progress: await readProgress(userId), error: "Importstatus ontbreekt." };
   }
-  if (state.phase === "triaging") {
+  const morePages = Boolean(state.pageToken);
+
+  if (state.phase === "triaging" && !morePages) {
     return { ok: true, step: "idle", processed: 0, progress: await readProgress(userId) };
   }
 
   // After the first import, keep watching the newest page for new mail.
-  if (state.phase === "done") {
+  if (state.phase === "done" && !morePages) {
     const token = await refreshGoogleAccessToken(refreshToken);
     if (!token) {
       return { ok: false, step: "error", processed: 0, progress: await readProgress(userId), error: "Gmail-token kon niet worden vernieuwd." };
@@ -184,8 +188,8 @@ export async function triageStep(userId: string): Promise<StepResult> {
   const moreRemain = untriaged.length > threads.length;
   // While the import is still walking the mailbox it owns the phase; triage
   // must never move it forward, or the remaining pages would never be fetched.
-  const nextPhase: ImportPhase =
-    currentPhase === "importing" ? "importing" : moreRemain ? "triaging" : "done";
+  const stillImporting = currentPhase === "importing" || Boolean(state?.pageToken);
+  const nextPhase: ImportPhase = stillImporting ? "importing" : moreRemain ? "triaging" : "done";
   await updateImportState(userId, {
     triagedCount: (state?.triagedCount ?? 0) + updates.length,
     phase: nextPhase,
