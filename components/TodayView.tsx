@@ -182,6 +182,15 @@ export function TodayView() {
   );
 }
 
+function item_archivedToday(supplier: string, items: MailAssessment[], startOfToday: Date): boolean {
+  return items.some(
+    (item) =>
+      item.archivedAt &&
+      Date.parse(item.archivedAt) >= startOfToday.getTime() &&
+      (item.shipment?.supplier ?? item.from ?? "").toLowerCase().includes(supplier.toLowerCase()),
+  );
+}
+
 function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
   const byKey = new Map<string, { shipment: ShipmentInfo; receivedAt: string }>();
   for (const item of items) {
@@ -197,10 +206,33 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
+  // Payment confirmations sit in the same panel, grouped per supplier so a
+  // second receipt shows as "Leverancier (2)".
+  const payments = new Map<string, { supplier: string; count: number; receivedAt: string; amount?: number }>();
+  for (const item of items) {
+    if (!item.payment) continue;
+    const key = item.payment.supplier.toLowerCase();
+    const existing = payments.get(key);
+    if (existing) {
+      existing.count += 1;
+      if (Date.parse(item.receivedAt) > Date.parse(existing.receivedAt)) existing.receivedAt = item.receivedAt;
+    } else {
+      payments.set(key, {
+        supplier: item.payment.supplier,
+        count: 1,
+        receivedAt: item.receivedAt,
+        amount: item.payment.amount,
+      });
+    }
+  }
+  const paymentEntries = [...payments.values()].sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
+
   const shipments = [...byKey.values()]
     .filter((entry) => {
       if (entry.shipment.status !== "Geleverd") return true;
-      return Date.parse(entry.receivedAt) >= startOfToday.getTime();
+      // Today's delivery, or one the agent processed today, stays visible.
+      const archivedToday = item_archivedToday(entry.shipment.supplier, items, startOfToday);
+      return archivedToday || Date.parse(entry.receivedAt) >= startOfToday.getTime();
     })
     .sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
 
@@ -225,7 +257,7 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
   return (
     <section className="mt-6">
       <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Onderweg</h2>
-      {shipments.length === 0 ? (
+      {shipments.length === 0 && paymentEntries.length === 0 ? (
         <p className="mt-4 text-[14px] text-[var(--muted)]">Bestel maar</p>
       ) : (
       <ul className="mt-4 space-y-4">
@@ -249,6 +281,23 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
             </li>
           );
         })}
+        {paymentEntries.map((entry, index) => (
+          <li key={`betaald-${entry.supplier}-${index}`} className="flex items-start gap-3">
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--green)" }} />
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-semibold text-[var(--ink)]">Betaald</p>
+              <div className="mt-1 flex items-baseline justify-between gap-3">
+                <p className="truncate text-[13px] text-[var(--ink)]">
+                  {entry.supplier}
+                  {entry.count > 1 ? <span className="text-[var(--muted)]"> ({entry.count})</span> : null}
+                </p>
+                {entry.amount != null ? (
+                  <p className="shrink-0 text-[12px] text-[var(--muted)]">€ {entry.amount.toFixed(2).replace(".", ",")}</p>
+                ) : null}
+              </div>
+            </div>
+          </li>
+        ))}
       </ul>
       )}
     </section>

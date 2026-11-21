@@ -102,6 +102,8 @@ export type MailAssessment = {
   bodyHtml?: string;
   /** Detected shipment/tracking update, when present. */
   shipment?: ShipmentInfo;
+  /** Payment confirmation: who was paid. Never auto-archived. */
+  payment?: { supplier: string; amount?: number; currency?: string; paidAt?: string };
   /** Set when the agent archived the mail itself after reading the order status. */
   archivedAt?: string;
   /** Declaration state for a paid invoice: none / pending (in "Declareren") / declared. */

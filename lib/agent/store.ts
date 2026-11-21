@@ -162,7 +162,8 @@ export function findInvoiceDuplicate(supplier: string, invoiceNumber: string): P
     if (!number) return null;
     const supplierNorm = supplier.trim().toLowerCase();
     const state = await readState();
-    for (const item of Object.values(state.assessments)) {
+    for (const raw of Object.values(state.assessments)) {
+      const item = withUserState(raw, state.userState?.[raw.conversationId]);
       if (!item.invoice) continue;
       const itemNumber = (item.invoice.invoiceNumber ?? "").trim().toLowerCase();
       if (itemNumber && itemNumber === number) return item;
@@ -269,7 +270,13 @@ export function removeAssessments(conversationIds: string[]): Promise<void> {
 export function readStateOnce(): Promise<{ assessments: MailAssessment[]; meta: AgentMeta }> {
   return withLock(async () => {
     const state = await readState();
-    return { assessments: Object.values(state.assessments), meta: state.meta };
+    // Same merge as readAssessments: the route that builds the inbox uses this.
+    return {
+      assessments: Object.values(state.assessments).map((item) =>
+        withUserState(item, state.userState?.[item.conversationId]),
+      ),
+      meta: state.meta,
+    };
   });
 }
 

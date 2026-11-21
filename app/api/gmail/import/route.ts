@@ -1,6 +1,6 @@
 import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { getGmailRefreshToken, resolveGmailConnection } from "@/lib/gmail/connection";
-import { getSyncProgress, syncStep } from "@/lib/gmail/sync";
+import { getSyncProgress, syncStep, triageStep } from "@/lib/gmail/sync";
 import { startImport } from "@/lib/gmail/store";
 import { updateMeta } from "@/lib/agent/store";
 
@@ -24,7 +24,24 @@ export async function POST() {
   const connection = await resolveGmailConnection(user.id, user.email).catch(() => null);
   const refreshToken = await getGmailRefreshToken(user.id);
   if (!refreshToken) {
-    return Response.json({ error: "Gmail is nog niet gekoppeld." }, { status: 400 });
+    // No usable token (e.g. local dev): still judge what is already stored,
+    // since triage never touches Gmail.
+    try {
+      const triage = await triageStep(user.id, user.email);
+      return Response.json({
+        ok: true,
+        step: "triage",
+        processed: triage.processed,
+        imported: 0,
+        removed: 0,
+        autoArchived: 0,
+        progress: await getSyncProgress(user.id),
+        note: "Alleen beoordeeld; Gmail is op deze omgeving niet gekoppeld.",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Beoordelen mislukt.";
+      return Response.json({ error: message }, { status: 503 });
+    }
   }
 
   const state = await getSyncProgress(user.id);

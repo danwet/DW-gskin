@@ -253,7 +253,13 @@ export async function triageStep(userId: string, ownerEmail?: string | null): Pr
 async function archiveProcessedOrders(userId: string, refreshToken: string): Promise<number> {
   const assessments = await readAssessments();
   const candidates = assessments.filter(
-    (item) => item.mailbox === "gmail" && item.shipment && !item.archivedAt && item.classification === "info",
+    (item) =>
+      item.mailbox === "gmail" &&
+      item.shipment &&
+      !item.archivedAt &&
+      item.classification === "info" &&
+      // A payment receipt is not an order status: leave it in the inbox.
+      !item.payment,
   );
   if (candidates.length === 0) return 0;
 

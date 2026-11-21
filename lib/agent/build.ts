@@ -2,6 +2,7 @@ import type { AssessmentDraft } from "./classify";
 import type { InboundMessage, MailAssessment } from "./types";
 import { detectUnsubscribe } from "./unsubscribe";
 import { detectShipment } from "./shipment";
+import { detectPayment } from "./payment";
 import { isValidIban } from "../epc";
 
 /** The text that came out of a PDF attachment, if the mail carried one. */
@@ -208,6 +209,7 @@ export function buildAssessment(
     body: latest.body || undefined,
     bodyHtml: latest.bodyHtml || undefined,
     shipment: detectShipment(latest) ?? undefined,
+    payment: detectPayment(latest) ?? undefined,
     thread: conversation.map((message) => ({
       from: message.from,
       fromEmail: message.fromEmail,
