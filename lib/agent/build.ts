@@ -4,8 +4,36 @@ import { detectUnsubscribe } from "./unsubscribe";
 import { detectShipment } from "./shipment";
 
 /** Subjects always start with a capital letter. */
+/**
+ * Keeps the action label consistent with the structured invoice data: when the
+ * amount is unknown, a number must not leak into the action text.
+ */
+export function normalizeNextAction(nextAction: string, invoiceAmount?: number | null): string {
+  const text = (nextAction ?? "").trim();
+  if (!text) return "Bekijk deze mail.";
+  if (invoiceAmount != null) return text;
+  const cleaned = text
+    .replace(/\s*(?:€|eur)\s*\d[\d.,]*/gi, "")
+    .replace(/\s*\d[\d.,]*\s*(?:euro|eur)\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return cleaned || "Betaal factuur";
+}
+
+/** Emoji, variation selectors, zero-width joiners and skin tones. */
+const EMOJI_PATTERN = /[\p{Extended_Pictographic}\p{Regional_Indicator}\u{FE0F}\u{200D}\u{1F3FB}-\u{1F3FF}]/gu;
+
+/** Removes emoji so a subject reads as plain text. */
+export function stripEmoji(value: string): string {
+  return (value ?? "")
+    .replace(EMOJI_PATTERN, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
+/** Subjects carry no emoji and always start with a capital letter. */
 export function capitalizeSubject(value: string): string {
-  const trimmed = (value ?? "").trim();
+  const trimmed = stripEmoji(value).trim();
   if (!trimmed) return "(geen onderwerp)";
   return trimmed.charAt(0).toLocaleUpperCase("nl-NL") + trimmed.slice(1);
 }
@@ -77,7 +105,7 @@ export function buildAssessment(
     fromEmail: counterparty.fromEmail,
     link: latest.link,
     classification: draft.classification,
-    nextAction: draft.nextAction || "Bekijk deze mail.",
+    nextAction: normalizeNextAction(draft.nextAction || "Bekijk deze mail.", invoice?.amount),
     priorityReason: draft.priorityReason || "",
     deadline: draft.deadline ?? undefined,
     consequence,

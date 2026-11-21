@@ -116,8 +116,7 @@ export function TodayView() {
     (item) =>
       item.classification !== "info" &&
       item.classification !== "unclassified" &&
-      item.handledByUser !== true &&
-      !(item.snoozedUntil && Date.parse(item.snoozedUntil) > nowMs),
+      item.handledByUser !== true,
   );
   const infoItems = inbox.items.filter(
     (item) => item.classification === "info" || (item.source === "scan" && item.handledByUser === true),
@@ -136,7 +135,7 @@ export function TodayView() {
       />
       <div className="mt-8 grid gap-0 lg:grid-cols-3 lg:gap-8">
         <div className="lg:col-span-2">
-          <div className="mx-auto w-full max-w-[720px] space-y-6">
+          <div className="mx-auto w-full max-w-[680px] space-y-6">
             <InboxGrid
               items={activeItems}
               infoItems={infoItems}

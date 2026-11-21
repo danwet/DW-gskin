@@ -65,6 +65,8 @@ export type MailAssessment = {
   draftReply?: string;
   sentAt?: string;
   snoozedUntil?: string;
+  /** Tier the card was demoted to while snoozed ("later" = Mag, "info" = Hoeft niet). */
+  snoozedTier?: "later" | "info";
   sourceMessageId: string;
   receivedAt: string;
   handledByUser?: boolean;

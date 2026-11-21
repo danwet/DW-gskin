@@ -8,10 +8,55 @@ const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
  * Sender label for a card. A missing name falls back to the part before the @,
  * so "info@example.com" and "<info@example.com>" both read as "info".
  */
+/** A segment that names a department rather than the organisation. */
+const DEPARTMENT_HINT =
+  /\b(debiteurenbeheer|debiteuren|crediteuren|administratie|facturatie|finance|financien|klantenservice|support|service|sales|recruitment|hr|afdeling|department|team|office|info|informatie|noreply|no-reply|mail)\b/i;
+
+/**
+ * "Debiteurenbeheer | Shave Energy" is really "Shave Energy", and
+ * "Gasservice Noordholland | Installatie afdeling" is really
+ * "Gasservice Noordholland": keep the segment that is not a department.
+ */
+export function simplifySenderName(name: string): string {
+  const parts = name
+    .split(/\s*[|·]\s*/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length < 2) return name;
+  return parts.find((part) => !DEPARTMENT_HINT.test(part)) ?? parts[0];
+}
+
+/** A display name that is only a department, e.g. "administratie". */
+const DEPARTMENT_ONLY =
+  /^(administratie|debiteurenbeheer|debiteuren|crediteuren|facturatie|finance|financien|klantenservice|support|service|sales|hr|recruitment|info|informatie|mail|office|team|noreply|no-reply)$/i;
+
+const FREE_MAIL = /(^|\.)(gmail|googlemail|outlook|hotmail|live|yahoo|icloud|ziggo|kpnmail|telfort|upcmail|planet|home|hetnet|me)\./i;
+
+/** "administratie@shave-energy.nl" → "Shave Energy". */
+export function organisationFromEmail(email: string): string {
+  const domain = (email ?? "").split("@")[1]?.toLowerCase() ?? "";
+  if (!domain || FREE_MAIL.test(domain)) return "";
+  const label = domain.split(".")[0];
+  if (!label || label.length < 3) return "";
+  return label
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export function senderDisplayName(from?: string | null, fromEmail?: string | null): string {
   const name = (from ?? "").trim().replace(/^["']+|["']+$/g, "").trim();
   const email = (fromEmail ?? "").trim();
-  if (name && name !== "Onbekend" && !name.includes("@")) return name;
+  if (name && name !== "Onbekend" && !name.includes("@")) {
+    const simplified = simplifySenderName(name);
+    // A pure department name says nothing; use the organisation behind the domain.
+    if (DEPARTMENT_ONLY.test(simplified)) {
+      const organisation = organisationFromEmail(email || name);
+      if (organisation) return organisation;
+    }
+    return simplified;
+  }
   const address = email.includes("@") ? email : name.includes("@") ? name : "";
   const local = address ? address.split("@")[0].trim() : "";
   return local || name || "Onbekend";

@@ -147,6 +147,14 @@ export function attachScanToAssessment(
   });
 }
 
+/** Assessments and meta from a single read, for the inbox first paint. */
+export function readStateOnce(): Promise<{ assessments: MailAssessment[]; meta: AgentMeta }> {
+  return withLock(async () => {
+    const state = await readState();
+    return { assessments: Object.values(state.assessments), meta: state.meta };
+  });
+}
+
 export function readMeta(): Promise<AgentMeta> {
   return withLock(async () => (await readState()).meta);
 }
@@ -211,12 +219,17 @@ export function saveDraft(conversationId: string, draftReply: string): Promise<M
   });
 }
 
-export function snoozeConversation(conversationId: string, until: string | null): Promise<MailAssessment | null> {
+export function snoozeConversation(
+  conversationId: string,
+  until: string | null,
+  tier?: "later" | "info" | null,
+): Promise<MailAssessment | null> {
   return withLock(async () => {
     const state = await readState();
     const existing = state.assessments[conversationId];
     if (!existing) return null;
     existing.snoozedUntil = until ?? undefined;
+    existing.snoozedTier = until ? tier ?? undefined : undefined;
     await writeState(state);
     return existing;
   });

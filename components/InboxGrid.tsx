@@ -30,7 +30,7 @@ export function InboxGrid({
   loading: boolean;
   error: string | null;
   onToggleHandled: (item: MailAssessment) => void;
-  onSnooze: (item: MailAssessment, until: string) => void;
+  onSnooze: (item: MailAssessment, until: string, tier?: "later" | "info") => void;
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
   onSave: (item: MailAssessment, saved: boolean) => void;
 }) {
@@ -48,15 +48,20 @@ export function InboxGrid({
     declareItems.filter((item) => !item.snoozedUntil || Date.parse(item.snoozedUntil) <= Date.now()),
   );
 
+  const nowMs = Date.now();
   const urgent: MailAssessment[] = [];
   const later: MailAssessment[] = [];
+  const snoozedIntoInfo: MailAssessment[] = [];
   for (const item of ordered) {
     // "Moet" = something is expected from you, regardless of whether the
-    // sender set a hard deadline. "Mag" is the rest (waiting etc.).
-    const needsAction = item.classification === "action_needed" || item.classification === "reply_needed";
-    if (needsAction) urgent.push(item);
-    else later.push(item);
+    // sender set a hard deadline. Snoozed cards sit one tier lower.
+    const tier = cardTier(item, nowMs);
+    if (tier === "urgent") urgent.push(item);
+    else if (tier === "later") later.push(item);
+    else snoozedIntoInfo.push(item);
   }
+
+  const infoTab = [...orderedInfo, ...orderNewestFirst(snoozedIntoInfo)];
 
   const isEmpty = ordered.length === 0 && orderedInfo.length === 0 && orderedDeclare.length === 0;
 
@@ -66,11 +71,11 @@ export function InboxGrid({
   const tabs: { id: "urgent" | "later" | "info" | "declare"; label: string; count: number | string }[] = [
     { id: "urgent", label: "Moet", count: urgent.length },
     { id: "later", label: "Mag", count: later.length },
-    { id: "info", label: "Hoeft niet", count: orderedInfo.length },
+    { id: "info", label: "Hoeft niet", count: infoTab.length },
     { id: "declare", label: "Declareren", count: declareLabel },
   ];
   const activeCards =
-    activeTab === "urgent" ? urgent : activeTab === "later" ? later : activeTab === "info" ? orderedInfo : orderedDeclare;
+    activeTab === "urgent" ? urgent : activeTab === "later" ? later : activeTab === "info" ? infoTab : orderedDeclare;
 
   const emptyMessage =
     activeTab === "urgent"
@@ -84,11 +89,11 @@ export function InboxGrid({
   useEffect(() => {
     setActiveTab((current) => {
       const currentCards =
-        current === "urgent" ? urgent : current === "later" ? later : current === "info" ? orderedInfo : orderedDeclare;
+        current === "urgent" ? urgent : current === "later" ? later : current === "info" ? infoTab : orderedDeclare;
       if (currentCards.length > 0) return current;
       if (urgent.length > 0) return "urgent";
       if (later.length > 0) return "later";
-      if (orderedInfo.length > 0) return "info";
+      if (infoTab.length > 0) return "info";
       if (orderedDeclare.length > 0) return "declare";
       return current;
     });
@@ -134,7 +139,11 @@ export function InboxGrid({
       </div>
 
       {loading ? (
-        <p className="text-[14px] leading-6 text-[var(--muted)]">Inbox wordt geladen…</p>
+        <div className="grid gap-x-3 gap-y-4 sm:grid-cols-2" aria-hidden="true">
+          {[0, 1, 2, 3].map((index) => (
+            <div key={index} className="card-surface h-[270px] animate-pulse rounded-2xl opacity-70 sm:h-[410px]" />
+          ))}
+        </div>
       ) : error ? (
         <p className="text-[14px] leading-6 text-[var(--muted)]">{error}</p>
       ) : activeCards.length === 0 ? (
@@ -213,6 +222,19 @@ function hasPayableInvoice(item: MailAssessment): boolean {
   return item.classification !== "info" && item.classification !== "unclassified";
 }
 
+/**
+ * Which column a card belongs to right now. A snoozed card drops one tier for
+ * a day and returns to its own tier automatically when the snooze expires.
+ */
+function cardTier(item: MailAssessment, nowMs: number): "urgent" | "later" | "info" {
+  if (item.snoozedUntil && Date.parse(item.snoozedUntil) > nowMs) {
+    return item.snoozedTier ?? "later";
+  }
+  if (item.classification === "info" || item.classification === "unclassified") return "info";
+  if (item.classification === "action_needed" || item.classification === "reply_needed") return "urgent";
+  return "later";
+}
+
 function preparedLabel(item: MailAssessment): string {
   if (item.preparedAction) return item.preparedAction;
   if (hasPayableInvoice(item) && item.invoice?.iban) return "QR-code aangemaakt";
@@ -231,7 +253,7 @@ function ctaLabel(item: MailAssessment): string {
     const settled = item.invoice?.paymentStatus === "paid_confirmed" || item.handledByUser;
     return settled ? "Betaald" : "Betalen";
   }
-  if (item.classification === "reply_needed") return "Goedkeuren";
+  if (item.classification === "reply_needed") return "Concept";
   if (item.classification === "action_needed") return "Afhandelen";
   return "Bekijken";
 }
@@ -243,7 +265,10 @@ function isPrimaryCta(item: MailAssessment): boolean {
 
 function balanceTwoLines(text: string): [string, string | null] {
   const words = text.trim().split(/\s+/).filter(Boolean);
-  if (words.length <= 3) return [words.join(" "), null];
+  // Two lines are balanced for any multi-word action, so short actions line up
+  // with long ones instead of sitting on a single line. "Geen actie" is simply
+  // too short for that and stays on one line.
+  if (words.length <= 1 || /^geen actie$/i.test(text.trim())) return [words.join(" "), null];
   let bestIndex = Math.ceil(words.length / 2);
   let bestDiff = Number.POSITIVE_INFINITY;
   for (let i = 1; i < words.length; i += 1) {
@@ -291,6 +316,7 @@ export function InboxCard({
   const zIndex = Math.min(2 + index, 39);
   const consequence = item.consequence?.senderSays ?? item.consequence?.possible;
   const cta = ctaLabel(item);
+
   const isScan = item.source === "scan";
   const isNewsletter =
     Boolean(item.unsubscribe) || item.classification === "info" || item.classification === "unclassified";
@@ -341,7 +367,7 @@ export function InboxCard({
             <p className="text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">Actie:</p>
             <BalancedText
               text={item.nextAction}
-              className="flex min-h-[40px] w-full flex-col justify-center text-[16px] font-semibold leading-5 text-[var(--ink)]"
+              className="flex min-h-[40px] w-full flex-col justify-start text-[16px] font-semibold leading-5 text-[var(--ink)]"
             />
           </div>
         ) : null}
@@ -411,7 +437,7 @@ export function InboxModal({
   onClose: () => void;
   onToggleHandled: (item: MailAssessment) => void;
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
-  onSnooze?: (item: MailAssessment, until: string) => void;
+  onSnooze?: (item: MailAssessment, until: string, tier?: "later" | "info") => void;
   onSave?: (item: MailAssessment, saved: boolean) => void;
   onOpenProposal?: (id: string) => void;
 }) {
@@ -481,13 +507,31 @@ export function InboxModal({
     if (item.proposal && onOpenProposal) onOpenProposal(item.proposal.id);
   };
 
+  // Snoozing drops the card exactly one tier for a day.
+  const tier = cardTier(item, Date.now());
+  const nextTier: "later" | "info" | null = tier === "urgent" ? "later" : tier === "later" ? "info" : null;
+
   const snoozeTomorrow = () => {
-    if (!onSnooze) return;
+    if (!onSnooze || !nextTier) return;
     const until = new Date();
     until.setDate(until.getDate() + 1);
     until.setHours(0, 0, 0, 0);
-    onSnooze(item, until.toISOString());
+    onSnooze(item, until.toISOString(), nextTier);
     onClose();
+  };
+
+  const propose = async (action: "archive" | "trash") => {
+    try {
+      const response = await fetch("/api/proposals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId: item.conversationId, action }),
+      });
+      const data = (await response.json().catch(() => null)) as { proposal?: { id: string } } | null;
+      if (response.ok && data?.proposal?.id) onOpenProposal?.(data.proposal.id);
+    } catch {
+      // The dialog stays usable; nothing was executed.
+    }
   };
 
   return (
@@ -497,7 +541,7 @@ export function InboxModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="inbox-detail-title"
-        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-[560px] overflow-y-auto rounded-[24px] border border-[var(--line)] bg-[var(--card)] p-6 shadow-[var(--shadow)]"
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-[760px] overflow-y-auto rounded-[24px] border border-[var(--line)] bg-[var(--card)] p-6 shadow-[var(--shadow)]"
       >
         <div className="flex items-start justify-between gap-3">
           <UrgencyPill tone={urgency.tone} label={urgency.label} />
@@ -735,7 +779,21 @@ export function InboxModal({
                 disabled={!item.proposal || !onOpenProposal}
                 className="btn-primary relative rounded-full px-4 py-2 text-[13px] font-medium"
               >
-                Bekijk voorstel
+                Verstuur
+              </button>
+              <button
+                type="button"
+                onClick={() => void propose("archive")}
+                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+              >
+                Archiveren
+              </button>
+              <button
+                type="button"
+                onClick={() => void propose("trash")}
+                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+              >
+                Verwijderen
               </button>
               <button
                 type="button"
@@ -744,7 +802,7 @@ export function InboxModal({
                   setSaved(next);
                   onSave?.(item, next);
                 }}
-                className="btn-secondary focus-ring rounded-full px-4 py-2 text-[13px] font-medium"
+                className="btn-secondary focus-ring ml-auto rounded-full px-4 py-2 text-[13px] font-medium"
               >
                 {saved ? "Bewaard" : "Bewaren"}
               </button>
@@ -761,7 +819,24 @@ export function InboxModal({
                 </button>
               ) : null}
             </>
-          ) : (
+          ) : tier === "later" || (tier === "urgent" && !hasPayableInvoice(item)) ? (
+            <>
+              <button
+                type="button"
+                onClick={() => void propose("archive")}
+                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+              >
+                Archiveren
+              </button>
+              <button
+                type="button"
+                onClick={() => void propose("trash")}
+                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+              >
+                Verwijderen
+              </button>
+            </>
+          ) : tier === "urgent" ? (
             <button
               type="button"
               onClick={() => {
@@ -769,6 +844,7 @@ export function InboxModal({
                 setHandled(next);
                 onToggleHandled(item);
                 if (next && hasPayableInvoice(item) && !declaration) setShowDeclarePrompt(true);
+                if (!next) setShowDeclarePrompt(false);
               }}
               className={`focus-ring relative rounded-full px-3 py-1.5 text-[13px] font-medium ${
                 handled ? "btn-secondary text-[var(--muted)]" : "btn-primary"
@@ -776,15 +852,24 @@ export function InboxModal({
             >
               {handled ? "Ongedaan maken" : doneLabel}
             </button>
-          )}
-          {onSnooze ? (
-            <button
-              type="button"
-              onClick={snoozeTomorrow}
-              className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
-            >
-              Snooze
-            </button>
+          ) : null}
+          {tier === "info" && !item.draftReply && onOpenProposal ? (
+            <>
+              <button
+                type="button"
+                onClick={() => void propose("archive")}
+                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+              >
+                Archiveren
+              </button>
+              <button
+                type="button"
+                onClick={() => void propose("trash")}
+                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+              >
+                Verwijderen
+              </button>
+            </>
           ) : null}
           {unsub ? (
             <button
@@ -809,6 +894,30 @@ export function InboxModal({
               className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
             >
               Gedeclareerd
+            </button>
+          ) : null}
+          {!item.draftReply && onSave && tier !== "info" ? (
+            <button
+              type="button"
+              onClick={() => {
+                const next = !saved;
+                setSaved(next);
+                onSave(item, next);
+              }}
+              className="btn-secondary focus-ring ml-auto rounded-full px-4 py-2 text-[13px] font-medium"
+            >
+              {saved ? "Bewaard" : "Bewaren"}
+            </button>
+          ) : null}
+          {nextTier && onSnooze && !handled ? (
+            <button
+              type="button"
+              onClick={snoozeTomorrow}
+              className={`btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium ${
+                item.draftReply || (onSave && tier !== "info") ? "" : "ml-auto"
+              }`}
+            >
+              Snooze
             </button>
           ) : null}
           {handled ? <span className="text-[12px] text-[var(--muted)]">Afgehandeld</span> : null}

@@ -193,10 +193,10 @@ function SidebarContent({
   onOpenSettings: () => void;
   onNavigate: () => void;
 }) {
-  // Demo: always show a full bar so the placement is visible. Set to false for live data.
-  const IMPORT_DEMO_FULL = true;
-  const importTotal = syncProgress?.total ?? (IMPORT_DEMO_FULL ? 201 : null);
-  const shownImported = IMPORT_DEMO_FULL ? (importTotal ?? 0) : (syncProgress?.imported ?? 0);
+  // Only visible while an import or triage is actually running.
+  const syncingNow = syncProgress?.phase === "importing" || syncProgress?.phase === "triaging";
+  const importTotal = syncingNow ? (syncProgress?.total ?? null) : null;
+  const shownImported = syncProgress?.imported ?? 0;
   const importPercent = importTotal ? Math.min(100, Math.round((shownImported / importTotal) * 100)) : 0;
 
   return (
@@ -239,7 +239,7 @@ function SidebarContent({
 
       <div className="mt-auto pt-4">
         {importTotal ? (
-          <div className="mb-[22px] px-2">
+          <div className="mb-[32px] px-2">
             <p className="text-[11px] leading-4 text-[var(--muted)]">
               Ophalen {shownImported} van {importTotal} emails
             </p>

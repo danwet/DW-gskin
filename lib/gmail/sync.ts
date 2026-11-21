@@ -44,6 +44,7 @@ async function readProgress(userId: string): Promise<SyncProgress> {
   if (!state) {
     return { phase: "idle", imported: 0, total: null, threadsImported: 0, triaged: 0, pending: 0, lastError: null };
   }
+  const active = state.phase === "importing" || state.phase === "triaging" || Boolean(state.pageToken);
   return {
     // A leftover page token means the mailbox was not fully walked; report it
     // as importing so the runner resumes instead of showing "done".
@@ -52,7 +53,9 @@ async function readProgress(userId: string): Promise<SyncProgress> {
     total: state.totalEstimate,
     threadsImported: state.importedThreads,
     triaged: state.triagedCount,
-    pending: await countUntriaged(userId).catch(() => Math.max(state.importedThreads - state.triagedCount, 0)),
+    pending: active
+      ? await countUntriaged(userId).catch(() => Math.max(state.importedThreads - state.triagedCount, 0))
+      : 0,
     lastError: state.lastError,
   };
 }

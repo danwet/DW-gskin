@@ -202,17 +202,19 @@ export function useInbox() {
     }
   }, []);
 
-  const snoozeItem = useCallback(async (item: MailAssessment, until: string) => {
+  const snoozeItem = useCallback(async (item: MailAssessment, until: string, tier?: "later" | "info") => {
     setItems((current) =>
       current.map((entry) =>
-        entry.conversationId === item.conversationId ? { ...entry, snoozedUntil: until } : entry,
+        entry.conversationId === item.conversationId
+          ? { ...entry, snoozedUntil: until, snoozedTier: tier }
+          : entry,
       ),
     );
     try {
       const response = await fetch("/api/inbox", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: item.conversationId, snoozedUntil: until }),
+        body: JSON.stringify({ conversationId: item.conversationId, snoozedUntil: until, snoozedTier: tier }),
       });
       if (response.ok) {
         const data = (await response.json()) as { item?: MailAssessment };

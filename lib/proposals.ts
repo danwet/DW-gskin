@@ -172,6 +172,15 @@ export async function syncProposals(
   const summaries = new Map<string, ProposalSummary>();
   const now = new Date().toISOString();
 
+  // One bulk statement instead of an update per proposal on every request.
+  if (gmailEmail && existing.some((row) => !row.gmail_email)) {
+    await supabase
+      .from("dw_action_proposals")
+      .update({ gmail_email: gmailEmail })
+      .eq("user_id", userId)
+      .is("gmail_email", null);
+  }
+
   for (const item of items) {
     const derived = deriveProposal(item);
     if (!derived) continue;
@@ -218,9 +227,6 @@ export async function syncProposals(
       current.action !== derived.action;
 
     if (!changed) {
-      if (current.gmail_email !== gmailEmail) {
-        await supabase.from("dw_action_proposals").update({ gmail_email: gmailEmail }).eq("id", current.id);
-      }
       summaries.set(item.conversationId, {
         id: current.id,
         action: current.action,
@@ -306,4 +312,71 @@ export async function decideProposal(
   const proposal = await getProposal(id, userId);
   if (!proposal) return { ok: false, code: "not_found" };
   return { ok: true, proposal };
+}
+
+/**
+ * Creates or re-targets the proposal for one conversation, used by the
+ * archive/delete buttons on informational cards. Nothing is executed: the user
+ * still has to approve and even then only a decision is stored.
+ */
+export async function requestProposal(
+  userId: string,
+  conversationId: string,
+  action: ProposalAction,
+): Promise<ProposalView | null> {
+  const supabase = await dbClient();
+  const { data: existing } = await supabase
+    .from("dw_action_proposals")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("conversation_id", conversationId)
+    .maybeSingle();
+  const row = (existing ?? null) as Row | null;
+
+  if (row && row.action === action) return getProposal(row.id, userId);
+
+  if (row) {
+    await supabase
+      .from("dw_action_proposals")
+      .update({
+        action,
+        target: "message",
+        payload: {},
+        version: row.version + 1,
+        status: "pending",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", row.id);
+    return getProposal(row.id, userId);
+  }
+
+  const { readAssessments } = await import("./agent/store");
+  const item = (await readAssessments()).find((entry) => entry.conversationId === conversationId);
+  if (!item) return null;
+
+  const now = new Date().toISOString();
+  const { data: inserted } = await supabase
+    .from("dw_action_proposals")
+    .insert({
+      user_id: userId,
+      gmail_email: null,
+      conversation_id: conversationId,
+      message_id: item.sourceMessageId,
+      thread_id: conversationId,
+      action,
+      target: "message",
+      reason:
+        action === "trash"
+          ? "Naar de prullenbak: deze mail vraagt geen actie."
+          : "Archiveren houdt je inbox overzichtelijk; deze mail vraagt geen actie.",
+      payload: {},
+      version: 1,
+      status: "pending",
+      created_at: now,
+      updated_at: now,
+    })
+    .select("*")
+    .single();
+  if (!inserted) return null;
+  return getProposal((inserted as Row).id, userId);
 }

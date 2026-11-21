@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { formatBriefDay, formatClock } from "@/lib/greeting";
+import { formatClock } from "@/lib/greeting";
 import { useApp } from "./AppProvider";
 import { useInbox } from "./AgentInbox";
 
@@ -19,13 +19,18 @@ const dtClass = "text-[11px] font-medium tracking-[0.14em] text-[var(--muted)]";
 const ddClass = "mt-1 text-[16px] font-semibold text-[var(--ink)]";
 
 export function AgentView() {
-  const { brief, lastRun, ready, now, refresh, refreshing, runs } = useApp();
+  const { ready, now, refresh, refreshing } = useApp();
   const { meta, model } = useInbox();
   const [showRuns, setShowRuns] = useState(false);
 
+  // The agent keeps its own run log in Supabase (meta.runs), not the brief.
+  const runs = meta?.runs ?? [];
+  const lastRun = meta?.lastRunAt ?? null;
   const earlierRuns = runs.slice(1);
   const modelDisplay = model === "rule" ? "Regel-gebaseerd" : model;
-  const sourceDisplay = meta?.source === "gmail" ? "Gmail" : meta?.source === "fixtures" ? "Testdata" : "Niet verbonden";
+  const sourceDisplay =
+    meta?.source === "gmail" ? "Gmail" : meta?.source === "fixtures" ? "Testdata" : "Niet verbonden";
+  const active = meta?.source === "gmail";
 
   return (
     <div className="mx-auto max-w-[880px] px-6 py-7 sm:px-8 sm:py-8">
@@ -38,17 +43,18 @@ export function AgentView() {
         <section className="glass-panel rounded-[22px] p-5">
           <div className="mb-4 flex items-start justify-between gap-3">
             <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Mail triage</h2>
-            <p className="pt-1 text-[13px] text-[var(--muted)]">Inactief</p>
+            <p className="pt-1 text-[13px] text-[var(--muted)]">{active ? "Actief" : "Inactief"}</p>
           </div>
           <p className="text-[14px] leading-6 text-[var(--muted)]">
-            Mail wordt per account opgeslagen. Er is geen mailbron gekoppeld, dus het dashboard haalt
-            niets op, verstuurt niets en archiveert niets. Het overzicht toont wat er al is opgeslagen.
+            {active
+              ? "De agent leest je Gmail alleen-lezen, beoordeelt nieuwe gesprekken en zet voorstellen klaar. Er wordt niets verstuurd of verplaatst."
+              : "Er is geen Gmail-koppeling actief. Koppel Gmail bij Instellingen → Verbindingen om de agent te laten draaien."}
           </p>
           <dl className="mt-5 grid gap-4 sm:grid-cols-3">
             <div>
               <dt className={dtClass}>LAATSTE RUN</dt>
-              <dd className={ddClass}>{ready && lastRun ? formatClock(new Date(lastRun)) : "—"}</dd>
-              <dd className="text-[12px] text-[var(--muted)]">{ready && lastRun ? formatBriefDay(new Date(lastRun)) : ""}</dd>
+              <dd className={ddClass}>{lastRun ? formatClock(new Date(lastRun)) : "—"}</dd>
+              <dd className="text-[12px] text-[var(--muted)]">{lastRun ? formatRunTime(lastRun) : ""}</dd>
             </div>
             <div>
               <dt className={dtClass}>KLOK NU</dt>
@@ -61,6 +67,9 @@ export function AgentView() {
               <dd className="text-[12px] text-[var(--muted)]">Model: {modelDisplay}</dd>
             </div>
           </dl>
+          {meta?.lastError ? (
+            <p className="mt-3 text-[12px] leading-5 text-[var(--danger)]">{meta.lastError}</p>
+          ) : null}
           <div className="mt-5">
             <button
               type="button"
@@ -75,19 +84,22 @@ export function AgentView() {
 
         <section className="glass-panel rounded-[22px] p-5">
           <div className="mb-4 flex items-start justify-between gap-3">
-            <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Deze run</h2>
-            <p className="pt-1 text-[13px] text-[var(--muted)]">{brief.messageCount} berichten</p>
+            <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Laatste run</h2>
+            <p className="pt-1 text-[13px] text-[var(--muted)]">{runs[0]?.ok === false ? "Mislukt" : "Geslaagd"}</p>
           </div>
-          <ul className="space-y-3 text-[14px] leading-6 text-[var(--ink)]">
-            <li>{brief.drafts.length} concepten opgesteld en klaargezet voor controle.</li>
-            <li>{brief.quiet.length} berichten hebben geen reactie nodig.</li>
-            <li>{brief.actions.length} acties zijn al afgehandeld.</li>
-            <li>
-              {brief.upcoming.length > 0
-                ? `Agenda-notitie: ${brief.upcoming[0].title}, ${brief.upcoming[0].when}.`
-                : "Geen nieuwe agenda-notitie."}
-            </li>
-          </ul>
+          {runs.length === 0 ? (
+            <p className="text-[14px] leading-6 text-[var(--muted)]">Nog geen run uitgevoerd.</p>
+          ) : (
+            <ul className="space-y-3 text-[14px] leading-6 text-[var(--ink)]">
+              <li>{runs[0].conversations} gesprekken beoordeeld.</li>
+              <li>{runs[0].messages} berichten gelezen.</li>
+              <li>{runs[0].skipped ?? 0} gesprekken overgeslagen (al beoordeeld).</li>
+              {runs[0].error ? <li className="text-[var(--danger)]">{runs[0].error}</li> : null}
+              <li className="text-[var(--muted)]">
+                Bron: {runs[0].source === "gmail" ? "Gmail" : "Testdata"} · model: {runs[0].model}
+              </li>
+            </ul>
+          )}
         </section>
 
         <section className="glass-panel rounded-[22px] p-5">
@@ -125,7 +137,10 @@ export function AgentView() {
                   <li key={`${run.at}-${index}`} className="flex items-start justify-between gap-3 text-[13px]">
                     <span className="shrink-0 text-[var(--muted)]">{formatRunTime(run.at)}</span>
                     <span className="min-w-0 text-right leading-5 text-[var(--muted)]">
-                      {run.drafts} concepten · {run.quiet} geen reactie · {run.actions} afgehandeld · {run.upcoming} agenda
+                      {run.ok ? "" : "mislukt · "}
+                      {run.conversations} gesprekken · {run.messages} berichten
+                      {run.skipped ? ` · ${run.skipped} overgeslagen` : ""}
+                      {run.error ? ` · ${run.error}` : ""}
                     </span>
                   </li>
                 ))}
