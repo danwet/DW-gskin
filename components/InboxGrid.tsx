@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { orderNewestFirst, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
 import type { MailAssessment } from "@/lib/agent/types";
 import { InvoiceBlock, timeZoneOf, UrgencyPill } from "./AgentInbox";
-import { ProposalDialog } from "./ProposalDialog";
 
 const TONE_TEXT: Record<UrgencyTone, string> = {
   red: "text-[var(--danger)]",
@@ -66,7 +65,6 @@ export function InboxGrid({
     });
   };
   const [activeTab, setActiveTab] = useState<"urgent" | "later" | "info" | "declare">("urgent");
-  const [proposalId, setProposalId] = useState<string | null>(null);
   const [clock, setClock] = useState(() => new Date());
   const now = clock;
   const timeZone = timeZoneOf();
@@ -201,17 +199,12 @@ export function InboxGrid({
           onDeclare={onDeclare}
           onSnooze={onSnooze}
           onSave={onSave}
-          onOpenProposal={(id) => {
-            setSelected(null);
-            setProposalId(id);
-          }}
           onRemove={onRemove}
           onReload={onReload}
           onError={onError}
         />
       ) : null}
 
-      {proposalId ? <ProposalDialog proposalId={proposalId} onClose={() => setProposalId(null)} /> : null}
     </section>
   );
 }
@@ -513,7 +506,6 @@ export function InboxModal({
   onDeclare,
   onSnooze,
   onSave,
-  onOpenProposal,
   onRemove,
   onReload,
   onError,
@@ -526,7 +518,6 @@ export function InboxModal({
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
   onSnooze?: (item: MailAssessment, until: string, tier?: "later" | "info") => void;
   onSave?: (item: MailAssessment, saved: boolean) => void;
-  onOpenProposal?: (id: string) => void;
   onRemove?: (conversationId: string) => void;
   onReload?: () => void;
   onError?: (message: string) => void;
@@ -571,12 +562,6 @@ export function InboxModal({
   const [unsubMessage, setUnsubMessage] = useState<string | null>(unsub?.message ?? null);
 
   const onUnsubscribe = () => {
-    // Read-only phase: never send an unsubscribe request. Show the proposal
-    // so the user can record an approval instead.
-    if (item.proposal && onOpenProposal) {
-      onOpenProposal(item.proposal.id);
-      return;
-    }
     if (unsub?.url) window.open(unsub.url, "_blank", "noopener,noreferrer");
   };
 
@@ -590,12 +575,6 @@ export function InboxModal({
   };
 
   const newsletterImages = item.bodyHtml ? extractImages(item.bodyHtml) : [];
-
-  // Read-only phase: sending is blocked server-side, so the draft action opens
-  // the reply proposal and records the decision instead.
-  const openReplyProposal = () => {
-    if (item.proposal && onOpenProposal) onOpenProposal(item.proposal.id);
-  };
 
   // Snoozing drops the card exactly one tier for a day.
   const tier = cardTier(item, Date.now());
@@ -1025,7 +1004,7 @@ export function InboxModal({
               </button>
             </>
           ) : null}
-          {tier === "info" && !item.draftReply && onOpenProposal ? (
+          {tier === "info" && !item.draftReply ? (
             <>
               <button
                 type="button"

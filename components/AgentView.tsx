@@ -48,7 +48,7 @@ export function AgentView() {
           </div>
           <p className="text-[14px] leading-6 text-[var(--muted)]">
             {active
-              ? "De agent leest je Gmail alleen-lezen, beoordeelt nieuwe gesprekken en zet voorstellen klaar. Er wordt niets verstuurd of verplaatst."
+              ? "De agent leest je Gmail, beoordeelt nieuwe gesprekken, archiveert of verwijdert mail die je afhandelt en verstuurt je antwoorden. Je ziet en bevestigt alles zelf."
               : "Er is geen Gmail-koppeling actief. Koppel Gmail bij Instellingen → Verbindingen om de agent te laten draaien."}
           </p>
           <dl className="mt-5 grid gap-4 sm:grid-cols-3">

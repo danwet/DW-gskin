@@ -6,7 +6,6 @@ import { runMailAgent } from "@/lib/agent/pipeline";
 import type { MailAssessment } from "@/lib/agent/types";
 import { resolveGmailConnection } from "@/lib/gmail/connection";
 import { getSyncProgress, type SyncProgress } from "@/lib/gmail/sync";
-import { syncProposals, type ProposalSummary } from "@/lib/proposals";
 
 export const dynamic = "force-dynamic";
 
@@ -19,22 +18,6 @@ export type PendingItem = {
   snippet: string;
   messages: number;
 };
-
-async function attachProposals(userId: string, items: MailAssessment[], gmailEmail: string | null): Promise<MailAssessment[]> {
-  if (items.length === 0) return items;
-  // Bound the first sync so a large archive cannot stall the inbox request.
-  const newest = [...items].sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt)).slice(0, 300);
-  let summaries: Map<string, ProposalSummary>;
-  try {
-    summaries = await syncProposals(userId, newest, gmailEmail);
-  } catch {
-    return items;
-  }
-  return items.map((item) => {
-    const summary = summaries.get(item.conversationId);
-    return summary ? { ...item, proposal: summary } : item;
-  });
-}
 
 export async function GET() {
   const user = await sessionUser();
@@ -87,7 +70,7 @@ export async function GET() {
 
       // Only live Gmail assessments: the demo cards never join this list.
       const raw = stateDoc.assessments.filter((item) => item.mailbox === "gmail");
-      const items = await attachProposals(user.id, raw, gmailEmail);
+      const items = raw;
 
       return Response.json({ items, pending: [], progress, meta, model, gmail: connection, undoable: Boolean(meta.lastAction) });
     }
@@ -100,7 +83,7 @@ export async function GET() {
     const latestMeta = meta;
     // Test data only: anything assessed from a linked Gmail account stays out.
     const rawItems = stateDoc.assessments.filter((item) => item.mailbox !== "gmail");
-    const items = await attachProposals(user.id, rawItems, gmailEmail);
+    const items = rawItems;
     return Response.json({
       items,
       pending: [],
