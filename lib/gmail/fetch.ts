@@ -22,6 +22,7 @@ export type GmailListPage = {
   ids: string[];
   nextPageToken: string | null;
   resultSizeEstimate: number | null;
+  status?: number;
   error?: string;
 };
 
@@ -123,7 +124,14 @@ export async function listGmailInbox(
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!response.ok) {
-    return { ok: false, ids: [], nextPageToken: null, resultSizeEstimate: null, error: `Gmail list faalde (${response.status}).` };
+    return {
+      ok: false,
+      ids: [],
+      nextPageToken: null,
+      resultSizeEstimate: null,
+      status: response.status,
+      error: `Gmail list faalde (${response.status}).`,
+    };
   }
   const data = (await response.json().catch(() => null)) as {
     messages?: { id?: string }[];

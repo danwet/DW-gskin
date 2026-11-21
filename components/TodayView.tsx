@@ -149,6 +149,9 @@ export function TodayView() {
                     beoordelen: {progress.pending}
                   </p>
                 </div>
+                {progress.lastError ? (
+                  <p className="mt-1 text-[12px] leading-5 text-[var(--danger)]">{progress.lastError}</p>
+                ) : null}
                 <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--line)]">
                   <div
                     className="h-1 rounded-full bg-[var(--accent)] transition-[width] duration-500"

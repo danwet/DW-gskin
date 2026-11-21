@@ -116,6 +116,18 @@ export async function importStep(userId: string, refreshToken: string): Promise<
 
   const page = await listGmailInbox(token.access_token, { pageToken: state.pageToken, maxResults: IMPORT_BATCH });
   if (!page.ok) {
+    // A paused import leaves a stale page token; Gmail then rejects the page.
+    // Restart the walk from the top (upserts dedupe) instead of getting stuck.
+    if (state.pageToken) {
+      await updateImportState(userId, {
+        pageToken: null,
+        phase: "importing",
+        importedCount: 0,
+        importedThreads: 0,
+        lastError: null,
+      });
+      return { ok: true, step: "import", processed: 0, progress: await readProgress(userId) };
+    }
     await updateImportState(userId, { phase: "error", lastError: page.error ?? "Gmail-list mislukt." });
     return { ok: false, step: "error", processed: 0, progress: await readProgress(userId), error: page.error };
   }
