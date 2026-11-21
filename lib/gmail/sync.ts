@@ -94,8 +94,12 @@ export async function importStep(userId: string, refreshToken: string): Promise<
       await updateImportState(userId, { lastError: page.error ?? "Gmail-list mislukt." });
       return { ok: false, step: "error", processed: 0, progress: await readProgress(userId), error: page.error };
     }
+    // Only fetch what we do not have yet: a quiet inbox then costs one call.
+    const known = new Set((await listStoredMessages(userId)).map((row) => row.message_id));
+    const fresh = page.ids.filter((id) => !known.has(id));
+
     const messages: InboundMessage[] = [];
-    for (const id of page.ids) {
+    for (const id of fresh) {
       const mapped = await fetchGmailMessage(token.access_token, id);
       if (mapped) messages.push(mapped);
     }
@@ -307,9 +311,9 @@ export async function syncStep(
   const reconcile = await reconcileGmailHistory(userId, refreshToken).catch(() => null);
 
   const morePages = Boolean(state?.pageToken);
-  // A pending page token means the mailbox is not fully walked yet, even when
-  // the phase says "done" — resume the import in that case.
-  if (!state || state.phase === "idle" || state.phase === "importing" || morePages) {
+  // "done" still needs a look at the newest page: new mail arrives after the
+  // initial walk and nobody else fetches it.
+  if (!state || state.phase === "idle" || state.phase === "importing" || state.phase === "done" || morePages) {
     const step = await importStep(userId, refreshToken);
     imported = step.processed;
     if (!step.ok) error = step.error;

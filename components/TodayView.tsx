@@ -71,6 +71,39 @@ function GmailNotice() {
   );
 }
 
+/**
+ * One card per invoice: a supplier that chases the same invoice in several
+ * mails (reminder, final notice) must not fill the overview twice. The newest
+ * message wins.
+ */
+function dedupeInvoices(items: MailAssessment[]): MailAssessment[] {
+  const byInvoice = new Map<string, number>();
+  const out: MailAssessment[] = [];
+
+  for (const item of items) {
+    const invoice = item.invoice;
+    const key =
+      invoice?.invoiceNumber && invoice?.supplier
+        ? `${invoice.supplier.toLowerCase()}::${invoice.invoiceNumber.toLowerCase()}`
+        : "";
+    if (!key) {
+      out.push(item);
+      continue;
+    }
+    const existingIndex = byInvoice.get(key);
+    if (existingIndex === undefined) {
+      byInvoice.set(key, out.length);
+      out.push(item);
+      continue;
+    }
+    // Same invoice seen before: keep whichever message is newer.
+    if (Date.parse(item.receivedAt) > Date.parse(out[existingIndex].receivedAt)) {
+      out[existingIndex] = item;
+    }
+  }
+  return out;
+}
+
 export function TodayView() {
   const { setSyncProgress } = useApp();
   const inbox = useInbox();
@@ -128,7 +161,7 @@ export function TodayView() {
   const nowMs = Date.now();
   // Bewaren moves a mail out of Focus, and order mail the agent archived itself
   // leaves too (it stays available for the shipments panel).
-  const visibleItems = inbox.items.filter((item) => !item.archivedAt && !item.savedAt);
+  const visibleItems = dedupeInvoices(inbox.items.filter((item) => !item.archivedAt && !item.savedAt));
 
   const activeItems = visibleItems.filter(
     (item) =>
