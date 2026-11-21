@@ -56,14 +56,28 @@ export function mapGmailMessage(data: unknown): InboundMessage | null {
     internalDate?: string;
   };
   if (!message.id) return null;
-  const from = headerValue(message.payload, "From");
+  const rawFrom = headerValue(message.payload, "From");
   const subject = headerValue(message.payload, "Subject");
-  const match = /([^<]*)\s*<([^>]+)>/.exec(from);
+  const match = /([^<]*)\s*<([^>]+)>/.exec(rawFrom);
+
+  let fromEmail = match?.[2]?.trim() ?? "";
+  let from = (match?.[1] ?? "").trim().replace(/^["']|["']$/g, "").trim();
+
+  // A sender without a display name ("info@example.com") is shown by the part
+  // before the @ instead of the full address.
+  if (!fromEmail && rawFrom.includes("@")) {
+    fromEmail = rawFrom.replace(/^["']|["']$/g, "").trim();
+  }
+  if (!from && fromEmail.includes("@")) {
+    from = fromEmail.split("@")[0].trim();
+  }
+  if (!from) from = "Onbekend";
+
   return {
     id: message.id,
     threadId: message.threadId ?? message.id,
-    from: (match?.[1] ?? from).trim() || "Onbekend",
-    fromEmail: match?.[2]?.trim() ?? "",
+    from,
+    fromEmail,
     subject: subject || "(geen onderwerp)",
     snippet: message.snippet ?? "",
     body: findPlainText(message.payload),

@@ -139,3 +139,34 @@ export async function deleteGmailConnection(userId: string): Promise<void> {
   const supabase = await dbClient();
   await supabase.from("dw_gmail_connections").delete().eq("user_id", userId);
 }
+
+/**
+ * Finds the connection for this user, adopting a legacy row that was created
+ * under an older session id (the JWT subject used to change per sign-in).
+ */
+export async function resolveGmailConnection(userId: string, email: string): Promise<GmailConnection | null> {
+  const direct = await getGmailConnection(userId);
+  if (direct) return direct;
+  if (!email) return null;
+
+  const supabase = await dbClient();
+  const { data } = await supabase
+    .from("dw_gmail_connections")
+    .select("*")
+    .eq("email", email)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+
+  const row = data as Row;
+  const { error } = await supabase
+    .from("dw_gmail_connections")
+    .update({ user_id: userId, updated_at: new Date().toISOString() })
+    .eq("user_id", row.user_id);
+  if (error) return toConnection(row);
+
+  await supabase.from("dw_gmail_imports").update({ user_id: userId }).eq("user_id", row.user_id);
+  await supabase.from("dw_gmail_messages").update({ user_id: userId }).eq("user_id", row.user_id);
+  return { ...toConnection(row), userId };
+}

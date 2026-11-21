@@ -201,3 +201,14 @@ export async function listThreadMessages(userId: string, threadId: string): Prom
     .order("received_at", { ascending: true });
   return ((data ?? []) as MessageRow[]).map(rowToMessage);
 }
+
+/** How many imported messages still await triage (exact count). */
+export async function countUntriaged(userId: string): Promise<number> {
+  const supabase = await dbClient();
+  const { count } = await supabase
+    .from("dw_gmail_messages")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .is("triaged_at", null);
+  return count ?? 0;
+}

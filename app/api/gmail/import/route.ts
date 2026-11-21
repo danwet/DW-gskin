@@ -1,5 +1,5 @@
 import { sessionUser, unauthorized } from "@/lib/api-auth";
-import { getGmailRefreshToken } from "@/lib/gmail/connection";
+import { getGmailRefreshToken, resolveGmailConnection } from "@/lib/gmail/connection";
 import { getSyncProgress, syncStep } from "@/lib/gmail/sync";
 import { startImport } from "@/lib/gmail/store";
 
@@ -20,6 +20,7 @@ export async function POST() {
   const user = await sessionUser();
   if (!user) return unauthorized();
 
+  await resolveGmailConnection(user.id, user.email).catch(() => null);
   const refreshToken = await getGmailRefreshToken(user.id);
   if (!refreshToken) {
     return Response.json({ error: "Gmail is nog niet gekoppeld." }, { status: 400 });

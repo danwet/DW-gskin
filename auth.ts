@@ -33,6 +33,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, account }) {
       if (account) {
+        // Stable per Google account across environments and sessions. Without
+        // this the JWT subject changes per sign-in and per-user data (the
+        // Gmail connection) would be orphaned.
+        if (account.providerAccountId) token.sub = account.providerAccountId;
         if (account.access_token) token.accessToken = account.access_token;
         if (account.refresh_token) token.refreshToken = account.refresh_token;
         if (account.expires_at) token.expiresAt = account.expires_at;

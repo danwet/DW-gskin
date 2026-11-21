@@ -1,14 +1,14 @@
 import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { loadAgentConfig, saveAgentConfig, type MailSource, type ProviderId } from "@/lib/agent/config";
 import { supabaseProbe, supabaseScanBucketReady } from "@/lib/supabase/kv";
-import { getGmailConnection } from "@/lib/gmail/connection";
+import { resolveGmailConnection } from "@/lib/gmail/connection";
 import { GMAIL_READONLY_SCOPE, gmailCallbackUri, gmailOAuthConfigured } from "@/lib/gmail/oauth";
 
 export const dynamic = "force-dynamic";
 
-async function status(userId: string, origin: string) {
+async function status(userId: string, origin: string, email: string) {
   const config = await loadAgentConfig();
-  const connection = await getGmailConnection(userId).catch(() => null);
+  const connection = await resolveGmailConnection(userId, email).catch(() => null);
   const googleClient = Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET);
   const providers: Record<string, { apiKeySet: boolean; model: string; enabled: boolean }> = {};
   for (const [id, provider] of Object.entries(config.providers)) {
@@ -59,7 +59,7 @@ async function status(userId: string, origin: string) {
 export async function GET(request: Request) {
   const user = await sessionUser();
   if (!user) return unauthorized();
-  return Response.json(await status(user.id, new URL(request.url).origin));
+  return Response.json(await status(user.id, new URL(request.url).origin, user.email));
 }
 
 export async function PUT(request: Request) {
@@ -107,5 +107,5 @@ export async function PUT(request: Request) {
   }
 
   await saveAgentConfig(patch);
-  return Response.json({ ok: true, ...(await status(user.id, new URL(request.url).origin)) });
+  return Response.json({ ok: true, ...(await status(user.id, new URL(request.url).origin, user.email)) });
 }

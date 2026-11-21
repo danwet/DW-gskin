@@ -5,7 +5,7 @@ import { groupByConversation } from "@/lib/agent/build";
 import { gmailConfigured, resolveMailSource } from "@/lib/agent/mail-source";
 import { runMailAgent } from "@/lib/agent/pipeline";
 import type { MailAssessment } from "@/lib/agent/types";
-import { getGmailConnection } from "@/lib/gmail/connection";
+import { resolveGmailConnection } from "@/lib/gmail/connection";
 import { getSyncProgress, type SyncProgress } from "@/lib/gmail/sync";
 import { listUntriagedMessages } from "@/lib/gmail/store";
 import { syncProposals, type ProposalSummary } from "@/lib/proposals";
@@ -65,7 +65,7 @@ export async function GET() {
 
   try {
     const config = await loadAgentConfig();
-    const connection = await getGmailConnection(user.id).catch(() => null);
+    const connection = await resolveGmailConnection(user.id, user.email).catch(() => null);
     const connectionUsable = connection?.status === "connected";
     const legacyGmail = gmailConfigured(config);
     const gmailReady = connectionUsable || legacyGmail;

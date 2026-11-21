@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { orderByUrgency, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
+import { orderNewestFirst, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
 import type { MailAssessment } from "@/lib/agent/types";
 import { InvoiceBlock, timeZoneOf, UrgencyPill } from "./AgentInbox";
 import { ProposalDialog } from "./ProposalDialog";
@@ -40,16 +40,12 @@ export function InboxGrid({
   const [clock, setClock] = useState(() => new Date());
   const now = clock;
   const timeZone = timeZoneOf();
-  const ordered = orderByUrgency(items, now, timeZone);
-  const orderedInfo = orderByUrgency(
+  const ordered = orderNewestFirst(items);
+  const orderedInfo = orderNewestFirst(
     infoItems.filter((item) => !item.snoozedUntil || Date.parse(item.snoozedUntil) <= Date.now()),
-    now,
-    timeZone,
   );
-  const orderedDeclare = orderByUrgency(
+  const orderedDeclare = orderNewestFirst(
     declareItems.filter((item) => !item.snoozedUntil || Date.parse(item.snoozedUntil) <= Date.now()),
-    now,
-    timeZone,
   );
 
   const urgent: MailAssessment[] = [];

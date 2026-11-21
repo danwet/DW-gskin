@@ -8,6 +8,7 @@ import type { InboundMessage } from "../agent/types";
 import { refreshGoogleAccessToken } from "../google-token";
 import { fetchGmailMessage, listGmailInbox } from "./fetch";
 import {
+  countUntriaged,
   getImportState,
   listThreadMessages,
   listUntriagedMessages,
@@ -49,7 +50,7 @@ async function readProgress(userId: string): Promise<SyncProgress> {
     total: state.totalEstimate,
     threadsImported: state.importedThreads,
     triaged: state.triagedCount,
-    pending: Math.max(state.importedThreads - state.triagedCount, 0),
+    pending: await countUntriaged(userId).catch(() => Math.max(state.importedThreads - state.triagedCount, 0)),
     lastError: state.lastError,
   };
 }
@@ -127,7 +128,7 @@ export async function importStep(userId: string, refreshToken: string): Promise<
   await updateImportState(userId, {
     phase: done ? "triaging" : "importing",
     pageToken: page.nextPageToken,
-    importedCount: state.importedCount + saved.newMessages,
+    importedCount: state.importedCount + saved.saved,
     totalEstimate: page.resultSizeEstimate ?? state.totalEstimate,
     importedThreads: state.importedThreads + saved.newThreads,
     lastError: null,
@@ -179,11 +180,15 @@ export async function triageStep(userId: string): Promise<StepResult> {
   if (updates.length > 0) await upsertAssessments(updates);
 
   const state = await getImportState(userId);
-  const importedDone = !state || state.phase === "triaging" || state.phase === "done";
+  const currentPhase = state?.phase ?? "idle";
   const moreRemain = untriaged.length > threads.length;
+  // While the import is still walking the mailbox it owns the phase; triage
+  // must never move it forward, or the remaining pages would never be fetched.
+  const nextPhase: ImportPhase =
+    currentPhase === "importing" ? "importing" : moreRemain ? "triaging" : "done";
   await updateImportState(userId, {
     triagedCount: (state?.triagedCount ?? 0) + updates.length,
-    phase: importedDone && !moreRemain ? "done" : "triaging",
+    phase: nextPhase,
     lastError: errors.length > 0 ? errors[0] : null,
   });
 

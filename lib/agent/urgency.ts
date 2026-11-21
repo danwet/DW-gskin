@@ -110,16 +110,18 @@ function deadlineText(deadline: Date | null): string {
 }
 
 /** Order by tone, then by earliest deadline, then most recent message. */
-export function orderByUrgency(items: MailAssessment[], now: Date, timeZone: string = DEFAULT_TIME_ZONE): MailAssessment[] {
-  return items
-    .map((item) => ({ item, urgency: urgencyFor(item, now, timeZone) }))
-    .sort((a, b) => {
-      const tone = TONE_ORDER[a.urgency.tone] - TONE_ORDER[b.urgency.tone];
-      if (tone !== 0) return tone;
-      const aDeadline = a.urgency.deadlineValue ?? Number.POSITIVE_INFINITY;
-      const bDeadline = b.urgency.deadlineValue ?? Number.POSITIVE_INFINITY;
-      if (aDeadline !== bDeadline) return aDeadline - bDeadline;
-      return Date.parse(b.item.receivedAt || "") - Date.parse(a.item.receivedAt || "");
-    })
-    .map((entry) => entry.item);
+/**
+ * Newest mail first. The urgency pill still shows per card, but it no longer
+ * drives the order: the list reads like a chronological inbox.
+ */
+export function orderNewestFirst(items: MailAssessment[]): MailAssessment[] {
+  return [...items].sort((a, b) => {
+    const aTime = Date.parse(a.receivedAt || "");
+    const bTime = Date.parse(b.receivedAt || "");
+    if (Number.isNaN(aTime) && Number.isNaN(bTime)) return 0;
+    if (Number.isNaN(aTime)) return 1;
+    if (Number.isNaN(bTime)) return -1;
+    return bTime - aTime;
+  });
 }
+

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { generateEPCQRString, isValidIban } from "@/lib/epc";
-import { orderByUrgency, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
+import { orderNewestFirst, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
 import type { AgentMeta, MailAssessment } from "@/lib/agent/types";
 import { Avatar, Card, CardHeading } from "./ui";
 import { useApp } from "./AppProvider";
@@ -252,7 +252,7 @@ export function InboxListCard({
   const now = new Date();
   const timeZone = timeZoneOf();
 
-  const ordered = orderByUrgency(items, now, timeZone);
+  const ordered = orderNewestFirst(items);
   const infoCount = items.filter((item) => item.classification === "info").length;
   const activeCount = items.length - infoCount;
   const visible = ordered.filter((item) =>
