@@ -1,0 +1,136 @@
+// Deterministic verification of the mail-agent logic, independent of the web
+// server and any API key. Run with: npm run agent:verify
+import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import { registerHooks } from "node:module";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+process.env.TZ = "Europe/Amsterdam";
+
+// The app uses extensionless TS imports (Next resolves them); Node's direct TS
+// runner needs the .ts extension, so map relative imports before loading.
+const projectRoot = new URL("../", import.meta.url).href;
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    const parent = context.parentURL ?? "";
+    const hasExtension = /\.[a-zA-Z0-9]+$/.test(specifier);
+    if (
+      parent.startsWith(projectRoot) &&
+      (specifier.startsWith("./") || specifier.startsWith("../")) &&
+      !hasExtension
+    ) {
+      return nextResolve(`${specifier}.ts`, context);
+    }
+    return nextResolve(specifier, context);
+  },
+});
+
+const { buildAssessment, groupByConversation } = await import("../lib/agent/build.ts");
+const { ruleAssessForTests } = await import("../lib/agent/classify.ts");
+const { buildFixtureMessages } = await import("../lib/agent/fixtures.ts");
+const store = await import("../lib/agent/store.ts");
+const { urgencyFor } = await import("../lib/agent/urgency.ts");
+
+const dir = await mkdtemp(path.join(tmpdir(), "dw-agent-"));
+store.setAgentStoreDirectoryForTests(dir);
+
+const now = new Date("2026-11-20T09:00:00.000Z");
+const nowPlus1 = new Date(now.getTime() + 24 * 3600 * 1000);
+
+function assess(messages) {
+  const grouped = groupByConversation(messages);
+  const updates = [];
+  for (const conversation of grouped.values()) {
+    updates.push(buildAssessment(conversation, ruleAssessForTests(conversation), now));
+  }
+  return updates;
+}
+
+function byId(items) {
+  return Object.fromEntries(items.map((item) => [item.conversationId, item]));
+}
+
+try {
+  await store.resetAgentStore();
+
+  // --- Run 1 (stage 1: invoice without reminder) ---
+  await store.upsertAssessments(assess(buildFixtureMessages(now, 1)));
+  let items = await store.readAssessments();
+  assert.equal(items.length, 14, "one card per conversation");
+
+  let map = byId(items);
+  assert.equal(map["thread-inv-100"].invoice.paymentStatus, "unknown", "invoice without proof is unknown");
+  assert.equal(map["thread-inv-205"].invoice.paymentStatus, "unknown");
+  assert.equal(map["thread-inv-030"].invoice.paymentStatus, "open_per_sender", "explicit reminder is open");
+  assert.equal(map["thread-reply-1"].classification, "reply_needed", "reply request is an action item");
+  assert.equal(map["thread-info-1"].classification, "info");
+  assert.equal(map["thread-wait-1"].classification, "waiting");
+  assert.equal(map["thread-inv-100"].invoice.amount, 120, "amount extracted");
+  assert.match(map["thread-inv-100"].invoice.dueDate, /^\d{4}-\d{2}-\d{2}$/, "due date extracted");
+
+  // --- Unsubscribe detection (no network performed during detection) ---
+  assert.equal(map["thread-nl-oc"].unsubscribe?.kind, "one-click", "List-Unsubscribe + One-Click is detected");
+  assert.equal(map["thread-nl-manual"].unsubscribe?.kind, "manual", "manual HTTPS link is detected");
+  assert.equal(map["thread-nl-mailto"].unsubscribe?.kind, "mailto", "mailto-only fallback is detected");
+  assert.equal(map["thread-nl-invalid"].unsubscribe, undefined, "invalid destination is dropped");
+  assert.equal(map["thread-inv-100"].unsubscribe, undefined, "invoice has no unsubscribe action");
+
+  // --- Urgency: orange today, red tomorrow, no new mail needed ---
+  const inv100 = map["thread-inv-100"];
+  assert.equal(urgencyFor(inv100, now, "Europe/Amsterdam").tone, "orange");
+  assert.equal(urgencyFor(inv100, nowPlus1, "Europe/Amsterdam").tone, "red");
+  assert.equal(urgencyFor(map["thread-info-1"], now, "Europe/Amsterdam").tone, "grey");
+  assert.equal(urgencyFor(map["thread-inv-030"], now, "Europe/Amsterdam").tone, "red", "overdue invoice is red");
+
+  // --- Run 2 (same messages): no duplicate cards ---
+  await store.upsertAssessments(assess(buildFixtureMessages(now, 1)));
+  items = await store.readAssessments();
+  assert.equal(items.length, 14, "second run adds no duplicate cards");
+
+  // --- Manual handled survives a re-run ---
+  await store.markHandled("thread-inv-100", true);
+  await store.upsertAssessments(assess(buildFixtureMessages(now, 1)));
+  map = byId(await store.readAssessments());
+  assert.equal(map["thread-inv-100"].handledByUser, true, "handled choice survives re-run");
+  assert.ok(!map["thread-inv-100"].needsAttention, "same message does not re-flag");
+
+  // --- Stage 2: reminder updates the existing card ---
+  await store.upsertAssessments(assess(buildFixtureMessages(now, 2)));
+  items = await store.readAssessments();
+  assert.equal(items.length, 14, "reminder updates the existing card instead of adding one");
+  map = byId(items);
+  const reminded = map["thread-inv-100"];
+  assert.equal(reminded.invoice.paymentStatus, "open_per_sender");
+  assert.ok(reminded.consequence?.senderSays?.toLowerCase().includes("incasso"), "shows what the sender says");
+  assert.equal(reminded.handledByUser, true, "handled state preserved on reminder");
+  assert.equal(reminded.needsAttention, true, "new message flags attention again");
+
+  // --- A failed classification must not wipe prior assessments ---
+  const before = await store.readAssessments();
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.OPENAI_API_KEY;
+  process.env.OPENAI_API_KEY = "test-invalid";
+  globalThis.fetch = async () => {
+    throw new Error("simulated network failure");
+  };
+  const { classifyConversation } = await import("../lib/agent/classify.ts");
+  await assert.rejects(() => classifyConversation(buildFixtureMessages(now, 1).slice(0, 1)), /simulated network failure/);
+  globalThis.fetch = originalFetch;
+  if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+  else process.env.OPENAI_API_KEY = originalKey;
+  assert.deepEqual(await store.readAssessments(), before, "failed model call preserves assessments");
+
+  console.log("✓ mail-agent verification passed");
+  console.log(JSON.stringify(
+    {
+      conversations: (await store.readAssessments()).length,
+      invoiceStatuses: byId(await store.readAssessments()),
+    },
+    null,
+    2,
+  ));
+} finally {
+  store.setAgentStoreDirectoryForTests(null);
+  await rm(dir, { recursive: true, force: true });
+}
