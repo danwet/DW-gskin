@@ -170,3 +170,12 @@ export async function resolveGmailConnection(userId: string, email: string): Pro
   await supabase.from("dw_gmail_messages").update({ user_id: userId }).eq("user_id", row.user_id);
   return { ...toConnection(row), userId };
 }
+
+/** True when a connection row exists, even if its token cannot be read here. */
+export async function hasGmailConnection(): Promise<boolean> {
+  const supabase = await dbClient();
+  const { count } = await supabase
+    .from("dw_gmail_connections")
+    .select("*", { count: "exact", head: true });
+  return (count ?? 0) > 0;
+}

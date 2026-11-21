@@ -23,6 +23,7 @@ export function InboxGrid({
   onSnooze,
   onDeclare,
   onSave,
+  onReload,
 }: {
   items: MailAssessment[];
   infoItems: MailAssessment[];
@@ -33,6 +34,7 @@ export function InboxGrid({
   onSnooze: (item: MailAssessment, until: string, tier?: "later" | "info") => void;
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
   onSave: (item: MailAssessment, saved: boolean) => void;
+  onReload?: () => void;
 }) {
   const [selected, setSelected] = useState<MailAssessment | null>(null);
   const [activeTab, setActiveTab] = useState<"urgent" | "later" | "info" | "declare">("urgent");
@@ -174,6 +176,7 @@ export function InboxGrid({
             setSelected(null);
             setProposalId(id);
           }}
+          onActed={onReload}
         />
       ) : null}
 
@@ -430,6 +433,7 @@ export function InboxModal({
   onSnooze,
   onSave,
   onOpenProposal,
+  onActed,
 }: {
   item: MailAssessment;
   now: Date;
@@ -440,6 +444,7 @@ export function InboxModal({
   onSnooze?: (item: MailAssessment, until: string, tier?: "later" | "info") => void;
   onSave?: (item: MailAssessment, saved: boolean) => void;
   onOpenProposal?: (id: string) => void;
+  onActed?: () => void;
 }) {
   const urgency = urgencyFor(item, now, timeZone);
   const [handled, setHandled] = useState(item.handledByUser === true);
@@ -520,17 +525,32 @@ export function InboxModal({
     onClose();
   };
 
-  const propose = async (action: "archive" | "trash") => {
+  const [busyAction, setBusyAction] = useState<"archive" | "trash" | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  // This one does reach Gmail: archive removes the INBOX label, trash moves it
+  // to the prullenbak (recoverable for 30 days).
+  const runAction = async (action: "archive" | "trash") => {
+    if (busyAction) return;
+    setBusyAction(action);
+    setActionError(null);
     try {
-      const response = await fetch("/api/proposals", {
+      const response = await fetch("/api/gmail/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId: item.conversationId, action }),
       });
-      const data = (await response.json().catch(() => null)) as { proposal?: { id: string } } | null;
-      if (response.ok && data?.proposal?.id) onOpenProposal?.(data.proposal.id);
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) {
+        setActionError(data?.error ?? "Actie mislukt.");
+        return;
+      }
+      onActed?.();
+      onClose();
     } catch {
-      // The dialog stays usable; nothing was executed.
+      setActionError("Actie mislukt.");
+    } finally {
+      setBusyAction(null);
     }
   };
 
@@ -771,6 +791,9 @@ export function InboxModal({
         ) : null}
 
         <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-[var(--line)] pt-4">
+          {actionError ? (
+            <p className="w-full text-[12px] leading-5 text-[var(--danger)]">{actionError}</p>
+          ) : null}
           {item.draftReply ? (
             <>
               <button
@@ -783,14 +806,16 @@ export function InboxModal({
               </button>
               <button
                 type="button"
-                onClick={() => void propose("archive")}
+                onClick={() => void runAction("archive")}
+                disabled={Boolean(busyAction)}
                 className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
               >
                 Archiveren
               </button>
               <button
                 type="button"
-                onClick={() => void propose("trash")}
+                onClick={() => void runAction("trash")}
+                disabled={Boolean(busyAction)}
                 className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
               >
                 Verwijderen
@@ -823,14 +848,16 @@ export function InboxModal({
             <>
               <button
                 type="button"
-                onClick={() => void propose("archive")}
+                onClick={() => void runAction("archive")}
+                disabled={Boolean(busyAction)}
                 className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
               >
                 Archiveren
               </button>
               <button
                 type="button"
-                onClick={() => void propose("trash")}
+                onClick={() => void runAction("trash")}
+                disabled={Boolean(busyAction)}
                 className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
               >
                 Verwijderen
@@ -857,14 +884,16 @@ export function InboxModal({
             <>
               <button
                 type="button"
-                onClick={() => void propose("archive")}
+                onClick={() => void runAction("archive")}
+                disabled={Boolean(busyAction)}
                 className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
               >
                 Archiveren
               </button>
               <button
                 type="button"
-                onClick={() => void propose("trash")}
+                onClick={() => void runAction("trash")}
+                disabled={Boolean(busyAction)}
                 className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
               >
                 Verwijderen

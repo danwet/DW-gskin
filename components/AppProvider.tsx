@@ -384,6 +384,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [applyWorkspace, flushSave]);
 
+  // Opening the dashboard after a while syncs Gmail in the background, so
+  // archived and deleted mail disappears without pressing anything.
+  const bootSynced = useRef(false);
+  useEffect(() => {
+    if (!ready || bootSynced.current) return;
+    bootSynced.current = true;
+    const last = lastRun ? Date.parse(lastRun) : 0;
+    if (Date.now() - last > 15 * 60 * 1000) void refresh();
+  }, [ready, lastRun, refresh]);
+
   const stampChecked = useCallback((id: string) => {
     setCheckedAt((current) => {
       const next = { ...current, [id]: Date.now() };

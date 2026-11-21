@@ -4,6 +4,7 @@ import { buildAssessment, groupByConversation } from "./build";
 import { classifyConversation } from "./classify";
 import { loadAgentConfig, type AgentConfig, type ProviderId } from "./config";
 import { fetchInboxMessages, gmailConfigured, resolveMailSource, storedGmailConnection } from "./mail-source";
+import { hasGmailConnection } from "../gmail/connection";
 import { isShipmentRelated } from "./shipment";
 import { appendRun, readAssessments, readMeta, updateMeta, upsertAssessments } from "./store";
 import type { InboundMessage, MailAssessment } from "./types";
@@ -47,9 +48,13 @@ export async function runMailAgent(now = new Date(), options?: { force?: boolean
     const label = useModel ? modelLabelFor(provider, model) : "rule";
 
     if (!connection) {
+      const linked = await hasGmailConnection().catch(() => false);
+      const reason = linked
+        ? "De Gmail-koppeling kon niet worden gelezen. Koppel opnieuw bij Instellingen → Verbindingen."
+        : "Gmail is niet gekoppeld.";
       await updateMeta({
         lastRunAt: now.toISOString(),
-        lastError: "Gmail is niet gekoppeld.",
+        lastError: reason,
         source,
         model: useModel ? provider : "rule",
       });
@@ -60,7 +65,7 @@ export async function runMailAgent(now = new Date(), options?: { force?: boolean
         model: useModel ? provider : "rule",
         conversations: 0,
         messages: 0,
-        error: "Gmail is niet gekoppeld.",
+        error: reason,
       });
       return {
         ok: false,
@@ -69,7 +74,7 @@ export async function runMailAgent(now = new Date(), options?: { force?: boolean
         processed: 0,
         messagesSeen: 0,
         conversations: 0,
-        errors: ["Gmail is niet gekoppeld."],
+        errors: [reason],
         note: "Koppel Gmail opnieuw in Instellingen → Verbindingen.",
       };
     }

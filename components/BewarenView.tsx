@@ -72,6 +72,7 @@ export function BewarenView() {
           onDeclare={inbox.declareInvoice}
           onSnooze={inbox.snoozeItem}
           onSave={inbox.saveItem}
+          onActed={inbox.reload}
         />
       ) : null}
     </div>

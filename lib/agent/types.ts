@@ -131,6 +131,8 @@ export type AgentMeta = {
   conversationsProcessed: number;
   messagesSeen: number;
   runs?: RunRecord[];
+  /** Gmail history cursor for reconciling deletions and archive actions. */
+  gmailHistoryId?: string;
 };
 
 export type InboundMessage = {

@@ -76,15 +76,35 @@ function decodeBody(value: string): string {
   return Buffer.from(normalized, "base64").toString("utf8");
 }
 
+/** Only the text/plain part counts as body text. */
 function findPlainText(payload: unknown): string {
   if (!payload || typeof payload !== "object") return "";
   const part = payload as { mimeType?: string; body?: { data?: string }; parts?: unknown[] };
-  if (part.body?.data) return decodeBody(part.body.data);
+  if (part.mimeType === "text/plain" && part.body?.data) return decodeBody(part.body.data);
   for (const child of part.parts ?? []) {
     const text = findPlainText(child);
     if (text) return text;
   }
   return "";
+}
+
+/** Newsletter HTML turned into readable text, for mails without a plain part. */
+export function htmlToText(html: string): string {
+  return (html ?? "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|tr|li|h[1-6]|table)>/gi, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function findHtml(payload: unknown): string {
@@ -127,6 +147,8 @@ export function mapGmailMessage(data: unknown): InboundMessage | null {
   }
   const from = senderDisplayName(rawName, fromEmail);
 
+  const plain = findPlainText(message.payload);
+  const html = findHtml(message.payload);
   return {
     id: message.id,
     threadId: message.threadId ?? message.id,
@@ -134,8 +156,9 @@ export function mapGmailMessage(data: unknown): InboundMessage | null {
     fromEmail,
     subject: subject || "(geen onderwerp)",
     snippet: message.snippet ?? "",
-    body: findPlainText(message.payload),
-    bodyHtml: findHtml(message.payload) || undefined,
+    // Multipart newsletters often only carry HTML: read it as text.
+    body: plain || (html ? htmlToText(html) : ""),
+    bodyHtml: html || undefined,
     receivedAt: message.internalDate
       ? new Date(Number(message.internalDate)).toISOString()
       : new Date().toISOString(),

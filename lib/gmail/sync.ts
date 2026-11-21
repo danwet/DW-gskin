@@ -7,6 +7,7 @@ import { upsertAssessments } from "../agent/store";
 import type { InboundMessage } from "../agent/types";
 import { refreshGoogleAccessToken } from "../google-token";
 import { fetchGmailMessage, listGmailInbox } from "./fetch";
+import { reconcileGmailHistory } from "./history";
 import {
   countUntriaged,
   getImportState,
@@ -246,10 +247,21 @@ export async function syncStep(
   userId: string,
   refreshToken: string,
   ownerEmail?: string | null,
-): Promise<{ ok: boolean; imported: number; triaged: number; progress: SyncProgress; error?: string }> {
+): Promise<{
+  ok: boolean;
+  imported: number;
+  triaged: number;
+  removed: number;
+  progress: SyncProgress;
+  error?: string;
+}> {
   const state = await getImportState(userId);
   let imported = 0;
   let error: string | undefined;
+
+  // First bring the store in line with Gmail: mail that was archived or
+  // deleted elsewhere disappears before anything new is imported.
+  const reconcile = await reconcileGmailHistory(userId, refreshToken).catch(() => null);
 
   const morePages = Boolean(state?.pageToken);
   // A pending page token means the mailbox is not fully walked yet, even when
@@ -263,5 +275,12 @@ export async function syncStep(
   const triage = await triageStep(userId, ownerEmail);
   if (!triage.ok && !error) error = triage.error;
 
-  return { ok: !error, imported, triaged: triage.processed, progress: await readProgress(userId), error };
+  return {
+    ok: !error,
+    imported,
+    triaged: triage.processed,
+    removed: reconcile?.removed ?? 0,
+    progress: await readProgress(userId),
+    error,
+  };
 }

@@ -22,10 +22,12 @@ export function gmailConfigured(config?: Partial<AgentConfig>): boolean {
 }
 
 export function resolveMailSource(config?: Partial<AgentConfig>, gmailReady?: boolean): MailSource {
+  const ready = gmailReady ?? gmailConfigured(config);
+  // Once a Gmail account is linked it is the only source: test data is never
+  // used again, whatever the setting says.
+  if (ready) return "gmail";
   const forced = config?.mailAgentSource ?? (process.env.MAIL_AGENT_SOURCE?.trim().toLowerCase() as AgentConfig["mailAgentSource"]);
-  if (forced === "fixtures") return "fixtures";
-  if (forced === "gmail") return "gmail";
-  return (gmailReady ?? gmailConfigured(config)) ? "gmail" : "fixtures";
+  return forced === "gmail" ? "gmail" : "fixtures";
 }
 
 /** The stored read-only Gmail connection, if there is one. */

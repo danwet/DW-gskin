@@ -146,6 +146,7 @@ export function TodayView() {
               onSnooze={inbox.snoozeItem}
               onDeclare={inbox.declareInvoice}
               onSave={inbox.saveItem}
+              onReload={inbox.reload}
             />
 
             <LegacyLoopsCard />

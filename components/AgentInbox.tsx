@@ -34,6 +34,7 @@ type InboxPayload = {
   progress?: InboxProgress | null;
   meta: AgentMeta;
   model: string;
+  gmail?: { email: string; status: string } | null;
   error?: string | null;
 };
 
@@ -89,6 +90,7 @@ export function useInbox() {
   const [items, setItems] = useState<MailAssessment[]>([]);
   const [pending, setPending] = useState<PendingMessage[]>([]);
   const [progress, setProgress] = useState<InboxProgress | null>(null);
+  const [gmail, setGmail] = useState<{ email: string; status: string } | null>(null);
   const [meta, setMeta] = useState<AgentMeta | null>(null);
   const [model, setModel] = useState("rule");
   const [loading, setLoading] = useState(true);
@@ -110,6 +112,7 @@ export function useInbox() {
       setItems(data.items);
       setPending(data.pending ?? []);
       setProgress(data.progress ?? null);
+      setGmail(data.gmail ?? null);
       setSyncProgress(data.progress ?? null);
       setMeta(data.meta);
       setModel(data.model);
@@ -229,7 +232,7 @@ export function useInbox() {
     }
   }, []);
 
-  return { items, pending, progress, meta, model, loading, error, reload, toggleHandled, snoozeItem, declareInvoice, saveItem };
+  return { items, pending, progress, meta, model, gmail, loading, error, reload, toggleHandled, snoozeItem, declareInvoice, saveItem };
 }
 
 export function InboxListCard({

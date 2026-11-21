@@ -20,7 +20,7 @@ const ddClass = "mt-1 text-[16px] font-semibold text-[var(--ink)]";
 
 export function AgentView() {
   const { ready, now, refresh, refreshing } = useApp();
-  const { meta, model } = useInbox();
+  const { meta, model, gmail } = useInbox();
   const [showRuns, setShowRuns] = useState(false);
 
   // The agent keeps its own run log in Supabase (meta.runs), not the brief.
@@ -28,9 +28,10 @@ export function AgentView() {
   const lastRun = meta?.lastRunAt ?? null;
   const earlierRuns = runs.slice(1);
   const modelDisplay = model === "rule" ? "Regel-gebaseerd" : model;
-  const sourceDisplay =
-    meta?.source === "gmail" ? "Gmail" : meta?.source === "fixtures" ? "Testdata" : "Niet verbonden";
-  const active = meta?.source === "gmail";
+  // The linked mailbox is the source; meta.source only records the last run.
+  const connected = gmail?.status === "connected";
+  const sourceDisplay = connected ? "Gmail" : meta?.source === "fixtures" ? "Testdata" : "Niet verbonden";
+  const active = connected;
 
   return (
     <div className="mx-auto max-w-[880px] px-6 py-7 sm:px-8 sm:py-8">
@@ -91,9 +92,9 @@ export function AgentView() {
             <p className="text-[14px] leading-6 text-[var(--muted)]">Nog geen run uitgevoerd.</p>
           ) : (
             <ul className="space-y-3 text-[14px] leading-6 text-[var(--ink)]">
-              <li>{runs[0].conversations} gesprekken beoordeeld.</li>
-              <li>{runs[0].messages} berichten gelezen.</li>
+              <li>{Math.max(runs[0].conversations - (runs[0].skipped ?? 0), 0)} gesprekken beoordeeld.</li>
               <li>{runs[0].skipped ?? 0} gesprekken overgeslagen (al beoordeeld).</li>
+              <li>{runs[0].messages} berichten gelezen.</li>
               {runs[0].error ? <li className="text-[var(--danger)]">{runs[0].error}</li> : null}
               <li className="text-[var(--muted)]">
                 Bron: {runs[0].source === "gmail" ? "Gmail" : "Testdata"} · model: {runs[0].model}

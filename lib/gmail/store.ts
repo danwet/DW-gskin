@@ -213,3 +213,47 @@ export async function countUntriaged(userId: string): Promise<number> {
     .is("triaged_at", null);
   return count ?? 0;
 }
+
+export type StoredMessageKey = { message_id: string; thread_id: string };
+
+export async function listStoredMessages(userId: string): Promise<StoredMessageKey[]> {
+  const supabase = await dbClient();
+  const { data } = await supabase.from("dw_gmail_messages").select("message_id, thread_id").eq("user_id", userId);
+  return (data ?? []) as StoredMessageKey[];
+}
+
+/**
+ * Deletes messages that no longer exist (or left the inbox) and returns the
+ * conversations that ended up empty, so their cards can go too.
+ */
+export async function purgeMessages(userId: string, messageIds: string[]): Promise<string[]> {
+  if (messageIds.length === 0) return [];
+  const supabase = await dbClient();
+
+  const { data: rows } = await supabase
+    .from("dw_gmail_messages")
+    .select("thread_id")
+    .eq("user_id", userId)
+    .in("message_id", messageIds);
+  const threads = Array.from(new Set((rows ?? []).map((row) => (row as { thread_id: string }).thread_id)));
+
+  await supabase.from("dw_gmail_messages").delete().eq("user_id", userId).in("message_id", messageIds);
+  if (threads.length === 0) return [];
+
+  const { data: left } = await supabase
+    .from("dw_gmail_messages")
+    .select("thread_id")
+    .eq("user_id", userId)
+    .in("thread_id", threads);
+  const stillThere = new Set((left ?? []).map((row) => (row as { thread_id: string }).thread_id));
+  return threads.filter((threadId) => !stillThere.has(threadId));
+}
+
+export async function clearTriagedFlag(userId: string, threadId: string): Promise<void> {
+  const supabase = await dbClient();
+  await supabase
+    .from("dw_gmail_messages")
+    .update({ triaged_at: null })
+    .eq("user_id", userId)
+    .eq("thread_id", threadId);
+}
