@@ -175,7 +175,7 @@ export function TodayView() {
         <div className="mt-8 border-t border-[var(--line)] pt-6 lg:mt-0 lg:flex lg:flex-col lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
           <AgendaPanel />
           <ShipmentsPanel items={inbox.items} />
-          <DaySummary items={inbox.items} />
+          <DaySummary items={inbox.items} dailyChanges={inbox.meta?.dailyChanges} />
         </div>
       </div>
     </div>
@@ -304,7 +304,18 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
   );
 }
 
-function DaySummary({ items }: { items: MailAssessment[] }) {
+function DaySummary({
+  items,
+  dailyChanges,
+}: {
+  items: MailAssessment[];
+  dailyChanges?: { date: string; orderStatus: number; paymentStatus: number };
+}) {
+  // Counters only apply to today; yesterday's numbers must not linger.
+  const today = new Date().toLocaleDateString("sv-SE");
+  const orderChanges = dailyChanges?.date === today ? dailyChanges.orderStatus : 0;
+  const paymentChanges = dailyChanges?.date === today ? dailyChanges.paymentStatus : 0;
+
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
   const isToday = (iso?: string) => Boolean(iso) && new Date(iso!).getTime() >= startOfToday.getTime();
@@ -314,12 +325,9 @@ function DaySummary({ items }: { items: MailAssessment[] }) {
   let betaaldBedrag = 0;
   let afgehandeld = 0;
   let gescand = 0;
-  let orderstatus = 0;
 
   for (const item of items) {
     if (item.source === "scan" && isToday(item.receivedAt)) gescand += 1;
-    // Order mail the agent read and archived by itself counts as done too.
-    if (item.archivedAt && isToday(item.archivedAt)) orderstatus += 1;
     if (item.sentAt && isToday(item.sentAt)) beantwoord += 1;
     if (item.handledByUser && isToday(item.handledAt ?? item.paidAt)) {
       if (item.invoice) {
@@ -336,7 +344,12 @@ function DaySummary({ items }: { items: MailAssessment[] }) {
   return (
     <section className="mt-6">
       <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Weggewerkt</h2>
-      {beantwoord === 0 && betaald === 0 && afgehandeld === 0 && gescand === 0 && orderstatus === 0 ? (
+      {beantwoord === 0 &&
+      betaald === 0 &&
+      afgehandeld === 0 &&
+      gescand === 0 &&
+      orderChanges === 0 &&
+      paymentChanges === 0 ? (
         <p className="mt-4 text-[14px] text-[var(--muted)]">Je hebt nog helemaal niks gedaan vandaag</p>
       ) : (
         <ul className="mt-4 space-y-2 text-[14px] leading-6 text-[var(--ink)]">
@@ -358,12 +371,16 @@ function DaySummary({ items }: { items: MailAssessment[] }) {
               <span>{afgehandeld} {afgehandeld === 1 ? "email afgehandeld" : "emails afgehandeld"}</span>
             </li>
           ) : null}
-          {orderstatus > 0 ? (
+          {orderChanges > 0 ? (
+            <li className="flex items-center gap-2.5">
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--blue)" }} />
+              <span>{orderChanges} orderstatus bijgewerkt</span>
+            </li>
+          ) : null}
+          {paymentChanges > 0 ? (
             <li className="flex items-center gap-2.5">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--green)" }} />
-              <span>
-                {orderstatus} {orderstatus === 1 ? "orderstatus" : "orderstatussen"} verwerkt
-              </span>
+              <span>{paymentChanges} betaalstatus bijgewerkt</span>
             </li>
           ) : null}
           {gescand > 0 ? (

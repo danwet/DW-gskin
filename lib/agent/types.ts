@@ -135,6 +135,8 @@ export type AgentMeta = {
   conversationsProcessed: number;
   messagesSeen: number;
   runs?: RunRecord[];
+  /** Status changes counted per day, for the Weggewerkt panel. */
+  dailyChanges?: { date: string; orderStatus: number; paymentStatus: number };
   /** Gmail history cursor for reconciling deletions and archive actions. */
   gmailHistoryId?: string;
   /** Snapshot of the last archive/trash, so it can be undone. */

@@ -247,19 +247,18 @@ export async function triageStep(userId: string, ownerEmail?: string | null): Pr
 
 /** One unit of work for the client runner: import a batch, then triage a batch. */
 /**
- * Order-status mail is read once and then has no further use in the inbox. After
- * the status is stored on the assessment, archive it in Gmail automatically.
+ * Order-status and payment-confirmation mail is read once and then has no
+ * further use in the inbox. Once the status is stored on the assessment, the
+ * mail is archived in Gmail (and marked read) automatically.
  */
 async function archiveProcessedOrders(userId: string, refreshToken: string): Promise<number> {
   const assessments = await readAssessments();
   const candidates = assessments.filter(
     (item) =>
       item.mailbox === "gmail" &&
-      item.shipment &&
+      Boolean(item.shipment || item.payment) &&
       !item.archivedAt &&
-      item.classification === "info" &&
-      // A payment receipt is not an order status: leave it in the inbox.
-      !item.payment,
+      item.classification === "info",
   );
   if (candidates.length === 0) return 0;
 

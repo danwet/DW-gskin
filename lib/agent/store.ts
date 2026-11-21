@@ -297,6 +297,27 @@ export function upsertAssessments(updates: MailAssessment[]): Promise<MailAssess
       const existing = state.assessments[update.conversationId];
       if (existing) {
         const isNewMessage = update.sourceMessageId !== existing.sourceMessageId;
+
+        // Only a genuine change counts: the previous status must differ.
+        const today = new Date().toLocaleDateString("sv-SE");
+        const changes = state.meta.dailyChanges?.date === today
+          ? state.meta.dailyChanges
+          : { date: today, orderStatus: 0, paymentStatus: 0 };
+        let touched = false;
+
+        const prevOrder = existing.shipment?.status;
+        const nextOrder = update.shipment?.status;
+        if (prevOrder && nextOrder && prevOrder !== nextOrder) {
+          changes.orderStatus += 1;
+          touched = true;
+        }
+        const prevPay = existing.invoice?.paymentStatus;
+        const nextPay = update.invoice?.paymentStatus;
+        if (prevPay && nextPay && prevPay !== nextPay) {
+          changes.paymentStatus += 1;
+          touched = true;
+        }
+        if (touched) state.meta.dailyChanges = changes;
         // User decisions live in their own layer, so nothing to copy here.
         if (!isNewMessage) {
           update.needsAttention = existing.needsAttention;
