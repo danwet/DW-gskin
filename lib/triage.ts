@@ -334,6 +334,7 @@ export function triageInbox(messages: RawMessage[], displayName: string): Brief 
           : `${drafts.length === 1 ? "One reply is" : `${drafts.length} replies are`} drafted. The afternoon block is there so you can send only what you approve.`,
     },
     events: [],
+    tomorrowEvents: [],
     upcoming: thursday
       ? [
           {

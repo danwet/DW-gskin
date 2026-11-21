@@ -61,15 +61,21 @@ export function zonedTimeToUtc(local: string, timeZone: string): Date {
   return new Date(guess - offsetMs(timeZone, new Date(utc)));
 }
 
-export function dayWindow(timeZone: string, now = new Date()): { start: Date; end: Date; day: string } {
+export function dayWindow(
+  timeZone: string,
+  now = new Date(),
+  dayOffset = 0,
+): { start: Date; end: Date; day: string } {
   const day = zonedDay(timeZone, now);
   const [year, month, date] = day.split("-").map(Number);
-  const next = new Date(Date.UTC(year, month - 1, date + 1));
-  const nextDay = next.toISOString().slice(0, 10);
+  const start = new Date(Date.UTC(year, month - 1, date + dayOffset));
+  const end = new Date(Date.UTC(year, month - 1, date + dayOffset + 1));
+  const startDay = start.toISOString().slice(0, 10);
+  const endDay = end.toISOString().slice(0, 10);
   return {
-    day,
-    start: zonedTimeToUtc(`${day}T00:00:00`, timeZone),
-    end: zonedTimeToUtc(`${nextDay}T00:00:00`, timeZone),
+    day: startDay,
+    start: zonedTimeToUtc(`${startDay}T00:00:00`, timeZone),
+    end: zonedTimeToUtc(`${endDay}T00:00:00`, timeZone),
   };
 }
 

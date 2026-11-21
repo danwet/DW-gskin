@@ -1,5 +1,5 @@
 import { sessionUser, unauthorized } from "@/lib/api-auth";
-import { todayCalendarEvents } from "@/lib/calendar";
+import { todayCalendarEvents, tomorrowCalendarEvents } from "@/lib/calendar";
 import { validTimeZone } from "@/lib/calendar-events";
 import { NO_MAIL_SOURCE } from "@/lib/empty-brief";
 import { briefFromMailbox, type MailboxRead } from "@/lib/mailbox";
@@ -28,6 +28,7 @@ export async function GET(request: Request) {
   }
 
   const calendar = await todayCalendarEvents(request, timeZone);
+  const tomorrow = await tomorrowCalendarEvents(request, timeZone);
   const empty = record.messages.length === 0 && record.invoices.length === 0;
   const mailbox: MailboxRead = {
     messages: record.messages,
@@ -36,6 +37,7 @@ export async function GET(request: Request) {
   };
   const brief = briefFromMailbox(mailbox, user.name || "there");
   brief.events = calendar.events;
+  brief.tomorrowEvents = tomorrow.events;
 
   let finalRecord = record;
   if (refresh) {

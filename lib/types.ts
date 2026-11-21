@@ -85,6 +85,7 @@ export type Brief = {
   messageCount: number;
   insight: { title: string; detail: string };
   events: CalendarEvent[];
+  tomorrowEvents: CalendarEvent[];
   upcoming: Upcoming[];
   drafts: DraftReply[];
   quiet: QuietEmail[];

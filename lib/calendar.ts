@@ -225,13 +225,26 @@ export async function todayCalendarEvents(
   request: Request,
   timeZone: string,
 ): Promise<{ events: CalendarEvent[]; error: string | null }> {
+  return calendarEventsFor(request, timeZone, dayWindow(timeZone));
+}
+
+export async function tomorrowCalendarEvents(
+  request: Request,
+  timeZone: string,
+): Promise<{ events: CalendarEvent[]; error: string | null }> {
+  return calendarEventsFor(request, timeZone, dayWindow(timeZone, new Date(), 1));
+}
+
+async function calendarEventsFor(
+  request: Request,
+  timeZone: string,
+  window: { start: Date; end: Date; day: string },
+): Promise<{ events: CalendarEvent[]; error: string | null }> {
   const access = await accessTokenFor(request);
   if ("missing" in access) {
     const needsSignIn = access.missing === "refresh-failed" || access.missing === "no-access-token" || access.missing === "expired-no-refresh";
     return { events: [], error: needsSignIn ? RECONSENT_ERROR : SIGN_IN_ERROR };
   }
-
-  const window = dayWindow(timeZone);
   let listed = await listAllEvents(access.token, window.start, window.end);
   if (!Array.isArray(listed) && listed.kind === "auth" && access.refresh) {
     const refreshed = await refreshGoogleAccessToken(access.refresh);

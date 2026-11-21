@@ -11,6 +11,7 @@ export function emptyBrief(detail = "Loading your inbox."): Brief {
       detail,
     },
     events: [],
+    tomorrowEvents: [],
     upcoming: [],
     drafts: [],
     quiet: [],

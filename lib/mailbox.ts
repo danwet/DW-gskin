@@ -41,6 +41,7 @@ function emptyWith(detail: string): Brief {
     messageCount: 0,
     insight: { title: "Nothing needs you yet.", detail },
     events: [],
+    tomorrowEvents: [],
     upcoming: [],
     drafts: [],
     quiet: [],
