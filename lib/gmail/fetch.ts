@@ -4,6 +4,19 @@ import type { InboundMessage } from "../agent/types";
 
 const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
 
+/**
+ * Sender label for a card. A missing name falls back to the part before the @,
+ * so "info@example.com" and "<info@example.com>" both read as "info".
+ */
+export function senderDisplayName(from?: string | null, fromEmail?: string | null): string {
+  const name = (from ?? "").trim();
+  const email = (fromEmail ?? "").trim();
+  if (name && name !== "Onbekend" && !name.includes("@")) return name;
+  const address = email.includes("@") ? email : name.includes("@") ? name : "";
+  const local = address ? address.split("@")[0].trim() : "";
+  return local || name || "Onbekend";
+}
+
 export type GmailListPage = {
   ok: boolean;
   ids: string[];
@@ -61,17 +74,12 @@ export function mapGmailMessage(data: unknown): InboundMessage | null {
   const match = /([^<]*)\s*<([^>]+)>/.exec(rawFrom);
 
   let fromEmail = match?.[2]?.trim() ?? "";
-  let from = (match?.[1] ?? "").trim().replace(/^["']|["']$/g, "").trim();
+  const rawName = (match?.[1] ?? "").trim().replace(/^["']|["']$/g, "").trim();
 
-  // A sender without a display name ("info@example.com") is shown by the part
-  // before the @ instead of the full address.
   if (!fromEmail && rawFrom.includes("@")) {
     fromEmail = rawFrom.replace(/^["']|["']$/g, "").trim();
   }
-  if (!from && fromEmail.includes("@")) {
-    from = fromEmail.split("@")[0].trim();
-  }
-  if (!from) from = "Onbekend";
+  const from = senderDisplayName(rawName, fromEmail);
 
   return {
     id: message.id,

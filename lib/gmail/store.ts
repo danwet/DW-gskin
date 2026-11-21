@@ -2,6 +2,7 @@ import "server-only";
 
 import type { InboundMessage } from "../agent/types";
 import { dbClient } from "../supabase/db";
+import { senderDisplayName } from "./fetch";
 
 export type ImportPhase = "idle" | "importing" | "triaging" | "done" | "error";
 
@@ -44,7 +45,7 @@ function rowToMessage(row: MessageRow): InboundMessage {
   return {
     id: row.message_id,
     threadId: row.thread_id,
-    from: row.from_name,
+    from: senderDisplayName(row.from_name, row.from_email),
     fromEmail: row.from_email,
     subject: row.subject,
     snippet: row.snippet,
