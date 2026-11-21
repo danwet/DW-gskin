@@ -240,13 +240,18 @@ export async function fetchGmailMessage(accessToken: string, id: string): Promis
   const mapped = mapGmailMessage(await response.json().catch(() => null));
   if (!mapped) return null;
 
-  // Invoice details live in the PDF, not in the mail text.
-  for (const part of mapped.pdfAttachments ?? []) {
-    const text = await pdfTextFromPayload(part, accessToken, id);
-    if (text) {
-      mapped.body = `${mapped.body ?? ""}\n\n--- Factuurbijlage: ${part.filename} ---\n${text}`.trim();
-      break;
+  // Invoice details live in the PDF, not in the mail text. A failing download
+  // or parse must never cost us the message itself.
+  try {
+    for (const part of mapped.pdfAttachments ?? []) {
+      const text = await pdfTextFromPayload(part, accessToken, id);
+      if (text) {
+        mapped.body = `${mapped.body ?? ""}\n\n--- Factuurbijlage: ${part.filename} ---\n${text}`.trim();
+        break;
+      }
     }
+  } catch {
+    // keep the mail text we already have
   }
   return mapped;
 }

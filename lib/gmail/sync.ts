@@ -153,16 +153,17 @@ export async function importStep(userId: string, refreshToken: string): Promise<
   const saved = await saveMessages(userId, messages);
   const totalEstimate = Math.max(state.totalEstimate ?? 0, page.resultSizeEstimate ?? 0);
 
-  // Stay on this page until every message is fetched, otherwise a rate limit
-  // silently drops mail and the import reports "done" too early.
-  if (missed > 0) {
+  // Retry a page with misses once, but never loop on it forever: a single
+  // stubborn message used to block the whole walk at the same page.
+  const alreadyRetried = (state.lastError ?? "").startsWith("page-retry");
+  if (missed > 0 && !alreadyRetried) {
     await updateImportState(userId, {
       phase: "importing",
       pageToken: state.pageToken ?? null,
       importedCount: state.importedCount + saved.newMessages,
       totalEstimate,
       importedThreads: state.importedThreads + saved.newThreads,
-      lastError: `${missed} van ${page.ids.length} berichten niet opgehaald; opnieuw proberen.`,
+      lastError: `page-retry ${missed}/${page.ids.length}`,
     });
     return { ok: true, step: "import", processed: saved.saved, progress: await readProgress(userId) };
   }
@@ -174,7 +175,7 @@ export async function importStep(userId: string, refreshToken: string): Promise<
     importedCount: state.importedCount + saved.saved,
     totalEstimate,
     importedThreads: state.importedThreads + saved.newThreads,
-    lastError: null,
+    lastError: missed > 0 ? `${missed} berichten overgeslagen; volgende ronde opnieuw.` : null,
   });
 
   return { ok: true, step: "import", processed: saved.saved, progress: await readProgress(userId) };
