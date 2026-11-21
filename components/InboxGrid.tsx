@@ -164,6 +164,10 @@ export function InboxGrid({
           onToggleHandled={onToggleHandled}
           onDeclare={onDeclare}
           onSave={onSave}
+          onOpenProposal={(id) => {
+            setSelected(null);
+            setProposalId(id);
+          }}
         />
       ) : null}
 
@@ -428,6 +432,7 @@ export function InboxModal({
   onToggleHandled,
   onDeclare,
   onSave,
+  onOpenProposal,
 }: {
   item: MailAssessment;
   now: Date;
@@ -436,6 +441,7 @@ export function InboxModal({
   onToggleHandled: (item: MailAssessment) => void;
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
   onSave?: (item: MailAssessment, saved: boolean) => void;
+  onOpenProposal?: (id: string) => void;
 }) {
   const urgency = urgencyFor(item, now, timeZone);
   const [handled, setHandled] = useState(item.handledByUser === true);
@@ -476,41 +482,14 @@ export function InboxModal({
   const [unsubState, setUnsubState] = useState<"idle" | "sending" | "sent" | "error">(unsub?.status ?? "idle");
   const [unsubMessage, setUnsubMessage] = useState<string | null>(unsub?.message ?? null);
 
-  const handleUnsubscribe = async () => {
-    if (!unsub) return;
-    setUnsubState("sending");
-    setUnsubMessage(null);
-    try {
-      const response = await fetch("/api/unsubscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messageId: item.sourceMessageId }),
-      });
-      const data = (await response.json().catch(() => null)) as { status?: string; message?: string } | null;
-      if (response.ok && data?.status === "sent") {
-        setUnsubState("sent");
-      } else {
-        setUnsubState("error");
-        setUnsubMessage(data?.message ?? "Afmelden is niet gelukt.");
-      }
-    } catch {
-      setUnsubState("error");
-      setUnsubMessage("Afmelden is niet gelukt.");
-    }
-  };
-
   const onUnsubscribe = () => {
-    if (!unsub) return;
-    if (unsub.kind === "manual" || unsubState === "error") {
-      if (unsub.url) window.open(unsub.url, "_blank", "noopener,noreferrer");
+    // Read-only phase: never send an unsubscribe request. Show the proposal
+    // so the user can record an approval instead.
+    if (item.proposal && onOpenProposal) {
+      onOpenProposal(item.proposal.id);
       return;
     }
-    if (unsub.kind === "mailto") {
-      if (item.link) window.open(item.link, "_blank", "noopener,noreferrer");
-      return;
-    }
-    if (unsubState === "sending" || unsubState === "sent") return;
-    void handleUnsubscribe();
+    if (unsub?.url) window.open(unsub.url, "_blank", "noopener,noreferrer");
   };
 
   const unsubLabel = (u: NonNullable<typeof unsub>) => {
@@ -524,31 +503,11 @@ export function InboxModal({
 
   const newsletterImages = item.bodyHtml ? extractImages(item.bodyHtml) : [];
 
-  async function sendDraft() {
-    if (!draft.trim() || sending || sent) return;
-    setSending(true);
-    setSendMessage(null);
-    try {
-      const body = new FormData();
-      body.append("conversationId", item.conversationId);
-      body.append("body", draft);
-      for (const file of attachments) body.append("files", file);
-      const response = await fetch("/api/agent/send", { method: "POST", body });
-      const data = (await response.json().catch(() => null)) as { ok?: boolean; message?: string } | null;
-      if (response.ok && data?.ok) {
-        setSent(true);
-        setHandled(true);
-        if (!item.handledByUser) onToggleHandled(item);
-        setSendMessage("Verzonden.");
-      } else {
-        setSendMessage(data?.message ?? "Versturen is niet gelukt.");
-      }
-    } catch {
-      setSendMessage("Versturen is niet gelukt.");
-    } finally {
-      setSending(false);
-    }
-  }
+  // Read-only phase: sending is blocked server-side, so the draft action opens
+  // the reply proposal and records the decision instead.
+  const openReplyProposal = () => {
+    if (item.proposal && onOpenProposal) onOpenProposal(item.proposal.id);
+  };
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4">
@@ -791,11 +750,11 @@ export function InboxModal({
             <>
               <button
                 type="button"
-                onClick={() => void sendDraft()}
-                disabled={sending || sent || !draft.trim()}
+                onClick={openReplyProposal}
+                disabled={!item.proposal || !onOpenProposal}
                 className="btn-primary relative rounded-full px-4 py-2 text-[13px] font-medium"
               >
-                {sent ? "Verzonden" : sending ? "Versturen…" : "Verstuur"}
+                Bekijk voorstel
               </button>
               <button
                 type="button"
