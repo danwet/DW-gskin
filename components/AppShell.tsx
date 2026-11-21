@@ -191,7 +191,7 @@ function SidebarContent({
 }) {
   return (
     <div className="sidebar-enter relative z-10 flex min-h-0 flex-1 flex-col">
-      <div className="shrink-0 px-3 pt-5 pb-2">
+      <div className="shrink-0 px-3 pt-5 pb-5">
         <div className="flex justify-start px-1">
           <button
             type="button"
@@ -212,7 +212,7 @@ function SidebarContent({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-5">
-      <nav className="mt-4 flex flex-col gap-1" aria-label="Hoofdnavigatie">
+      <nav className="mt-[2.4rem] flex flex-col gap-1" aria-label="Hoofdnavigatie">
         {NAV.map((link) => {
           const active = pathname === link.href;
           return (
