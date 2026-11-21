@@ -16,6 +16,12 @@ type ServerSettings = {
   defaultProvider: string;
   gmail: { refreshTokenSet: boolean; clientConfigured: boolean };
   calendar: { configured: boolean };
+  supabase: {
+    configured: boolean;
+    agentStateReady: boolean;
+    userStateReady: boolean;
+    settingsReady: boolean;
+  };
   auth: { secretSet: boolean; url: string | null };
   cronSecret: boolean;
   agentApiKey: boolean;
@@ -565,6 +571,23 @@ function ServerSection({
         <button type="button" onClick={onSave} disabled={saving} className={primaryClass}>
           Agent-instellingen opslaan
         </button>
+
+        <div className="space-y-2 rounded-2xl border border-[var(--line)] px-4 py-3 text-[13px]">
+          <p className="text-[11px] font-medium tracking-[0.12em] text-[var(--muted)]">OPSLAG (SUPABASE)</p>
+          <Status
+            dot={server?.supabase.configured === true}
+            label={server?.supabase.configured ? "Supabase geconfigureerd" : "Niet geconfigureerd — lokale bestanden"}
+          />
+          <Status dot={server?.supabase.settingsReady === true} label="Tabel dw_agent_settings" />
+          <Status dot={server?.supabase.agentStateReady === true} label="Tabel dw_agent_state" />
+          <Status dot={server?.supabase.userStateReady === true} label="Tabel dw_user_state" />
+          {server && server.supabase.configured && !server.supabase.agentStateReady ? (
+            <p className="pt-1 text-[12px] leading-5 text-[var(--muted)]">
+              De tabellen ontbreken. Draai <span className="font-mono">supabase/migrate-nextauth.sql</span> in de
+              Supabase SQL Editor; zonder die tabellen worden de demo-kaarten niet bewaard.
+            </p>
+          ) : null}
+        </div>
 
         <div className="space-y-2 rounded-2xl border border-[var(--line)] px-4 py-3 text-[13px]">
           <Status dot={server?.cronSecret === true} label="CRON_SECRET op de server" />

@@ -62,6 +62,31 @@ export async function supabaseWriteJson(
 
 const SCAN_BUCKET = process.env.SUPABASE_SCAN_BUCKET?.trim() || "scanned-invoices";
 
+export type SupabaseProbe = {
+  configured: boolean;
+  agentStateReady: boolean;
+  userStateReady: boolean;
+  settingsReady: boolean;
+};
+
+/** Checks whether the three JSON tables are actually reachable (they must be created by the SQL migration). */
+export async function supabaseProbe(): Promise<SupabaseProbe> {
+  if (!supabaseAvailable()) {
+    return { configured: false, agentStateReady: false, userStateReady: false, settingsReady: false };
+  }
+  const [agent, user, settings] = await Promise.all([
+    supabaseReadJson("dw_agent_state", "id", "singleton"),
+    supabaseReadJson("dw_user_state", "user_id", "__probe__"),
+    supabaseReadJson("dw_agent_settings", "id", "singleton"),
+  ]);
+  return {
+    configured: true,
+    agentStateReady: agent.ok,
+    userStateReady: user.ok,
+    settingsReady: settings.ok,
+  };
+}
+
 /** Uploads a scanned invoice to Supabase Storage; false when unavailable or the bucket is missing. */
 export async function supabaseUploadScan(name: string, buffer: Buffer, mime: string): Promise<boolean> {
   const client = await loadClient();

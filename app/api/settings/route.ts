@@ -1,5 +1,6 @@
 import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { loadAgentConfig, saveAgentConfig, type MailSource, type ProviderId } from "@/lib/agent/config";
+import { supabaseProbe } from "@/lib/supabase/kv";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ async function status() {
     calendar: {
       configured: Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET),
     },
+    supabase: await supabaseProbe(),
     auth: {
       secretSet: Boolean(process.env.AUTH_SECRET),
       url: process.env.AUTH_URL?.trim() || null,
