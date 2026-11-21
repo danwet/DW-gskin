@@ -133,19 +133,40 @@ export async function importStep(userId: string, refreshToken: string): Promise<
   }
 
   const messages: InboundMessage[] = [];
+  let missed = 0;
   for (const id of page.ids) {
-    const mapped = await fetchGmailMessage(token.access_token, id);
+    let mapped = await fetchGmailMessage(token.access_token, id);
+    if (!mapped) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      mapped = await fetchGmailMessage(token.access_token, id);
+    }
     if (mapped) messages.push(mapped);
+    else missed += 1;
   }
 
   const saved = await saveMessages(userId, messages);
-  const done = !page.nextPageToken;
+  const totalEstimate = Math.max(state.totalEstimate ?? 0, page.resultSizeEstimate ?? 0);
 
+  // Stay on this page until every message is fetched, otherwise a rate limit
+  // silently drops mail and the import reports "done" too early.
+  if (missed > 0) {
+    await updateImportState(userId, {
+      phase: "importing",
+      pageToken: state.pageToken ?? null,
+      importedCount: state.importedCount + saved.newMessages,
+      totalEstimate,
+      importedThreads: state.importedThreads + saved.newThreads,
+      lastError: `${missed} van ${page.ids.length} berichten niet opgehaald; opnieuw proberen.`,
+    });
+    return { ok: true, step: "import", processed: saved.saved, progress: await readProgress(userId) };
+  }
+
+  const done = !page.nextPageToken;
   await updateImportState(userId, {
     phase: done ? "triaging" : "importing",
     pageToken: page.nextPageToken,
     importedCount: state.importedCount + saved.saved,
-    totalEstimate: page.resultSizeEstimate ?? state.totalEstimate,
+    totalEstimate,
     importedThreads: state.importedThreads + saved.newThreads,
     lastError: null,
   });

@@ -677,14 +677,20 @@ async function assessWithProvider(
 }
 
 /** Dispatches to the configured provider, else to the deterministic rule classifier. */
-export function classifyConversation(
+export async function classifyConversation(
   messages: InboundMessage[],
   opts?: { provider?: ProviderId; apiKey?: string; model?: string },
 ): Promise<AssessmentDraft> {
   const provider = opts?.provider ?? "openai";
   const apiKey = opts?.apiKey ?? providerEnvKey(provider);
-  if (apiKey) return assessWithProvider(messages, provider, { apiKey, model: opts?.model });
-  return Promise.resolve(ruleAssess(messages));
+  if (!apiKey) return ruleAssess(messages);
+  try {
+    return await assessWithProvider(messages, provider, { apiKey, model: opts?.model });
+  } catch {
+    // A malformed or rate-limited model response must not stall the import:
+    // fall back to the deterministic classifier for this conversation.
+    return ruleAssess(messages);
+  }
 }
 
 export function ruleAssessForTests(messages: InboundMessage[]): AssessmentDraft {

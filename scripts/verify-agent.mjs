@@ -127,7 +127,10 @@ try {
     throw new Error("simulated network failure");
   };
   const { classifyConversation } = await import("../lib/agent/classify.ts");
-  await assert.rejects(() => classifyConversation(buildFixtureMessages(now, 1).slice(0, 1)), /simulated network failure/);
+  // A failed model call now falls back to the deterministic classifier instead
+  // of throwing, so the import never stalls on a bad model response.
+  const fallback = await classifyConversation(buildFixtureMessages(now, 1).slice(0, 1));
+  assert.ok(fallback && typeof fallback === "object" && typeof fallback.classification === "string", "failed model call falls back to the rule classifier");
   globalThis.fetch = originalFetch;
   if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
   else process.env.OPENAI_API_KEY = originalKey;
