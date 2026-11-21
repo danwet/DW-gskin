@@ -44,7 +44,9 @@ export type InboxFilter = "active" | "info" | "all";
 const TONE_DOT: Record<UrgencyTone, string> = {
   red: "var(--danger)",
   orange: "var(--orange)",
+  yellow: "var(--yellow)",
   blue: "var(--blue)",
+  green: "var(--green)",
   grey: "var(--muted)",
 };
 

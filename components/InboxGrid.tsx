@@ -9,7 +9,9 @@ import { ProposalDialog } from "./ProposalDialog";
 const TONE_TEXT: Record<UrgencyTone, string> = {
   red: "text-[var(--danger)]",
   orange: "text-[var(--orange)]",
+  yellow: "text-[var(--yellow)]",
   blue: "text-[var(--blue)]",
+  green: "text-[var(--green)]",
   grey: "text-[var(--muted)]",
 };
 

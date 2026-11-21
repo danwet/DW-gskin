@@ -1,6 +1,6 @@
 import type { MailAssessment } from "./types";
 
-export type UrgencyTone = "red" | "orange" | "blue" | "grey";
+export type UrgencyTone = "red" | "orange" | "yellow" | "blue" | "green" | "grey";
 
 export const DEFAULT_TIME_ZONE = "Europe/Amsterdam";
 
@@ -16,8 +16,10 @@ export type Urgency = {
 const TONE_ORDER: Record<UrgencyTone, number> = {
   red: 0,
   orange: 1,
-  blue: 2,
-  grey: 3,
+  yellow: 2,
+  blue: 3,
+  green: 4,
+  grey: 5,
 };
 
 function startOfDayInZone(timeZone: string, now: Date): Date {
@@ -67,19 +69,19 @@ export function urgencyFor(
   const today = startOfDayInZone(timeZone, now);
 
   if (handled && !needsAttention) {
-    return { tone: "grey", label: "Afgehandeld", deadlineValue: deadline?.getTime() ?? null, deadlineText: deadlineText(deadline) };
+    return { tone: "green", label: "Afgehandeld", deadlineValue: deadline?.getTime() ?? null, deadlineText: deadlineText(deadline) };
   }
   if (invoice?.paymentStatus === "paid_confirmed" && !needsAttention) {
-    return { tone: "grey", label: "Betaald bevestigd", deadlineValue: deadline?.getTime() ?? null, deadlineText: deadlineText(deadline) };
+    return { tone: "green", label: "Betaald bevestigd", deadlineValue: deadline?.getTime() ?? null, deadlineText: deadlineText(deadline) };
   }
   if (assessment.classification === "unclassified") {
-    return { tone: "grey", label: "Gemist", deadlineValue: deadline?.getTime() ?? null, deadlineText: deadlineText(deadline) };
+    return { tone: "yellow", label: "Gemist", deadlineValue: deadline?.getTime() ?? null, deadlineText: deadlineText(deadline) };
   }
   if (assessment.classification === "info") {
-    return { tone: "grey", label: "Ter informatie", deadlineValue: deadline?.getTime() ?? null, deadlineText: deadlineText(deadline) };
+    return { tone: "blue", label: "Ter informatie", deadlineValue: deadline?.getTime() ?? null, deadlineText: deadlineText(deadline) };
   }
   if (assessment.classification === "waiting") {
-    return { tone: "grey", label: "Wacht op reactie", deadlineValue: deadline?.getTime() ?? null, deadlineText: deadlineText(deadline) };
+    return { tone: "orange", label: "Wacht op reactie", deadlineValue: deadline?.getTime() ?? null, deadlineText: deadlineText(deadline) };
   }
 
   if (deadline) {
@@ -102,7 +104,7 @@ export function urgencyFor(
   if (invoice?.paymentStatus === "open_per_sender") {
     return { tone: "blue", label: "Openstaand volgens afzender", deadlineValue: null, deadlineText: deadlineText(null) };
   }
-  return { tone: "blue", label: "Actie nodig", deadlineValue: null, deadlineText: deadlineText(null) };
+  return { tone: "red", label: "Actie nodig", deadlineValue: null, deadlineText: deadlineText(null) };
 }
 
 function deadlineText(deadline: Date | null): string {
