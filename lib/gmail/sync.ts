@@ -3,13 +3,15 @@ import "server-only";
 import { buildAssessment, groupByConversation } from "../agent/build";
 import { classifyConversation } from "../agent/classify";
 import { loadAgentConfig, type ProviderId } from "../agent/config";
-import { upsertAssessments } from "../agent/store";
+import { markArchivedByAgent, readAssessments, upsertAssessments } from "../agent/store";
 import type { InboundMessage } from "../agent/types";
 import { refreshGoogleAccessToken } from "../google-token";
 import { fetchGmailMessage, listGmailInbox } from "./fetch";
 import { reconcileGmailHistory } from "./history";
+import { archiveGmailMessage } from "./actions";
 import {
   countUntriaged,
+  listStoredMessages,
   getImportState,
   listThreadMessages,
   listUntriagedMessages,
@@ -243,6 +245,40 @@ export async function triageStep(userId: string, ownerEmail?: string | null): Pr
 }
 
 /** One unit of work for the client runner: import a batch, then triage a batch. */
+/**
+ * Order-status mail is read once and then has no further use in the inbox. After
+ * the status is stored on the assessment, archive it in Gmail automatically.
+ */
+async function archiveProcessedOrders(userId: string, refreshToken: string): Promise<number> {
+  const assessments = await readAssessments();
+  const candidates = assessments.filter(
+    (item) => item.mailbox === "gmail" && item.shipment && !item.archivedAt && item.classification === "info",
+  );
+  if (candidates.length === 0) return 0;
+
+  const stored = await listStoredMessages(userId);
+  const archived: string[] = [];
+
+  for (const item of candidates) {
+    const ids = stored.filter((row) => row.thread_id === item.conversationId).map((row) => row.message_id);
+    const targets = ids.length > 0 ? ids : item.sourceMessageId ? [item.sourceMessageId] : [];
+    if (targets.length === 0) continue;
+
+    let ok = true;
+    for (const id of targets) {
+      const result = await archiveGmailMessage(refreshToken, id);
+      if (!result.ok) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) archived.push(item.conversationId);
+  }
+
+  await markArchivedByAgent(archived);
+  return archived.length;
+}
+
 export async function syncStep(
   userId: string,
   refreshToken: string,
@@ -252,6 +288,7 @@ export async function syncStep(
   imported: number;
   triaged: number;
   removed: number;
+  autoArchived: number;
   progress: SyncProgress;
   error?: string;
 }> {
@@ -275,11 +312,15 @@ export async function syncStep(
   const triage = await triageStep(userId, ownerEmail);
   if (!triage.ok && !error) error = triage.error;
 
+  // Order mail whose status is now stored goes to the archive by itself.
+  const autoArchived = await archiveProcessedOrders(userId, refreshToken).catch(() => 0);
+
   return {
     ok: !error,
     imported,
     triaged: triage.processed,
     removed: reconcile?.removed ?? 0,
+    autoArchived,
     progress: await readProgress(userId),
     error,
   };

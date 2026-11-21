@@ -143,7 +143,7 @@ export async function saveMessages(
     subject: message.subject,
     snippet: message.snippet,
     body: (message.body ?? "").slice(0, 20_000),
-    body_html: (message.bodyHtml ?? "").slice(0, 40_000),
+    body_html: keepHeadAndTail(message.bodyHtml ?? "", 40_000),
     received_at: message.receivedAt,
     imported_at: new Date().toISOString(),
   }));
@@ -212,6 +212,17 @@ export async function countUntriaged(userId: string): Promise<number> {
     .eq("user_id", userId)
     .is("triaged_at", null);
   return count ?? 0;
+}
+
+/**
+ * Long newsletters are capped to keep the database small — but the unsubscribe
+ * link lives in the footer, so keep the tail as well as the head.
+ */
+export function keepHeadAndTail(html: string, limit = 40_000): string {
+  if (!html || html.length <= limit) return html;
+  const head = Math.floor(limit * 0.25);
+  const tail = limit - head;
+  return `${html.slice(0, head)}\n<!-- ingekort -->\n${html.slice(-tail)}`;
 }
 
 export type StoredMessageKey = { message_id: string; thread_id: string };

@@ -156,6 +156,23 @@ export function restoreAssessment(item: MailAssessment): Promise<void> {
   });
 }
 
+export function markArchivedByAgent(conversationIds: string[]): Promise<void> {
+  if (conversationIds.length === 0) return Promise.resolve();
+  return withLock(async () => {
+    const state = await readState();
+    const now = new Date().toISOString();
+    let changed = false;
+    for (const id of conversationIds) {
+      const item = state.assessments[id];
+      if (item && !item.archivedAt) {
+        item.archivedAt = now;
+        changed = true;
+      }
+    }
+    if (changed) await writeState(state);
+  });
+}
+
 export function applyArchiveCleanup(opts: {
   conversationId: string;
   action: "archive" | "trash";

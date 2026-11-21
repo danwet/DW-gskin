@@ -45,7 +45,7 @@ export function InboxGrid({
   // Trash straight from the card, without opening it.
   const trashFromCard = (item: MailAssessment) => {
     onRemove?.(item.conversationId);
-    void (async () => {
+    enqueueAction(async () => {
       try {
         const response = await fetch("/api/gmail/action", {
           method: "POST",
@@ -61,7 +61,7 @@ export function InboxGrid({
         onError?.("Verwijderen mislukt: geen verbinding.");
         onReload?.();
       }
-    })();
+    });
   };
   const [activeTab, setActiveTab] = useState<"urgent" | "later" | "info" | "declare">("urgent");
   const [proposalId, setProposalId] = useState<string | null>(null);
@@ -326,6 +326,13 @@ function BalancedText({ text, className }: { text: string; className: string }) 
       {line2 ? <span className="block truncate">{line2}</span> : null}
     </p>
   );
+}
+
+// Every action rewrites the same agent document, so run them one at a time.
+// Firing several at once let a later write undo an earlier removal.
+let actionQueue: Promise<unknown> = Promise.resolve();
+function enqueueAction(task: () => Promise<void>): void {
+  actionQueue = actionQueue.then(task, task);
 }
 
 export function InboxCard({
@@ -606,21 +613,22 @@ export function InboxModal({
   const runAction = (action: "archive" | "trash") => {
     if (busyAction) return;
     setBusyAction(action);
-    void (async () => {
-      // The request starts right away; the eye only gets a short beat so the
-      // click feels acknowledged before the popup disappears.
-      const request = fetch("/api/gmail/action", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: item.conversationId, action }),
-      });
-      await new Promise((resolve) => setTimeout(resolve, 140));
+
+    // Close and drop the card right away, but leave the eye a short beat so the
+    // click is acknowledged before the popup disappears.
+    setTimeout(() => {
       onClose();
       onRemove?.(item.conversationId);
+    }, 140);
+
+    enqueueAction(async () => {
       try {
-        const response = await request;
+        const response = await fetch("/api/gmail/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conversationId: item.conversationId, action }),
+        });
         if (!response.ok) {
-          // Bring the card back and say why, instead of failing silently.
           const data = (await response.json().catch(() => null)) as { error?: string } | null;
           onError?.(data?.error ?? "Actie mislukt.");
           onReload?.();
@@ -629,7 +637,7 @@ export function InboxModal({
         onError?.("Actie mislukt: geen verbinding.");
         onReload?.();
       }
-    })();
+    });
   };
 
   return (

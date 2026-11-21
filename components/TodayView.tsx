@@ -112,17 +112,21 @@ export function TodayView() {
   }, [syncing, inbox.reload]);
 
   const nowMs = Date.now();
-  const activeItems = inbox.items.filter(
+  // Mail the agent archived itself (order status) leaves the overview but stays
+  // available for the shipments panel.
+  const visibleItems = inbox.items.filter((item) => !item.archivedAt);
+
+  const activeItems = visibleItems.filter(
     (item) =>
       item.classification !== "info" &&
       item.classification !== "unclassified" &&
       item.handledByUser !== true,
   );
-  const infoItems = inbox.items.filter(
+  const infoItems = visibleItems.filter(
     (item) => item.classification === "info" || (item.source === "scan" && item.handledByUser === true),
   );
-  const declareItems = inbox.items.filter((item) => item.invoice && item.declaration === "pending");
-  const missedItems = inbox.items.filter((item) => item.classification === "unclassified");
+  const declareItems = visibleItems.filter((item) => item.invoice && item.declaration === "pending");
+  const missedItems = visibleItems.filter((item) => item.classification === "unclassified");
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-7 sm:px-8 sm:py-8 md:pt-14 md:pb-14">

@@ -66,6 +66,28 @@ function findUnsubscribeLinkInText(text: string): { url: string; kind: "manual" 
 }
 
 /**
+ * The plain-text body has its anchors stripped, so the html is the only place
+ * where the actual afmeld-link survives. Look for a keyword and take the href
+ * that wraps it, or the closest bare url around it.
+ */
+function findUnsubscribeLinkInHtml(html: string): { url: string; kind: "manual" | "mailto" } | null {
+  if (!html) return null;
+  const index = html.search(KEYWORDS);
+  if (index === -1) return null;
+
+  // The link can wrap the keyword, so look a little before it as well.
+  const window = html.slice(Math.max(0, index - 600), index + 600);
+  const href = window.match(/href\s*=\s*["'](https?:\/\/[^"']+|mailto:[^"']+)["']/i);
+  const bare = href ? null : window.match(/(?:https?:\/\/|mailto:)[^\s<>"'()]+/i);
+  const raw = href?.[1] ?? bare?.[0];
+  if (!raw) return null;
+
+  const url = raw.replace(/[.,;)\]]+$/, "");
+  if (!/^mailto:/i.test(url) && !/^https:\/\//i.test(url)) return null;
+  return /^mailto:/i.test(url) ? { url, kind: "mailto" } : { url, kind: "manual" };
+}
+
+/**
  * Determines whether and how a message can be unsubscribed. Pure string work —
  * it never performs a network request and never triggers link prefetching.
  */
@@ -100,7 +122,10 @@ export function detectUnsubscribe(message: InboundMessage): UnsubscribeInfo | nu
     }
   }
 
-  const bodyLink = findUnsubscribeLinkInText(`${message.snippet ?? ""}\n${message.body ?? ""}`);
+  // The html keeps the real anchor, the plain text keeps the words.
+  const bodyLink =
+    findUnsubscribeLinkInHtml(message.bodyHtml ?? "") ??
+    findUnsubscribeLinkInText(`${message.snippet ?? ""}\n${message.body ?? ""}`);
   if (bodyLink?.kind === "mailto") return { kind: "mailto" };
   if (bodyLink?.kind === "manual") {
     const validated = validateUnsubscribeUrl(bodyLink.url);

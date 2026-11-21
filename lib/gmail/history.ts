@@ -1,7 +1,7 @@
 import "server-only";
 
 import { refreshGoogleAccessToken } from "../google-token";
-import { readMeta, removeAssessments, updateMeta } from "../agent/store";
+import { readAssessments, readMeta, removeAssessments, updateMeta } from "../agent/store";
 import { listStoredMessages, purgeMessages, saveMessages } from "./store";
 import { fetchGmailMessage, listGmailInbox } from "./fetch";
 
@@ -82,15 +82,25 @@ async function listAllInboxIds(accessToken: string): Promise<Set<string>> {
   return ids;
 }
 
+/** Conversations the agent archived itself; their data stays. */
+async function archivedThreads(): Promise<Set<string>> {
+  const items = await readAssessments();
+  return new Set(items.filter((item) => item.archivedAt).map((item) => item.conversationId));
+}
+
 /** Drops stored messages that are no longer in the inbox and their empty cards. */
 async function pruneMissing(userId: string, accessToken: string): Promise<number> {
   const inbox = await listAllInboxIds(accessToken);
   if (inbox.size === 0) return 0;
   const stored = await listStoredMessages(userId);
-  const gone = stored.filter((row) => !inbox.has(row.message_id)).map((row) => row.message_id);
+  // Cards the agent archived itself keep their data for the shipments panel.
+  const archived = await archivedThreads();
+  const gone = stored
+    .filter((row) => !inbox.has(row.message_id) && !archived.has(row.thread_id))
+    .map((row) => row.message_id);
   if (gone.length === 0) return 0;
   const emptied = await purgeMessages(userId, gone);
-  await removeAssessments(emptied);
+  await removeAssessments(emptied.filter((id) => !archived.has(id)));
   return gone.length;
 }
 
@@ -132,8 +142,9 @@ export async function reconcileGmailHistory(
       }
 
       if (gone.size > 0) {
+        const archived = await archivedThreads();
         const emptied = await purgeMessages(userId, [...gone]);
-        await removeAssessments(emptied);
+        await removeAssessments(emptied.filter((id) => !archived.has(id)));
         removed += gone.size;
       }
 

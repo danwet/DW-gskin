@@ -102,6 +102,8 @@ export type MailAssessment = {
   bodyHtml?: string;
   /** Detected shipment/tracking update, when present. */
   shipment?: ShipmentInfo;
+  /** Set when the agent archived the mail itself after reading the order status. */
+  archivedAt?: string;
   /** Declaration state for a paid invoice: none / pending (in "Declareren") / declared. */
   declaration?: "none" | "pending" | "declared";
   /** Full conversation thread, retained for the collapsible context view. */
