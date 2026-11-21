@@ -171,25 +171,6 @@ export function TodayView() {
               </div>
             ) : null}
 
-            {inbox.pending.length > 0 ? (
-              <section>
-                <p className="mb-3 text-[13px] font-medium text-[var(--muted)]">
-                  Nog te beoordelen ({inbox.pending.length})
-                </p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {inbox.pending.slice(0, 12).map((item) => (
-                    <div key={item.conversationId} className="card-surface rounded-2xl px-4 py-3">
-                      <p className="truncate text-[14px] font-semibold text-[var(--ink)]">{item.subject}</p>
-                      <p className="truncate text-[12px] text-[var(--muted)]">{item.from}</p>
-                      <span className="mt-2 inline-block rounded-full bg-[var(--blue-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--active-ink)]">
-                        Nog te beoordelen
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
             <InboxGrid
               items={activeItems}
               infoItems={infoItems}
