@@ -127,23 +127,32 @@ function headerValue(payload: unknown, name: string): string {
 }
 
 /** Maps a Gmail `format=full` resource to the app's inbound-message shape. */
-/** Walks the payload and collects real PDF attachments. */
-function findPdfParts(payload: unknown): { attachmentId: string; filename: string }[] {
-  const found: { attachmentId: string; filename: string }[] = [];
+/**
+ * Walks the payload and collects PDF parts. Small attachments come back inline
+ * as base64 (`body.data`); larger ones only carry an `attachmentId`.
+ */
+type PdfPart = { filename: string; attachmentId?: string; data?: string };
+
+function findPdfParts(payload: unknown): PdfPart[] {
+  const found: PdfPart[] = [];
 
   const walk = (node: unknown) => {
     if (!node || typeof node !== "object") return;
     const part = node as {
       mimeType?: string;
       filename?: string;
-      body?: { attachmentId?: string; size?: number };
+      body?: { attachmentId?: string; data?: string; size?: number };
       parts?: unknown[];
     };
-    const mime = (part.mimeType ?? "").toLowerCase();
+    const mime = (part.mimeType ?? "").toLowerCase().split(";")[0].trim();
     const filename = part.filename ?? "";
-    const isPdf = mime === "application/pdf" || (mime === "application/octet-stream" && /\.pdf$/i.test(filename));
-    if (isPdf && part.body?.attachmentId) {
-      found.push({ attachmentId: part.body.attachmentId, filename: filename || "factuur.pdf" });
+    const isPdf = mime === "application/pdf" || /\.pdf$/i.test(filename);
+    if (isPdf && (part.body?.attachmentId || part.body?.data)) {
+      found.push({
+        filename: filename || "factuur.pdf",
+        attachmentId: part.body?.attachmentId,
+        data: part.body?.data,
+      });
     }
     for (const child of part.parts ?? []) walk(child);
   };
@@ -197,20 +206,27 @@ export function mapGmailMessage(data: unknown): InboundMessage | null {
   };
 }
 
-/** Downloads one attachment and returns its text, so invoices can be read. */
-async function fetchAttachmentText(accessToken: string, messageId: string, attachmentId: string): Promise<string> {
-  const response = await fetch(
-    `${GMAIL_API}/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,
-    { headers: { Authorization: `Bearer ${accessToken}` } },
-  );
-  if (!response.ok) return "";
+function base64UrlToBuffer(value: string): Buffer {
+  return Buffer.from(value.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+}
 
-  const data = (await response.json().catch(() => null)) as { data?: string } | null;
-  if (!data?.data) return "";
+async function pdfTextFromPayload(part: PdfPart, accessToken: string, messageId: string): Promise<string> {
+  // Inline attachments already carry their bytes.
+  let raw = part.data ?? "";
 
-  const buffer = Buffer.from(data.data.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+  if (!raw && part.attachmentId) {
+    const response = await fetch(
+      `${GMAIL_API}/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(part.attachmentId)}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+    if (!response.ok) return "";
+    const data = (await response.json().catch(() => null)) as { data?: string } | null;
+    raw = data?.data ?? "";
+  }
+
+  if (!raw) return "";
   try {
-    return await extractTextFromBuffer(buffer, "application/pdf");
+    return await extractTextFromBuffer(base64UrlToBuffer(raw), "application/pdf");
   } catch {
     return "";
   }
@@ -224,12 +240,12 @@ export async function fetchGmailMessage(accessToken: string, id: string): Promis
   const mapped = mapGmailMessage(await response.json().catch(() => null));
   if (!mapped) return null;
 
-  // Invoice details live in the PDF, not in the mail text: read the first one.
-  const pdf = mapped.pdfAttachments?.[0];
-  if (pdf) {
-    const text = await fetchAttachmentText(accessToken, id, pdf.attachmentId);
+  // Invoice details live in the PDF, not in the mail text.
+  for (const part of mapped.pdfAttachments ?? []) {
+    const text = await pdfTextFromPayload(part, accessToken, id);
     if (text) {
-      mapped.body = `${mapped.body ?? ""}\n\n--- Factuurbijlage: ${pdf.filename} ---\n${text}`.trim();
+      mapped.body = `${mapped.body ?? ""}\n\n--- Factuurbijlage: ${part.filename} ---\n${text}`.trim();
+      break;
     }
   }
   return mapped;
