@@ -290,7 +290,6 @@ export function InboxCard({
   const rowOverlap = index >= 2 ? "sm:-mt-6" : "";
   const zIndex = Math.min(2 + index, 39);
   const consequence = item.consequence?.senderSays ?? item.consequence?.possible;
-  const prepared = preparedLabel(item);
   const cta = ctaLabel(item);
   const isScan = item.source === "scan";
   const isNewsletter =
@@ -355,8 +354,7 @@ export function InboxCard({
         ) : null}
 
         <div className={isNewsletter ? "mt-auto w-full" : "w-full"}>
-          <p className="text-[12px] font-medium text-[var(--muted)]">{prepared}</p>
-            <div className="mt-2 flex justify-center">
+            <div className="mt-3 flex justify-center">
               <button
                 type="button"
                 onClick={(event) => {
