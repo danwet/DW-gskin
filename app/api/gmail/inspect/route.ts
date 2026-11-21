@@ -2,6 +2,7 @@ import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { getGmailRefreshToken } from "@/lib/gmail/connection";
 import { refreshGoogleAccessToken } from "@/lib/google-token";
 import { extractPdfTextStrict } from "@/lib/scan/extract";
+import { getSyncProgress, importStep, triageStep } from "@/lib/gmail/sync";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -52,6 +53,26 @@ export async function GET(request: Request) {
   if (!refreshToken) return Response.json({ error: "Geen leesbare Gmail-token op deze omgeving." }, { status: 409 });
   const token = await refreshGoogleAccessToken(refreshToken);
   if (!token) return Response.json({ error: "Token kon niet worden vernieuwd." }, { status: 502 });
+
+  // ?step=import|triage runs exactly one step and reports what happened, which
+  // is the only way to see an error the sync loop swallows.
+  const step = url.searchParams.get("step");
+  if (step === "import" || step === "triage") {
+    const before = await getSyncProgress(user.id);
+    try {
+      const result = step === "import"
+        ? await importStep(user.id, refreshToken)
+        : await triageStep(user.id, user.email);
+      return Response.json({ v: 2, step, before, result, after: await getSyncProgress(user.id) });
+    } catch (error) {
+      return Response.json({
+        v: 2,
+        step,
+        before,
+        thrown: error instanceof Error ? `${error.message}\n${error.stack?.slice(0, 400) ?? ""}` : String(error),
+      });
+    }
+  }
 
   const auth = { Authorization: `Bearer ${token.access_token}` };
   const listResponse = await fetch(
