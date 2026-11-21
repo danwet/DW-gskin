@@ -22,6 +22,7 @@ type ServerSettings = {
     agentStateReady: boolean;
     userStateReady: boolean;
     settingsReady: boolean;
+    scanBucketReady: boolean;
   };
   auth: { secretSet: boolean; url: string | null };
   cronSecret: boolean;
@@ -587,6 +588,7 @@ function ServerSection({
           <Status dot={server?.supabase.settingsReady === true} label="Tabel dw_agent_settings" />
           <Status dot={server?.supabase.agentStateReady === true} label="Tabel dw_agent_state" />
           <Status dot={server?.supabase.userStateReady === true} label="Tabel dw_user_state" />
+          <Status dot={server?.supabase.scanBucketReady === true} label="Bucket voor scans" />
           {server && server.supabase.configured && !server.supabase.agentStateReady ? (
             <p className="pt-1 text-[12px] leading-5 text-[var(--muted)]">
               De tabellen ontbreken. Draai <span className="font-mono">supabase/migrate-nextauth.sql</span> in de

@@ -1,4 +1,4 @@
-import { supabaseProbe } from "@/lib/supabase/kv";
+import { supabaseProbe, supabaseScanBucketReady } from "@/lib/supabase/kv";
 
 export const dynamic = "force-dynamic";
 
@@ -20,5 +20,6 @@ export async function GET() {
       authGoogleSecret: Boolean(process.env.AUTH_GOOGLE_SECRET?.trim()),
     },
     supabase,
+    scanBucketReady: await supabaseScanBucketReady(),
   });
 }

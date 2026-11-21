@@ -87,7 +87,17 @@ export async function supabaseWriteJson(
   return !error;
 }
 
-const SCAN_BUCKET = process.env.SUPABASE_SCAN_BUCKET?.trim() || "scanned-invoices";
+export function scanBucket(): string {
+  return process.env.SUPABASE_SCAN_BUCKET?.trim() || "Scans";
+}
+
+/** True when the scan storage bucket exists and is reachable with the service-role key. */
+export async function supabaseScanBucketReady(): Promise<boolean> {
+  const client = await loadClient();
+  if (!client) return false;
+  const { error } = await client.storage.from(scanBucket()).list("", { limit: 1 });
+  return !error;
+}
 
 export type SupabaseProbe = {
   configured: boolean;
@@ -129,7 +139,7 @@ export async function supabaseProbe(): Promise<SupabaseProbe> {
 export async function supabaseUploadScan(name: string, buffer: Buffer, mime: string): Promise<boolean> {
   const client = await loadClient();
   if (!client) return false;
-  const { error } = await client.storage.from(SCAN_BUCKET).upload(name, buffer, {
+  const { error } = await client.storage.from(scanBucket()).upload(name, buffer, {
     contentType: mime,
     upsert: true,
   });
@@ -140,7 +150,7 @@ export async function supabaseUploadScan(name: string, buffer: Buffer, mime: str
 export async function supabaseDownloadScan(name: string): Promise<Buffer | null> {
   const client = await loadClient();
   if (!client) return null;
-  const { data, error } = await client.storage.from(SCAN_BUCKET).download(name);
+  const { data, error } = await client.storage.from(scanBucket()).download(name);
   if (error || !data) return null;
   const arrayBuffer = await data.arrayBuffer();
   return Buffer.from(arrayBuffer);
