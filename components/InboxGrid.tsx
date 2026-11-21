@@ -1109,6 +1109,9 @@ export function InboxModal({
                   setDeclaration("pending");
                   onDeclare(item, "pending");
                   setShowDeclarePrompt(false);
+                  // Paid and answered: the mail itself is done. runAction closes
+                  // the popup, drops the card and archives it as read.
+                  runAction("archive");
                 }}
                 className="btn-primary focus-ring rounded-full px-4 py-1.5 text-[13px] font-medium"
               >
@@ -1120,6 +1123,7 @@ export function InboxModal({
                   setDeclaration("none");
                   onDeclare(item, "none");
                   setShowDeclarePrompt(false);
+                  runAction("archive");
                 }}
                 className="btn-secondary focus-ring rounded-full px-4 py-1.5 text-[13px] font-medium"
               >

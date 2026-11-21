@@ -61,6 +61,23 @@ export function runGmailAction(refreshToken: string, messageId: string, action: 
     : trashGmailMessage(refreshToken, messageId);
 }
 
+/** A sent reply arrives unread in Sent; clear that immediately. */
+export async function markGmailMessageRead(refreshToken: string, messageId: string): Promise<MailActionResult> {
+  const token = await accessToken(refreshToken);
+  if (!token) return { ok: false, reason: "auth", message: "Gmail-token kon niet worden vernieuwd." };
+
+  const response = await fetch(`${GMAIL_API}/messages/${encodeURIComponent(messageId)}/modify`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ removeLabelIds: ["UNREAD"] }),
+  });
+  if (response.ok) return { ok: true };
+  if (response.status === 403) {
+    return { ok: false, reason: "scope", message: "De koppeling heeft geen schrijfrechten. Koppel Gmail opnieuw." };
+  }
+  return { ok: false, reason: "api", message: `Markeren als gelezen mislukte (${response.status}).` };
+}
+
 /** Puts the message back: the INBOX label for an archive, out of trash otherwise. */
 export async function restoreGmailMessage(
   refreshToken: string,

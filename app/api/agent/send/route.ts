@@ -3,7 +3,7 @@ import { loadAgentConfig } from "@/lib/agent/config";
 import { getGmailRefreshToken } from "@/lib/gmail/connection";
 import { sendGmailReply, type Attachment } from "@/lib/agent/gmail-send";
 import { markArchivedByAgent, markSent, readAssessments, saveDraft } from "@/lib/agent/store";
-import { archiveGmailMessage } from "@/lib/gmail/actions";
+import { archiveGmailMessage, markGmailMessageRead } from "@/lib/gmail/actions";
 import { listStoredMessages } from "@/lib/gmail/store";
 
 export const dynamic = "force-dynamic";
@@ -58,6 +58,9 @@ async function sendReply(request: Request) {
   });
 
   if (result.ok) {
+    // The sent copy shows up as unread in Sent; clear that right away.
+    if (result.id) await markGmailMessageRead(refreshToken, result.id).catch(() => null);
+
     const updated = await markSent(conversationId);
 
     // A replied mail has served its purpose: out of the inbox, marked read.
