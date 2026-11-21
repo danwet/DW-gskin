@@ -1,7 +1,7 @@
 import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { getGmailRefreshToken } from "@/lib/gmail/connection";
 import { refreshGoogleAccessToken } from "@/lib/google-token";
-import { extractTextFromBuffer } from "@/lib/scan/extract";
+import { extractPdfTextStrict } from "@/lib/scan/extract";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -75,30 +75,59 @@ export async function GET(request: Request) {
     const pdf = parts.find((p) => p.mimeType.startsWith("application/pdf") || /\.pdf$/i.test(p.filename));
 
     let pdfText = "";
+    let pdfError: string | null = null;
+    let pdfSource = "none";
+
     if (pdf) {
       const raw = message?.payload as { parts?: unknown[] } | undefined;
-      // find the actual part again to grab its bytes
-      const grab = (node: unknown): string => {
-        if (!node || typeof node !== "object") return "";
-        const part = node as { mimeType?: string; filename?: string; body?: { data?: string }; parts?: unknown[] };
+      // Grab the actual PDF part: inline bytes or an attachmentId.
+      const grab = (node: unknown): { data?: string; attachmentId?: string } => {
+        if (!node || typeof node !== "object") return {};
+        const part = node as {
+          mimeType?: string;
+          filename?: string;
+          body?: { data?: string; attachmentId?: string };
+          parts?: unknown[];
+        };
         if ((part.mimeType ?? "").startsWith("application/pdf") || /\.pdf$/i.test(part.filename ?? "")) {
-          if (part.body?.data) return part.body.data;
+          if (part.body?.data) return { data: part.body.data };
+          if (part.body?.attachmentId) return { attachmentId: part.body.attachmentId };
         }
         for (const child of part.parts ?? []) {
           const found = grab(child);
-          if (found) return found;
+          if (found.data || found.attachmentId) return found;
         }
-        return "";
+        return {};
       };
-      const inline = grab(raw);
-      if (inline) {
+
+      const part = grab(raw);
+      let base64 = part.data ?? "";
+      if (base64) pdfSource = "inline";
+      else if (part.attachmentId) {
+        pdfSource = "attachment";
+        const download = await fetch(
+          `${GMAIL_API}/messages/${entry.id}/attachments/${encodeURIComponent(part.attachmentId)}`,
+          { headers: auth },
+        );
+        if (!download.ok) {
+          pdfError = `download faalde (${download.status})`;
+        } else {
+          const payload = (await download.json().catch(() => null)) as { data?: string } | null;
+          base64 = payload?.data ?? "";
+          if (!base64) pdfError = "download gaf geen data";
+        }
+      } else {
+        pdfError = "geen bytes en geen attachmentId";
+      }
+
+      if (base64) {
         try {
-          pdfText = await extractTextFromBuffer(
-            Buffer.from(inline.replace(/-/g, "+").replace(/_/g, "/"), "base64"),
-            "application/pdf",
+          pdfText = await extractPdfTextStrict(
+            Buffer.from(base64.replace(/-/g, "+").replace(/_/g, "/"), "base64"),
           );
+          if (!pdfText.trim()) pdfError = "extractie gaf lege tekst";
         } catch (error) {
-          pdfText = `EXTRACTIE MISLUKT: ${error instanceof Error ? error.message : "onbekend"}`;
+          pdfError = `extractie mislukt: ${error instanceof Error ? error.message : "onbekend"}`;
         }
       }
     }
@@ -108,6 +137,8 @@ export async function GET(request: Request) {
       snippet: (message?.snippet ?? "").slice(0, 80),
       parts,
       pdfFound: Boolean(pdf),
+      pdfSource,
+      pdfError,
       pdfTextLength: pdfText.length,
       pdfTextStart: pdfText.slice(0, 160).replace(/\s+/g, " "),
     });

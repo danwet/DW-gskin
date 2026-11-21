@@ -168,20 +168,35 @@ function extractConsequence(text: string): string {
 }
 
 /** Extracts readable text from a text-layer PDF; returns "" for images and scanned PDFs (no OCR). */
+/**
+ * Reads the text of a PDF. Throws on failure so a caller can report why; the
+ * serverless runtime is picky about fonts and eval, hence the safe options.
+ */
+export async function extractPdfTextStrict(buffer: Buffer): Promise<string> {
+  const doc = await getDocument({
+    data: new Uint8Array(buffer),
+    disableWorker: true,
+    isEvalSupported: false,
+    disableFontFace: true,
+    useSystemFonts: false,
+  } as unknown as Parameters<typeof getDocument>[0]).promise;
+
+  let text = "";
+  for (let page = 1; page <= doc.numPages; page += 1) {
+    const pageObj = await doc.getPage(page);
+    const content = await pageObj.getTextContent();
+    for (const item of content.items) {
+      if ("str" in item) text += `${item.str}\n`;
+    }
+    text += "\n";
+  }
+  return text;
+}
+
 export async function extractTextFromBuffer(buffer: Buffer, mime: string): Promise<string> {
   if (mime !== "application/pdf") return "";
   try {
-    const doc = await getDocument({ data: new Uint8Array(buffer), disableWorker: true } as unknown as Parameters<typeof getDocument>[0]).promise;
-    let text = "";
-    for (let page = 1; page <= doc.numPages; page += 1) {
-      const pageObj = await doc.getPage(page);
-      const content = await pageObj.getTextContent();
-      for (const item of content.items) {
-        if ("str" in item) text += `${item.str}\n`;
-      }
-      text += "\n";
-    }
-    return text;
+    return await extractPdfTextStrict(buffer);
   } catch {
     return "";
   }
