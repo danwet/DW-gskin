@@ -41,9 +41,12 @@ export async function trashGmailMessage(refreshToken: string, messageId: string)
   const token = await accessToken(refreshToken);
   if (!token) return { ok: false, reason: "auth", message: "Gmail-token kon niet worden vernieuwd." };
 
-  const response = await fetch(`${GMAIL_API}/messages/${encodeURIComponent(messageId)}/trash`, {
+  // One atomic change: into the trash, out of the inbox, and marked as read.
+  // messages.trash alone left the message unread in "Alle mail".
+  const response = await fetch(`${GMAIL_API}/messages/${encodeURIComponent(messageId)}/modify`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ addLabelIds: ["TRASH"], removeLabelIds: ["INBOX", "UNREAD"] }),
   });
   if (response.ok) return { ok: true };
   if (response.status === 403) {
