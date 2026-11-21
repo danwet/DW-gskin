@@ -1,29 +1,29 @@
 const labels: Record<number, string> = {
-  0: "Clear outside",
-  1: "Mostly clear",
-  2: "Partly cloudy",
-  3: "Overcast",
-  45: "Foggy",
-  48: "Foggy",
-  51: "Drizzle",
-  53: "Drizzle",
-  55: "Drizzle",
-  61: "Rain outside",
-  63: "Rain outside",
-  65: "Rain outside",
-  71: "Snow outside",
-  73: "Snow outside",
-  75: "Snow outside",
-  80: "Showers",
-  81: "Showers",
-  82: "Showers",
-  95: "Storms",
-  96: "Storms",
-  99: "Storms",
+  0: "Helder",
+  1: "Vrij helder",
+  2: "Half bewolkt",
+  3: "Bewolkt",
+  45: "Mistig",
+  48: "Mistig",
+  51: "Motregen",
+  53: "Motregen",
+  55: "Motregen",
+  61: "Regen",
+  63: "Regen",
+  65: "Regen",
+  71: "Sneeuw",
+  73: "Sneeuw",
+  75: "Sneeuw",
+  80: "Buien",
+  81: "Buien",
+  82: "Buien",
+  95: "Onweer",
+  96: "Onweer",
+  99: "Onweer",
 };
 
 export function conditionLabel(code: number): string {
-  return labels[code] ?? "Outside now";
+  return labels[code] ?? "Weer";
 }
 
 export function toFahrenheit(celsius: number): number {
