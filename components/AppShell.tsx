@@ -9,6 +9,7 @@ import { DraftDialog } from "./DraftDialog";
 import { LoopPreview } from "./LoopPreview";
 import { PaymentModal } from "./PaymentModal";
 import { SettingsDialog } from "./SettingsDialog";
+import { BrandMark } from "./BrandMark";
 
 const NAV = [
   { href: "/", label: "Focus", icon: "home" as const },
@@ -203,12 +204,7 @@ function SidebarContent({
             <PanelIcon />
           </button>
         </div>
-        <div className="mt-2 px-1">
-          <img src="/dw-mark.png" alt="DW" className="h-auto w-full dark:invert" />
-          <p className="mt-1.5 pl-[0.7em] text-center text-[10px] font-light uppercase tracking-[0.7em] text-[var(--muted)]">
-            GSKIN
-          </p>
-        </div>
+        <BrandMark className="mt-2 px-1" />
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-5">

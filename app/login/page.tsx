@@ -1,6 +1,7 @@
 import { auth, GOOGLE_CALLBACK_PATH, googleAuthConfigured } from "@/auth";
 import { redirect } from "next/navigation";
 import { signInWithGoogle } from "./actions";
+import { BrandMark } from "@/components/BrandMark";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +25,8 @@ export default async function LoginPage({
   return (
     <main className="grid min-h-screen place-items-center px-4 py-10">
       <div className="w-full max-w-[480px] rounded-[22px] border border-[var(--line)] bg-[var(--card)] p-8 shadow-[var(--shadow)]">
-        <img src="/dw-mark.png" alt="DW" className="h-auto w-40 dark:invert" />
-        <p className="mt-6 text-[12px] font-medium tracking-[0.16em] text-[var(--muted)]">DASHBOARD</p>
-        <h1 className="mt-2 text-[32px] font-semibold tracking-[-0.04em]">
+        <BrandMark className="w-40" />
+        <h1 className="mt-8 text-[32px] font-semibold tracking-[-0.04em]">
           {configured ? "Sign in" : "Set up sign-in"}
         </h1>
         <p className="mt-2 text-[15px] leading-6 text-[var(--muted)]">
