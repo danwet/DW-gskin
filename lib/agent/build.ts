@@ -2,6 +2,7 @@ import type { AssessmentDraft } from "./classify";
 import type { InboundMessage, MailAssessment } from "./types";
 import { detectUnsubscribe } from "./unsubscribe";
 import { detectShipment } from "./shipment";
+import { isValidIban } from "../epc";
 
 /** The text that came out of a PDF attachment, if the mail carried one. */
 export function extractAttachmentText(body?: string): string {
@@ -31,6 +32,18 @@ export function amountFromInvoiceText(text: string): number | null {
     .map((match) => toNumber(match[1]))
     .filter((value): value is number => value !== null);
   return all.length > 0 ? Math.max(...all) : null;
+}
+
+/**
+ * The account to pay, taken from the attachment. Masked numbers (NL04KNAB****)
+ * never match, so the customer's own account cannot win by accident.
+ */
+export function ibanFromInvoiceText(text: string): string | null {
+  const candidates = text.match(/\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/g) ?? [];
+  for (const candidate of candidates) {
+    if (isValidIban(candidate)) return candidate.toUpperCase();
+  }
+  return null;
 }
 
 /** Subjects always start with a capital letter. */
@@ -112,6 +125,7 @@ export function buildAssessment(
   // it when the PDF splits the currency symbol from the number.
   const attachmentText = extractAttachmentText(latest.body);
   const attachmentAmount = attachmentText ? amountFromInvoiceText(attachmentText) : null;
+  const attachmentIban = attachmentText ? ibanFromInvoiceText(attachmentText) : null;
 
   const invoice = draft.invoice
     ? {
@@ -119,7 +133,7 @@ export function buildAssessment(
         invoiceNumber: draft.invoice.invoiceNumber || undefined,
         amount: draft.invoice.amount ?? attachmentAmount ?? undefined,
         currency: draft.invoice.currency || undefined,
-        iban: draft.invoice.iban || undefined,
+        iban: draft.invoice.iban || attachmentIban || undefined,
         dueDate: draft.invoice.dueDate ?? undefined,
         paymentStatus: draft.invoice.paymentStatus,
         paymentAdvice: draft.invoice.paymentAdvice || undefined,
