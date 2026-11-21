@@ -161,6 +161,9 @@ html,
 body {
   min-height: 100%;
   background-color: var(--page);
+  /* The window itself never rubber-bands, so the sidebar never moves with it.
+     The content column bounces on its own. */
+  overscroll-behavior: none;
 }
 
 body {
