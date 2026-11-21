@@ -81,7 +81,7 @@ try {
   const inv100 = map["thread-inv-100"];
   assert.equal(urgencyFor(inv100, now, "Europe/Amsterdam").tone, "orange");
   assert.equal(urgencyFor(inv100, nowPlus1, "Europe/Amsterdam").tone, "red");
-  assert.equal(urgencyFor(map["thread-info-1"], now, "Europe/Amsterdam").tone, "grey");
+  assert.equal(urgencyFor(map["thread-info-1"], now, "Europe/Amsterdam").tone, "blue", "info mail reads as information");
   assert.equal(urgencyFor(map["thread-inv-030"], now, "Europe/Amsterdam").tone, "red", "overdue invoice is red");
 
   // --- Run 2 (same messages): no duplicate cards ---
