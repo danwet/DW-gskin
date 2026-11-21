@@ -107,6 +107,9 @@ export async function importStep(userId: string, refreshToken: string): Promise<
     await updateImportState(userId, {
       importedCount: state.importedCount + saved.newMessages,
       importedThreads: state.importedThreads + saved.newThreads,
+      // New mail still has to be judged: report triaging so the progress bar
+      // shows it instead of looking idle.
+      phase: saved.newMessages > 0 ? "triaging" : state.phase,
       lastError: null,
     });
     return { ok: true, step: "import", processed: saved.newMessages, progress: await readProgress(userId) };

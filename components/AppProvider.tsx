@@ -362,6 +362,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // The spinner is a short acknowledgement: it stops after a few seconds while
     // the actual sync keeps running in the background.
     const spinnerTimer = setTimeout(() => setRefreshing(false), 3000);
+    // Follow the run while it happens: the cheap progress endpoint feeds the
+    // sidebar bar, which otherwise only updates after everything is done.
+    const progressPoll = setInterval(async () => {
+      try {
+        const response = await fetch("/api/gmail/import", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = (await response.json()) as { progress?: SyncProgressView | null };
+        if (data.progress) setSyncProgress(data.progress);
+      } catch {
+        // Polling is best effort.
+      }
+    }, 1200);
     try {
       await flushSave();
       // Run the mail agent too, so the button is a real sync (incremental).
@@ -388,10 +400,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       held.cancel();
     } finally {
       clearTimeout(spinnerTimer);
+      clearInterval(progressPoll);
       setRefreshing(false);
       setHeldSnoozes(new Set());
     }
-  }, [applyWorkspace, flushSave]);
+  }, [applyWorkspace, flushSave, setSyncProgress]);
 
   // Opening the dashboard after a while syncs Gmail in the background, so
   // archived and deleted mail disappears without pressing anything.
