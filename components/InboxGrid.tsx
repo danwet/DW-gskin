@@ -420,7 +420,7 @@ export function InboxCard({
           </div>
         ) : null}
 
-        {!isNewsletter ? (
+        {!isNewsletter && urgency.deadlineValue != null ? (
           <div className="flex w-full flex-col items-center gap-1">
             <p className="translate-y-[7px] text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">Uiterste datum:</p>
             <p className={`tnum text-[13px] font-medium ${deadlineClass(urgency)}`}>{urgency.deadlineText}</p>
