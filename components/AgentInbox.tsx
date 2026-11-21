@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { generateEPCQRString, isValidIban } from "@/lib/epc";
 import { orderNewestFirst, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
@@ -89,7 +89,7 @@ function formatDate(iso: string | undefined): string {
 }
 
 export function useInbox() {
-  const { syncNonce, setSyncProgress } = useApp();
+  const { syncNonce, setSyncProgress, setTopBar } = useApp();
   const [items, setItems] = useState<MailAssessment[]>([]);
   const [pending, setPending] = useState<PendingMessage[]>([]);
   const [progress, setProgress] = useState<InboxProgress | null>(null);
@@ -256,6 +256,24 @@ export function useInbox() {
   const removeItem = useCallback((conversationId: string) => {
     setItems((current) => current.filter((entry) => entry.conversationId !== conversationId));
   }, []);
+
+  // Publish the header data once, with stable callbacks: the shell renders it
+  // so the cluster sits in the same place on every page.
+  const handlersRef = useRef({ undo, toggleHandled, declareInvoice });
+  handlersRef.current = { undo, toggleHandled, declareInvoice };
+
+  useEffect(() => {
+    setTopBar({
+      missedItems: items.filter((item) => item.classification === "unclassified"),
+      undoable,
+      lastSyncAt: meta?.lastRunAt ?? null,
+      undo: () => handlersRef.current.undo(),
+      onToggleHandled: (item) => handlersRef.current.toggleHandled(item),
+      onDeclare: (item, declaration) => handlersRef.current.declareInvoice(item, declaration),
+    });
+  }, [items, undoable, meta?.lastRunAt, setTopBar]);
+
+  useEffect(() => () => setTopBar(null), [setTopBar]);
 
   return { items, pending, progress, meta, model, gmail, undoable, undo, notice, setNotice, loading, error, reload, removeItem, toggleHandled, snoozeItem, declareInvoice, saveItem };
 }

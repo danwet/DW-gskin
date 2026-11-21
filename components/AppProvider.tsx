@@ -12,6 +12,7 @@ import {
 } from "react";
 import { briefInFlight, holdBrief } from "@/lib/brief-flight";
 import { emptyBrief } from "@/lib/empty-brief";
+import type { TopBarState } from "@/lib/top-bar";
 import { applyThursdayHold, HOLD_LOOP_ID, resolveHoldChecks, saveHoldChoice } from "@/lib/thursday-hold";
 import {
   clearLegacyUserState,
@@ -49,6 +50,9 @@ type AppContextValue = {
   /** Live Gmail import progress, shown in the sidebar. */
   syncProgress: SyncProgressView | null;
   setSyncProgress: (value: SyncProgressView | null) => void;
+  /** Header cluster published by whichever page owns the inbox. */
+  topBar: TopBarState | null;
+  setTopBar: (value: TopBarState | null) => void;
   refresh: () => Promise<void>;
   weather: WeatherNow | null;
   weatherError: string | null;
@@ -115,6 +119,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [refreshing, setRefreshing] = useState(() => briefInFlight());
   const [syncNonce, setSyncNonce] = useState(0);
   const [syncProgress, setSyncProgress] = useState<SyncProgressView | null>(null);
+  const [topBar, setTopBar] = useState<TopBarState | null>(null);
   const [sourceBrief, setSourceBrief] = useState<Brief>(emptyBrief());
   const [account, setAccount] = useState<Account | null>(null);
   const [calendarError, setCalendarError] = useState<string | null>(null);
@@ -610,6 +615,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     syncNonce,
     syncProgress,
     setSyncProgress,
+    topBar,
+    setTopBar,
     refresh,
     weather,
     weatherError,

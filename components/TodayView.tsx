@@ -150,14 +150,7 @@ export function TodayView() {
           </div>
         ) : null}
       <GmailNotice />
-      <TodayHeader
-        missedItems={missedItems}
-        lastSyncAt={inbox.meta?.lastRunAt ?? null}
-        onToggleHandled={inbox.toggleHandled}
-        onDeclare={inbox.declareInvoice}
-        undoable={inbox.undoable}
-        onUndo={() => void inbox.undo()}
-      />
+      <TodayHeader />
       <div className="mt-8 grid gap-0 lg:grid-cols-3 lg:gap-8">
         <div className="lg:col-span-2">
           <div className="mx-auto w-full max-w-[680px] space-y-6">

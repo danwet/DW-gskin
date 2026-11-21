@@ -49,7 +49,7 @@ export function BewarenView() {
           {groups.map((group) => (
             <section key={group.key}>
               <h2 className="mb-4 text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)] capitalize">{group.label}</h2>
-              <div className="grid gap-x-3 gap-y-0 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {group.items.map((item, index) => (
                   <InboxCard
                     key={item.conversationId}
@@ -59,6 +59,7 @@ export function BewarenView() {
                     timeZone={timeZone}
                     onDeclare={inbox.declareInvoice}
                     onClick={() => setSelected(item)}
+                    flat
                   />
                 ))}
               </div>

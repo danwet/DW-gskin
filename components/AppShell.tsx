@@ -10,6 +10,7 @@ import { LoopPreview } from "./LoopPreview";
 import { PaymentModal } from "./PaymentModal";
 import { SettingsDialog } from "./SettingsDialog";
 import { BrandMark } from "./BrandMark";
+import { TopBar } from "./TopBar";
 
 const NAV = [
   { href: "/", label: "Focus", icon: "home" as const },
@@ -160,7 +161,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </aside>
       ) : null}
 
-      <main className="min-w-0 flex-1">{children}</main>
+      <main className="min-w-0 flex-1">
+        {/* Same spot on every page, aligned to the content column. */}
+        <div className="mx-auto flex w-full max-w-[1180px] justify-end px-6 pt-6 sm:px-8">
+          <TopBar />
+        </div>
+        {children}
+      </main>
 
       <SettingsDialog />
       <DraftDialog />

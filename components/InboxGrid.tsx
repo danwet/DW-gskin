@@ -345,6 +345,7 @@ export function InboxCard({
   onDeclare,
   onClick,
   onTrash,
+  flat,
 }: {
   item: MailAssessment;
   index: number;
@@ -353,12 +354,14 @@ export function InboxCard({
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
   onClick: () => void;
   onTrash?: () => void;
+  /** Straight, non-overlapping card for multi-column overviews. */
+  flat?: boolean;
 }) {
   const urgency = urgencyFor(item, now, timeZone);
   const tilts = ["rotate-[2.5deg]", "-rotate-[1.5deg]", "-rotate-[3deg]", "rotate-[2deg]"];
-  const tilt = tilts[index % tilts.length];
-  const overlap = index % 2 === 1 ? (index % 4 === 3 ? "sm:-ml-8" : "sm:-ml-4") : "";
-  const rowOverlap = index >= 2 ? "sm:-mt-6" : "";
+  const tilt = flat ? "" : tilts[index % tilts.length];
+  const overlap = flat ? "" : index % 2 === 1 ? (index % 4 === 3 ? "sm:-ml-8" : "sm:-ml-4") : "";
+  const rowOverlap = flat ? "" : index >= 2 ? "sm:-mt-6" : "";
   const zIndex = Math.min(2 + index, 39);
   const consequence = item.consequence?.senderSays ?? item.consequence?.possible;
   const cta = ctaLabel(item);
@@ -911,6 +914,8 @@ export function InboxModal({
                   const next = !saved;
                   setSaved(next);
                   onSave?.(item, next);
+                  // Saving moves the mail out of Focus, so the popup can go.
+                  if (next) onClose();
                 }}
                 className="btn-secondary focus-ring ml-auto rounded-full px-4 py-2 text-[13px] font-medium"
               >
@@ -1035,6 +1040,8 @@ export function InboxModal({
                 const next = !saved;
                 setSaved(next);
                 onSave(item, next);
+                // Saving moves the mail out of Focus, so the popup can go.
+                if (next) onClose();
               }}
               className="btn-secondary focus-ring ml-auto rounded-full px-4 py-2 text-[13px] font-medium"
             >
