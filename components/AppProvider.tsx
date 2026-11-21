@@ -361,7 +361,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setRefreshing(true);
     // The spinner is a short acknowledgement: it stops after a few seconds while
     // the actual sync keeps running in the background.
-    const spinnerTimer = setTimeout(() => setRefreshing(false), 4000);
+    const spinnerTimer = setTimeout(() => setRefreshing(false), 3000);
     try {
       await flushSave();
       // Run the mail agent too, so the button is a real sync (incremental).
