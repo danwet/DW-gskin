@@ -52,7 +52,6 @@ export function BewarenView() {
                     index={index}
                     now={now}
                     timeZone={timeZone}
-                    onSnooze={inbox.snoozeItem}
                     onDeclare={inbox.declareInvoice}
                     onClick={() => setSelected(item)}
                   />
@@ -71,6 +70,7 @@ export function BewarenView() {
           onClose={() => setSelected(null)}
           onToggleHandled={inbox.toggleHandled}
           onDeclare={inbox.declareInvoice}
+          onSnooze={inbox.snoozeItem}
           onSave={inbox.saveItem}
         />
       ) : null}

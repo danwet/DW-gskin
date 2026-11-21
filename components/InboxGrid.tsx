@@ -146,7 +146,6 @@ export function InboxGrid({
           items={activeCards}
           now={now}
           timeZone={timeZone}
-          onSnooze={onSnooze}
           onDeclare={onDeclare}
           onOpen={(item) => setSelected(item)}
         />
@@ -160,6 +159,7 @@ export function InboxGrid({
           onClose={() => setSelected(null)}
           onToggleHandled={onToggleHandled}
           onDeclare={onDeclare}
+          onSnooze={onSnooze}
           onSave={onSave}
           onOpenProposal={(id) => {
             setSelected(null);
@@ -177,14 +177,12 @@ function CardGrid({
   items,
   now,
   timeZone,
-  onSnooze,
   onDeclare,
   onOpen,
 }: {
   items: MailAssessment[];
   now: Date;
   timeZone: string;
-  onSnooze: (item: MailAssessment, until: string) => void;
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
   onOpen: (item: MailAssessment) => void;
 }) {
@@ -197,7 +195,6 @@ function CardGrid({
           index={index}
           now={now}
           timeZone={timeZone}
-          onSnooze={onSnooze}
           onDeclare={onDeclare}
           onClick={() => onOpen(item)}
         />
@@ -261,7 +258,6 @@ export function InboxCard({
   index,
   now,
   timeZone,
-  onSnooze,
   onDeclare,
   onClick,
 }: {
@@ -269,7 +265,6 @@ export function InboxCard({
   index: number;
   now: Date;
   timeZone: string;
-  onSnooze: (item: MailAssessment, until: string) => void;
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
   onClick: () => void;
 }) {
@@ -359,19 +354,6 @@ export function InboxCard({
               >
                 {cta}
               </button>
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  const until = new Date();
-                  until.setDate(until.getDate() + 1);
-                  until.setHours(0, 0, 0, 0);
-                  onSnooze(item, until.toISOString());
-                }}
-                className="btn-secondary focus-ring shrink-0 rounded-full px-3 py-2 text-[13px] font-medium"
-              >
-                Snooze
-              </button>
             </div>
           </div>
       </div>
@@ -406,6 +388,7 @@ export function InboxModal({
   onClose,
   onToggleHandled,
   onDeclare,
+  onSnooze,
   onSave,
   onOpenProposal,
 }: {
@@ -415,6 +398,7 @@ export function InboxModal({
   onClose: () => void;
   onToggleHandled: (item: MailAssessment) => void;
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
+  onSnooze?: (item: MailAssessment, until: string) => void;
   onSave?: (item: MailAssessment, saved: boolean) => void;
   onOpenProposal?: (id: string) => void;
 }) {
@@ -482,6 +466,15 @@ export function InboxModal({
   // the reply proposal and records the decision instead.
   const openReplyProposal = () => {
     if (item.proposal && onOpenProposal) onOpenProposal(item.proposal.id);
+  };
+
+  const snoozeTomorrow = () => {
+    if (!onSnooze) return;
+    const until = new Date();
+    until.setDate(until.getDate() + 1);
+    until.setHours(0, 0, 0, 0);
+    onSnooze(item, until.toISOString());
+    onClose();
   };
 
   return (
@@ -771,6 +764,15 @@ export function InboxModal({
               {handled ? "Ongedaan maken" : doneLabel}
             </button>
           )}
+          {onSnooze ? (
+            <button
+              type="button"
+              onClick={snoozeTomorrow}
+              className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+            >
+              Snooze
+            </button>
+          ) : null}
           {unsub ? (
             <button
               type="button"
