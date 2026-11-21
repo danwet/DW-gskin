@@ -156,6 +156,35 @@ export function restoreAssessment(item: MailAssessment): Promise<void> {
   });
 }
 
+export function applyArchiveCleanup(opts: {
+  conversationId: string;
+  action: "archive" | "trash";
+  messageIds: string[];
+  assessment: MailAssessment;
+}): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+
+    // Undo snapshot, so the action can be reversed later.
+    state.meta.lastAction = {
+      conversationId: opts.conversationId,
+      action: opts.action,
+      messageIds: opts.messageIds,
+      assessment: opts.assessment,
+      at: new Date().toISOString(),
+    };
+
+    // Drop this card and every other card that points at the same messages.
+    const targets = new Set<string>([opts.conversationId]);
+    for (const [key, item] of Object.entries(state.assessments)) {
+      if (item.sourceMessageId && opts.messageIds.includes(item.sourceMessageId)) targets.add(key);
+    }
+    for (const key of targets) delete state.assessments[key];
+
+    await writeState(state);
+  });
+}
+
 export function removeAssessments(conversationIds: string[]): Promise<void> {
   if (conversationIds.length === 0) return Promise.resolve();
   return withLock(async () => {

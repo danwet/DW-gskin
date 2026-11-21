@@ -126,6 +126,11 @@ export function TodayView() {
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-7 sm:px-8 sm:py-8 md:pt-14 md:pb-14">
+        {inbox.notice ? (
+          <div className="glass-float fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-2xl px-4 py-2.5 text-[13px] text-[var(--ink)]">
+            {inbox.notice}
+          </div>
+        ) : null}
       <GmailNotice />
       <TodayHeader
         missedItems={missedItems}
@@ -150,6 +155,7 @@ export function TodayView() {
               onSave={inbox.saveItem}
               onReload={inbox.reload}
               onRemove={inbox.removeItem}
+              onError={inbox.setNotice}
             />
 
             <LegacyLoopsCard />

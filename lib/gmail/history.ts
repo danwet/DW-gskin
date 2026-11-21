@@ -109,55 +109,59 @@ export async function reconcileGmailHistory(
   const meta = await readMeta();
   const start = meta.gmailHistoryId?.trim() || null;
 
-  // First contact: remember the cursor and stop.
-  if (!start) {
-    if (current) await updateMeta({ gmailHistoryId: current });
-    return { removed: 0, reset: true };
-  }
-
-  const history = await listGmailHistory(token.access_token, start);
-
-  if (!history.ok && history.stale) {
-    const removed = await pruneMissing(userId, token.access_token);
-    if (current) await updateMeta({ gmailHistoryId: current });
-    return { removed, reset: true };
-  }
-  if (!history.ok) return { removed: 0, reset: false };
-
-  const gone = new Set<string>();
-  const backInInbox = new Set<string>();
-
-  for (const record of history.records) {
-    for (const entry of record.messagesDeleted ?? []) {
-      if (entry.message?.id) gone.add(entry.message.id);
-    }
-    for (const entry of record.labelsRemoved ?? []) {
-      if (entry.message?.id && (entry.labelIds ?? []).includes("INBOX")) gone.add(entry.message.id);
-    }
-    for (const entry of (record as { labelsAdded?: { message?: { id?: string }; labelIds?: string[] }[] }).labelsAdded ?? []) {
-      if (entry.message?.id && (entry.labelIds ?? []).includes("INBOX")) backInInbox.add(entry.message.id);
-    }
-  }
-
   let removed = 0;
-  if (gone.size > 0) {
-    const emptied = await purgeMessages(userId, [...gone]);
-    await removeAssessments(emptied);
-    removed = gone.size;
-  }
+  let reset = !start;
 
-  // Mail that returned to the inbox is fetched again so it can be triaged.
-  if (backInInbox.size > 0) {
-    const existing = new Set((await listStoredMessages(userId)).map((row) => row.message_id));
-    const fresh: Awaited<ReturnType<typeof fetchGmailMessage>>[] = [];
-    for (const id of backInInbox) {
-      if (existing.has(id)) continue;
-      fresh.push(await fetchGmailMessage(token.access_token, id));
+  // History-based pass: precise, and also handles mail that came back.
+  if (start) {
+    const history = await listGmailHistory(token.access_token, start);
+    if (history.ok) {
+      const gone = new Set<string>();
+      const backInInbox = new Set<string>();
+
+      for (const record of history.records) {
+        for (const entry of record.messagesDeleted ?? []) {
+          if (entry.message?.id) gone.add(entry.message.id);
+        }
+        for (const entry of record.labelsRemoved ?? []) {
+          if (entry.message?.id && (entry.labelIds ?? []).includes("INBOX")) gone.add(entry.message.id);
+        }
+        for (const entry of (record as { labelsAdded?: { message?: { id?: string }; labelIds?: string[] }[] }).labelsAdded ?? []) {
+          if (entry.message?.id && (entry.labelIds ?? []).includes("INBOX")) backInInbox.add(entry.message.id);
+        }
+      }
+
+      if (gone.size > 0) {
+        const emptied = await purgeMessages(userId, [...gone]);
+        await removeAssessments(emptied);
+        removed += gone.size;
+      }
+
+      if (backInInbox.size > 0) {
+        const existing = new Set((await listStoredMessages(userId)).map((row) => row.message_id));
+        const fresh: Awaited<ReturnType<typeof fetchGmailMessage>>[] = [];
+        for (const id of backInInbox) {
+          if (existing.has(id)) continue;
+          fresh.push(await fetchGmailMessage(token.access_token, id));
+        }
+        const messages = fresh.filter((message): message is NonNullable<typeof message> => Boolean(message));
+        if (messages.length > 0) await saveMessages(userId, messages);
+      }
+
+      await updateMeta({ gmailHistoryId: history.historyId ?? current ?? start });
+    } else if (history.stale) {
+      reset = true;
     }
-    const messages = fresh.filter((message): message is NonNullable<typeof message> => Boolean(message));
-    if (messages.length > 0) await saveMessages(userId, messages);
   }
 
-  await updateMeta({ gmailHistoryId: history.historyId ?? current ?? start });
-  return { removed, reset: false };
+  // Safety net: a full compare against the live inbox, so an archived or
+  // deleted mail never survives in the overview, whatever the history said.
+  removed += await pruneMissing(userId, token.access_token);
+
+  // Persist a baseline cursor for the next run.
+  if (current && reset) {
+    await updateMeta({ gmailHistoryId: current });
+  }
+
+  return { removed, reset };
 }

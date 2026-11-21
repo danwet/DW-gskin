@@ -25,6 +25,7 @@ export function InboxGrid({
   onSave,
   onReload,
   onRemove,
+  onError,
 }: {
   items: MailAssessment[];
   infoItems: MailAssessment[];
@@ -37,8 +38,31 @@ export function InboxGrid({
   onSave: (item: MailAssessment, saved: boolean) => void;
   onReload?: () => void;
   onRemove?: (conversationId: string) => void;
+  onError?: (message: string) => void;
 }) {
   const [selected, setSelected] = useState<MailAssessment | null>(null);
+
+  // Trash straight from the card, without opening it.
+  const trashFromCard = (item: MailAssessment) => {
+    onRemove?.(item.conversationId);
+    void (async () => {
+      try {
+        const response = await fetch("/api/gmail/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conversationId: item.conversationId, action: "trash" }),
+        });
+        if (!response.ok) {
+          const data = (await response.json().catch(() => null)) as { error?: string } | null;
+          onError?.(data?.error ?? "Verwijderen mislukt.");
+          onReload?.();
+        }
+      } catch {
+        onError?.("Verwijderen mislukt: geen verbinding.");
+        onReload?.();
+      }
+    })();
+  };
   const [activeTab, setActiveTab] = useState<"urgent" | "later" | "info" | "declare">("urgent");
   const [proposalId, setProposalId] = useState<string | null>(null);
   const [clock, setClock] = useState(() => new Date());
@@ -161,6 +185,7 @@ export function InboxGrid({
           timeZone={timeZone}
           onDeclare={onDeclare}
           onOpen={(item) => setSelected(item)}
+          onTrash={trashFromCard}
         />
       )}
 
@@ -180,6 +205,7 @@ export function InboxGrid({
           }}
           onRemove={onRemove}
           onReload={onReload}
+          onError={onError}
         />
       ) : null}
 
@@ -194,12 +220,14 @@ function CardGrid({
   timeZone,
   onDeclare,
   onOpen,
+  onTrash,
 }: {
   items: MailAssessment[];
   now: Date;
   timeZone: string;
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
   onOpen: (item: MailAssessment) => void;
+  onTrash?: (item: MailAssessment) => void;
 }) {
   return (
     <div className="grid gap-x-3 gap-y-0 sm:grid-cols-2">
@@ -212,6 +240,7 @@ function CardGrid({
           timeZone={timeZone}
           onDeclare={onDeclare}
           onClick={() => onOpen(item)}
+          onTrash={onTrash ? () => onTrash(item) : undefined}
         />
       ))}
     </div>
@@ -306,6 +335,7 @@ export function InboxCard({
   timeZone,
   onDeclare,
   onClick,
+  onTrash,
 }: {
   item: MailAssessment;
   index: number;
@@ -313,6 +343,7 @@ export function InboxCard({
   timeZone: string;
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
   onClick: () => void;
+  onTrash?: () => void;
 }) {
   const urgency = urgencyFor(item, now, timeZone);
   const tilts = ["rotate-[2.5deg]", "-rotate-[1.5deg]", "-rotate-[3deg]", "rotate-[2deg]"];
@@ -386,7 +417,7 @@ export function InboxCard({
         ) : null}
 
         <div className={isNewsletter ? "mt-auto w-full" : "w-full"}>
-            <div className="mt-3 flex justify-center">
+            <div className="mt-3 flex items-center justify-center gap-2">
               <button
                 type="button"
                 onClick={(event) => {
@@ -399,10 +430,45 @@ export function InboxCard({
               >
                 {cta}
               </button>
+              {isNewsletter && onTrash ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onTrash();
+                  }}
+                  aria-label="Naar de prullenbak"
+                  title="Naar de prullenbak"
+                  className="glass-chip focus-ring grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full text-[var(--muted)] hover:text-[var(--danger)]"
+                >
+                  <TrashIcon />
+                </button>
+              ) : null}
             </div>
           </div>
       </div>
     </div>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6" />
+      <path d="M18.5 6 17.6 19a1.7 1.7 0 0 1-1.7 1.6H8.1A1.7 1.7 0 0 1 6.4 19L5.5 6" />
+      <path d="M10 10.5v6M14 10.5v6" />
+    </svg>
   );
 }
 
@@ -438,6 +504,7 @@ export function InboxModal({
   onOpenProposal,
   onRemove,
   onReload,
+  onError,
 }: {
   item: MailAssessment;
   now: Date;
@@ -450,6 +517,7 @@ export function InboxModal({
   onOpenProposal?: (id: string) => void;
   onRemove?: (conversationId: string) => void;
   onReload?: () => void;
+  onError?: (message: string) => void;
 }) {
   const urgency = urgencyFor(item, now, timeZone);
   const [handled, setHandled] = useState(item.handledByUser === true);
@@ -551,9 +619,14 @@ export function InboxModal({
       onRemove?.(item.conversationId);
       try {
         const response = await request;
-        // If Gmail refused, bring the card back so the state stays honest.
-        if (!response.ok) onReload?.();
+        if (!response.ok) {
+          // Bring the card back and say why, instead of failing silently.
+          const data = (await response.json().catch(() => null)) as { error?: string } | null;
+          onError?.(data?.error ?? "Actie mislukt.");
+          onReload?.();
+        }
       } catch {
+        onError?.("Actie mislukt: geen verbinding.");
         onReload?.();
       }
     })();

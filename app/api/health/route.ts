@@ -20,6 +20,7 @@ export async function GET(request: Request) {
       authSecret: Boolean(process.env.AUTH_SECRET?.trim()),
       authGoogleId: Boolean(process.env.AUTH_GOOGLE_ID?.trim()),
       authGoogleSecret: Boolean(process.env.AUTH_GOOGLE_SECRET?.trim()),
+      gmailTokenSecret: Boolean(process.env.GMAIL_TOKEN_SECRET?.trim()),
     },
     supabase,
     scanBucketReady: await supabaseScanBucketReady(),

@@ -20,8 +20,15 @@ export async function POST() {
 
   const connection = await resolveGmailConnection(user.id, user.email).catch(() => null);
   const refreshToken = await getGmailRefreshToken(user.id);
-  if (!connection || !refreshToken) {
+  if (!connection) {
     return Response.json({ error: "Gmail is niet gekoppeld." }, { status: 400 });
+  }
+  if (!refreshToken) {
+    // The row exists but the token cannot be decrypted here (wrong secret).
+    return Response.json(
+      { error: "De Gmail-koppeling kon niet worden gelezen. Koppel opnieuw bij Instellingen → Verbindingen." },
+      { status: 409 },
+    );
   }
 
   for (const id of last.messageIds) {

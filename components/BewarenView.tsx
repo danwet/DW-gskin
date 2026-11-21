@@ -27,6 +27,11 @@ export function BewarenView() {
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 py-7 sm:px-8 sm:py-8 md:pt-14 md:pb-14">
+        {inbox.notice ? (
+          <div className="glass-float fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-2xl px-4 py-2.5 text-[13px] text-[var(--ink)]">
+            {inbox.notice}
+          </div>
+        ) : null}
       <header className="mb-8">
         <p className="text-[11px] font-medium tracking-[0.16em] text-[var(--muted)] uppercase">Bewaren</p>
         <h1 className="mt-1 text-[30px] font-bold tracking-[-0.03em] text-[var(--ink)]">Bewaren</h1>
@@ -74,6 +79,7 @@ export function BewarenView() {
           onSave={inbox.saveItem}
           onReload={inbox.reload}
           onRemove={inbox.removeItem}
+          onError={inbox.setNotice}
         />
       ) : null}
     </div>

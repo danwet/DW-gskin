@@ -93,6 +93,7 @@ export function useInbox() {
   const [progress, setProgress] = useState<InboxProgress | null>(null);
   const [gmail, setGmail] = useState<{ email: string; status: string } | null>(null);
   const [undoable, setUndoable] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [meta, setMeta] = useState<AgentMeta | null>(null);
   const [model, setModel] = useState("rule");
   const [loading, setLoading] = useState(true);
@@ -235,6 +236,12 @@ export function useInbox() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), 6000);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
   const undo = useCallback(async () => {
     try {
       const response = await fetch("/api/gmail/undo", { method: "POST" });
@@ -248,7 +255,7 @@ export function useInbox() {
     setItems((current) => current.filter((entry) => entry.conversationId !== conversationId));
   }, []);
 
-  return { items, pending, progress, meta, model, gmail, undoable, undo, loading, error, reload, removeItem, toggleHandled, snoozeItem, declareInvoice, saveItem };
+  return { items, pending, progress, meta, model, gmail, undoable, undo, notice, setNotice, loading, error, reload, removeItem, toggleHandled, snoozeItem, declareInvoice, saveItem };
 }
 
 export function InboxListCard({

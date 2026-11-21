@@ -2,7 +2,7 @@ import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { getGmailRefreshToken, resolveGmailConnection } from "@/lib/gmail/connection";
 import { runGmailAction, type MailAction } from "@/lib/gmail/actions";
 import { listStoredMessages, purgeMessages } from "@/lib/gmail/store";
-import { readAssessments, removeAssessments, updateMeta } from "@/lib/agent/store";
+import { applyArchiveCleanup, readAssessments, removeAssessments } from "@/lib/agent/store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -24,8 +24,15 @@ export async function POST(request: Request) {
 
   const connection = await resolveGmailConnection(user.id, user.email).catch(() => null);
   const refreshToken = await getGmailRefreshToken(user.id);
-  if (!connection || !refreshToken) {
+  if (!connection) {
     return Response.json({ error: "Gmail is niet gekoppeld." }, { status: 400 });
+  }
+  if (!refreshToken) {
+    // The row exists but the token cannot be decrypted here (wrong secret).
+    return Response.json(
+      { error: "De Gmail-koppeling kon niet worden gelezen. Koppel opnieuw bij Instellingen → Verbindingen." },
+      { status: 409 },
+    );
   }
 
   const stored = (await listStoredMessages(user.id)).filter((row) => row.thread_id === conversationId);
@@ -50,22 +57,21 @@ export async function POST(request: Request) {
     }
   }
 
-  // Keep a snapshot first, so the actie terug te zetten is.
-  if (assessment) {
-    await updateMeta({
-      lastAction: {
-        conversationId,
-        action,
-        messageIds: ids,
-        assessment,
-        at: new Date().toISOString(),
-      },
-    });
+  // Gmail is now changed. Everything below is bookkeeping: if that fails the
+  // request must still report success, because the mail really is archived.
+  let cleanupError: string | null = null;
+  try {
+    // One write: store the undo snapshot and drop the card(s).
+    if (assessment) {
+      await applyArchiveCleanup({ conversationId, action, messageIds: ids, assessment });
+    } else {
+      await removeAssessments([conversationId]);
+    }
+    // Drop the message rows so a later reconcile does not resurrect the card.
+    await purgeMessages(user.id, ids);
+  } catch (error) {
+    cleanupError = error instanceof Error ? error.message : "Opruimen mislukt.";
   }
 
-  // Mirror it locally so the card disappears straight away.
-  await purgeMessages(user.id, ids);
-  await removeAssessments([conversationId]);
-
-  return Response.json({ ok: true, action, messages: ids.length });
+  return Response.json({ ok: true, action, messages: ids.length, cleanupError });
 }

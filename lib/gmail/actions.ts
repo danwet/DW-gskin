@@ -26,7 +26,8 @@ export async function archiveGmailMessage(refreshToken: string, messageId: strin
   const response = await fetch(`${GMAIL_API}/messages/${encodeURIComponent(messageId)}/modify`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ removeLabelIds: ["INBOX"] }),
+    // Archive means out of the inbox, and read so it stops demanding attention.
+    body: JSON.stringify({ removeLabelIds: ["INBOX", "UNREAD"] }),
   });
   if (response.ok) return { ok: true };
   if (response.status === 403) {
