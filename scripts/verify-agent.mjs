@@ -31,6 +31,7 @@ const { ruleAssessForTests } = await import("../lib/agent/classify.ts");
 const { buildFixtureMessages } = await import("../lib/agent/fixtures.ts");
 const store = await import("../lib/agent/store.ts");
 const { urgencyFor } = await import("../lib/agent/urgency.ts");
+const { runMailAgentOnMessages } = await import("../lib/agent/pipeline.ts");
 
 const dir = await mkdtemp(path.join(tmpdir(), "dw-agent-"));
 store.setAgentStoreDirectoryForTests(dir);
@@ -105,6 +106,17 @@ try {
   assert.ok(reminded.consequence?.senderSays?.toLowerCase().includes("incasso"), "shows what the sender says");
   assert.equal(reminded.handledByUser, true, "handled state preserved on reminder");
   assert.equal(reminded.needsAttention, true, "new message flags attention again");
+
+  // --- Incremental classification: only new mail reaches the model ---
+  await store.resetAgentStore();
+  const firstRun = await runMailAgentOnMessages(buildFixtureMessages(now, 1), "fixtures", now);
+  assert.equal(firstRun.processed, 14, "first run classifies everything");
+  const secondRun = await runMailAgentOnMessages(buildFixtureMessages(now, 1), "fixtures", now);
+  assert.equal(secondRun.processed, 0, "unchanged mail is not re-classified");
+  assert.equal(secondRun.skipped, 14, "all conversations are skipped");
+  const bumpedRun = await runMailAgentOnMessages(buildFixtureMessages(now, 2), "fixtures", now);
+  assert.equal(bumpedRun.processed, 1, "only the thread with a new message is re-classified");
+  assert.equal(bumpedRun.skipped, 13, "the remaining conversations are skipped");
 
   // --- A failed classification must not wipe prior assessments ---
   const before = await store.readAssessments();

@@ -105,6 +105,7 @@ export type RunRecord = {
   source: "gmail" | "fixtures";
   model: "openai" | "anthropic" | "gemini" | "openrouter" | "rule";
   conversations: number;
+  skipped?: number;
   messages: number;
   archived?: number;
   error: string | null;

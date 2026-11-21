@@ -16,6 +16,7 @@ export type RunResult = {
   processed: number;
   messagesSeen: number;
   conversations: number;
+  skipped?: number;
   archived?: number;
   errors: string[];
   note?: string;
@@ -35,7 +36,7 @@ function modelLabelFor(provider: ProviderId, model?: string): string {
   return model?.trim() || provider;
 }
 
-export async function runMailAgent(now = new Date()): Promise<RunResult> {
+export async function runMailAgent(now = new Date(), options?: { force?: boolean }): Promise<RunResult> {
   const config = await loadAgentConfig();
   const source = resolveMailSource(config);
   const fetchResult = await fetchInboxMessages(config);
@@ -69,7 +70,7 @@ export async function runMailAgent(now = new Date()): Promise<RunResult> {
       note: "Mailbox read failed; previous assessments were preserved.",
     };
   }
-  return runMailAgentOnMessages(fetchResult.messages, source, now, config);
+  return runMailAgentOnMessages(fetchResult.messages, source, now, config, options);
 }
 
 /** Classification + storage, separated so the harness can inject a message set. */
@@ -78,6 +79,7 @@ export async function runMailAgentOnMessages(
   source: "gmail" | "fixtures",
   now = new Date(),
   config?: AgentConfig,
+  options?: { force?: boolean },
 ): Promise<RunResult> {
   const { provider, apiKey, model } = activeProvider(config);
   const useModel = Boolean(apiKey);
@@ -107,10 +109,22 @@ export async function runMailAgentOnMessages(
   }
 
   const grouped = groupByConversation(messages);
+  const existingById = new Map((await readAssessments()).map((item) => [item.conversationId, item]));
   const updates: MailAssessment[] = [];
   const errors: string[] = [];
+  let skipped = 0;
 
-  for (const conversation of grouped.values()) {
+  for (const [conversationId, conversation] of grouped) {
+    const latest = conversation[conversation.length - 1];
+    const current = existingById.get(conversationId);
+
+    // Only new mail, or a new message inside an existing thread, needs the model.
+    // A conversation that was already assessed on its latest message is left as is.
+    if (!options?.force && current && current.sourceMessageId === latest.id) {
+      skipped += 1;
+      continue;
+    }
+
     try {
       const draft = await classifyConversation(conversation, { provider, apiKey, model });
       updates.push(buildAssessment(conversation, draft, now));
@@ -119,7 +133,9 @@ export async function runMailAgentOnMessages(
     }
   }
 
-  await upsertAssessments(updates);
+  if (updates.length > 0) {
+    await upsertAssessments(updates);
+  }
 
   // Order/shipment status updates are archived in Gmail once the agent has read
   // them. Only possible with a gmail.modify refresh token; otherwise this is a
@@ -160,6 +176,7 @@ export async function runMailAgentOnMessages(
     source,
     model: useModel ? provider : "rule",
     conversations: grouped.size,
+    skipped,
     messages: messages.length,
     archived,
     error: success ? null : `Model mislukt voor ${errors.length} gesprek(ken)`,
@@ -172,6 +189,7 @@ export async function runMailAgentOnMessages(
     processed: updates.length,
     messagesSeen: messages.length,
     conversations: grouped.size,
+    skipped,
     archived,
     errors,
   };

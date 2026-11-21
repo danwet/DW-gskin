@@ -14,6 +14,7 @@ export async function GET(request: Request) {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  const result = await runMailAgent();
+  const force = new URL(request.url).searchParams.get("force") === "1";
+  const result = await runMailAgent(new Date(), { force });
   return Response.json(result, { status: result.ok ? 200 : 502 });
 }
