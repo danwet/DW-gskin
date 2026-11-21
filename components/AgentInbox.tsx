@@ -6,6 +6,7 @@ import { generateEPCQRString, isValidIban } from "@/lib/epc";
 import { orderByUrgency, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
 import type { AgentMeta, MailAssessment } from "@/lib/agent/types";
 import { Avatar, Card, CardHeading } from "./ui";
+import { useApp } from "./AppProvider";
 
 type InboxPayload = {
   items: MailAssessment[];
@@ -62,6 +63,7 @@ function formatDate(iso: string | undefined): string {
 }
 
 export function useInbox() {
+  const { syncNonce } = useApp();
   const [items, setItems] = useState<MailAssessment[]>([]);
   const [meta, setMeta] = useState<AgentMeta | null>(null);
   const [model, setModel] = useState("rule");
@@ -94,7 +96,7 @@ export function useInbox() {
 
   useEffect(() => {
     void reload();
-  }, [reload]);
+  }, [reload, syncNonce]);
 
   const toggleHandled = useCallback(async (item: MailAssessment) => {
     const handled = !(item.handledByUser === true);

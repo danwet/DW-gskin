@@ -34,6 +34,8 @@ type AppContextValue = {
   lastRun: string | null;
   runs: BriefRun[];
   refreshing: boolean;
+  /** Increments after a manual sync so the inbox reloads its cards. */
+  syncNonce: number;
   refresh: () => Promise<void>;
   weather: WeatherNow | null;
   weatherError: string | null;
@@ -98,6 +100,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [lastRun, setLastRun] = useState<string | null>(null);
   const [runs, setRuns] = useState<BriefRun[]>([]);
   const [refreshing, setRefreshing] = useState(() => briefInFlight());
+  const [syncNonce, setSyncNonce] = useState(0);
   const [sourceBrief, setSourceBrief] = useState<Brief>(emptyBrief());
   const [account, setAccount] = useState<Account | null>(null);
   const [calendarError, setCalendarError] = useState<string | null>(null);
@@ -339,6 +342,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setRefreshing(true);
     try {
       await flushSave();
+      // Run the mail agent too, so the button is a real sync (incremental).
+      try {
+        await fetch("/api/inbox/refresh", { method: "POST" });
+      } catch {
+        // The inbox surfaces its own error; the brief refresh continues.
+      }
+      setSyncNonce((value) => value + 1);
       held.start();
       const result = await held.promise;
       if (result.status === 401) {
@@ -573,6 +583,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     lastRun,
     runs,
     refreshing,
+    syncNonce,
     refresh,
     weather,
     weatherError,
