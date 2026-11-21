@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { AgendaPanel } from "./AgendaPanel";
 import type { MailAssessment, ShipmentInfo } from "@/lib/agent/types";
 import { useInbox, type InboxProgress } from "./AgentInbox";
+import { useApp } from "./AppProvider";
 import { InboxGrid } from "./InboxGrid";
 import { LegacyLoopsCard } from "./LegacyLoopsCard";
 import { TodayHeader } from "./TodayHeader";
@@ -71,6 +72,7 @@ function GmailNotice() {
 }
 
 export function TodayView() {
+  const { setSyncProgress } = useApp();
   const inbox = useInbox();
   const [progress, setProgress] = useState<InboxProgress | null>(inbox.progress);
 
@@ -93,7 +95,12 @@ export function TodayView() {
           const response = await fetch("/api/gmail/import", { method: "POST" });
           const data = (await response.json().catch(() => null)) as { progress?: InboxProgress } | null;
           if (cancelled) return;
-          if (data?.progress) setProgress(data.progress);
+          if (data?.progress) {
+            setProgress(data.progress);
+            // The sidebar reads this from the app context; without it the bar
+            // kept showing whatever the last inbox load reported.
+            setSyncProgress(data.progress);
+          }
           const phase = data?.progress?.phase;
           if (phase !== "importing" && phase !== "triaging") break;
           await new Promise((resolve) => setTimeout(resolve, 250));

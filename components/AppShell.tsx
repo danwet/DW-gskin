@@ -193,11 +193,18 @@ function SidebarContent({
   onOpenSettings: () => void;
   onNavigate: () => void;
 }) {
-  // Only visible while an import or triage is actually running.
-  const syncingNow = syncProgress?.phase === "importing" || syncProgress?.phase === "triaging";
-  const importTotal = syncingNow ? (syncProgress?.total ?? null) : null;
-  const shownImported = syncProgress?.imported ?? 0;
-  const importPercent = importTotal ? Math.min(100, Math.round((shownImported / importTotal) * 100)) : 0;
+  // Two phases, two counters: fetching mail, then judging it. Showing the fetch
+  // counter during triage made the bar look stuck.
+  const triaging = syncProgress?.phase === "triaging";
+  const syncingNow = syncProgress?.phase === "importing" || triaging;
+  const total = triaging
+    ? (syncProgress?.threadsImported ?? null)
+    : (syncProgress?.total ?? null);
+  const shown = triaging ? (syncProgress?.triaged ?? 0) : (syncProgress?.imported ?? 0);
+  const importTotal = syncingNow && total ? total : null;
+  const percent = importTotal ? Math.min(100, Math.round((shown / importTotal) * 100)) : 0;
+  const progressLabel = triaging ? "Beoordelen" : "Indexeren";
+  const progressUnit = triaging ? "gesprekken" : "berichten";
 
   return (
     <div className="sidebar-enter relative z-10 flex min-h-0 flex-1 flex-col">
@@ -241,10 +248,10 @@ function SidebarContent({
         {importTotal ? (
           <div className="mb-[32px] px-2">
             <p className="text-[11px] leading-4 text-[var(--muted)]">
-              Ophalen {shownImported} van {importTotal} emails
+              {progressLabel} {shown} van {importTotal} {progressUnit}
             </p>
             <div className="mt-1 h-[3px] w-full overflow-hidden rounded-full bg-[var(--line)]">
-              <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${importPercent}%` }} />
+              <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${percent}%` }} />
             </div>
           </div>
         ) : null}
