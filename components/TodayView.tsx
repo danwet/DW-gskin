@@ -199,7 +199,17 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
       byKey.set(key, { shipment: item.shipment, receivedAt: item.receivedAt });
     }
   }
-  const shipments = [...byKey.values()].sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
+  // A delivered order is only relevant on the day it arrived; after midnight
+  // it drops out of the panel.
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const shipments = [...byKey.values()]
+    .filter((entry) => {
+      if (entry.shipment.status !== "Geleverd") return true;
+      return Date.parse(entry.receivedAt) >= startOfToday.getTime();
+    })
+    .sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
 
   const statusColor = (status: string) =>
     status === "Geleverd"
@@ -310,7 +320,7 @@ function DaySummary({ items }: { items: MailAssessment[] }) {
             <li className="flex items-center gap-2.5">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--green)" }} />
               <span>
-                {orderstatus} {orderstatus === 1 ? "orderstatus update" : "orderstatus updates"}
+                {orderstatus} {orderstatus === 1 ? "orderstatus" : "orderstatussen"} verwerkt
               </span>
             </li>
           ) : null}
