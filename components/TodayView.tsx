@@ -289,7 +289,7 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
 
   return (
     <section className="mt-6">
-      <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Onderweg</h2>
+      <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Bestellingen</h2>
       {shipments.length === 0 && paymentEntries.length === 0 ? (
         <p className="mt-4 text-[14px] text-[var(--muted)]">Bestel maar</p>
       ) : (
