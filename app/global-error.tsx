@@ -9,7 +9,7 @@ export default function GlobalError({
 }) {
   return (
     <html lang="nl">
-      <body style={{ margin: 0, fontFamily: "system-ui, sans-serif", background: "#ffffff", color: "#17181a" }}>
+      <body style={{ margin: 0, fontFamily: "system-ui, sans-serif", background: "#f2f2f2", color: "#17181a" }}>
         <div
           style={{
             minHeight: "100vh",
@@ -23,7 +23,7 @@ export default function GlobalError({
           }}
         >
           <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0 }}>Er ging iets mis</h1>
-          <p style={{ fontSize: 14, color: "#5b6068", maxWidth: 480, margin: 0 }}>
+          <p style={{ fontSize: 14, color: "#5c6267", maxWidth: 480, margin: 0 }}>
             {error.message || "Onbekende fout."}
             {error.digest ? ` (${error.digest})` : ""}
           </p>
@@ -33,7 +33,7 @@ export default function GlobalError({
             style={{
               borderRadius: 999,
               border: "none",
-              background: "#245bb5",
+              background: "#245fb8",
               color: "#fff",
               padding: "10px 18px",
               fontSize: 14,

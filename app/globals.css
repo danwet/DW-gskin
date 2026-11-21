@@ -5,25 +5,25 @@
 :root {
   color-scheme: light;
 
-  /* Oppervlakken */
-  --page: #f0f3f1;
-  --bg: #f7f9f6;
-  --surface: #f7f9f6;
-  --sidebar: rgba(249, 251, 248, 0.82);
+  /* Oppervlakken: neutraal lichtgrijs canvas, witte kaarten */
+  --page: #f2f2f2;
+  --bg: #f7f7f7;
+  --surface: #f7f7f7;
+  --sidebar: rgba(255, 255, 255, 0.72);
   --card: #ffffff;
 
-  /* Tekst */
-  --ink: #202925;
-  --muted: #56635d;
-  --faint: #87908a;
+  /* Tekst: neutraal */
+  --ink: #1b1e21;
+  --muted: #5c6267;
+  --faint: #8b9095;
 
   /* Lijnen */
-  --line: #e0e6e1;
+  --line: #dedede;
 
-  /* Acties / nadruk */
-  --accent: #245d52;
-  --blue: #245d52;
-  --blue-soft: #deede6;
+  /* Acties / nadruk: blauw */
+  --accent: #245fb8;
+  --blue: #245fb8;
+  --blue-soft: #dceaff;
   --purple: #6b5bd2;
   --green: #1b7f4b;
   --green-soft: rgba(27, 127, 75, 0.12);
@@ -32,54 +32,54 @@
   --danger: #c93a3a;
   --danger-soft: rgba(201, 58, 58, 0.12);
 
-  /* Liquid Glass (licht getint, salie) */
-  --glass-fallback: #f9fbf8;
-  --glass-bg: rgba(249, 251, 248, 0.82);
-  --glass-bg-strong: rgba(255, 255, 255, 0.9);
-  --glass-bg-soft: rgba(237, 242, 238, 0.7);
-  --glass-hl: rgba(255, 255, 255, 0.95);
-  --glass-hl2: rgba(255, 255, 255, 0.6);
-  --glass-edge: #dce4de;
-  --glass-bottom: rgba(32, 41, 37, 0.06);
-  --glass-reflect: rgba(255, 255, 255, 0.3);
-  --glass-shadow: 0 10px 26px rgba(32, 41, 37, 0.06), 0 2px 6px rgba(32, 41, 37, 0.04);
-  --glass-border: 1px solid #dce4de;
-  --chip-border: 1px solid #d8e2da;
+  /* Liquid Glass: neutraal, transparant wit */
+  --glass-fallback: #fbfbfb;
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg-strong: rgba(255, 255, 255, 0.5);
+  --glass-bg-soft: rgba(255, 255, 255, 0.34);
+  --glass-hl: rgba(255, 255, 255, 0.9);
+  --glass-hl2: rgba(255, 255, 255, 0.5);
+  --glass-edge: #dedede;
+  --glass-bottom: rgba(24, 24, 26, 0.05);
+  --glass-reflect: rgba(255, 255, 255, 0.26);
+  --glass-shadow: 0 10px 26px rgba(24, 24, 26, 0.05), 0 2px 6px rgba(24, 24, 26, 0.03);
+  --glass-border: 1px solid #dedede;
+  --chip-border: 1px solid #d7d7d7;
 
-  /* Zachte petrolselectie (filters + actieve navigatie) */
-  --active-bg: #deede6;
-  --active-bg-deep: #d3e6dc;
-  --active-ink: #245d52;
-  --active-hl: rgba(255, 255, 255, 0.9);
-  --active-line: #c8dcd1;
+  /* Selectie: licht blauw glas */
+  --active-bg: #dceaff;
+  --active-bg-deep: #cfe0fb;
+  --active-ink: #1c4f9c;
+  --active-hl: rgba(255, 255, 255, 0.85);
+  --active-line: #b9d2f2;
 
-  /* Brede, zachte lichtval van boven */
-  --glow: rgba(247, 249, 246, 0.95);
-  --glow2: rgba(247, 249, 246, 0.5);
+  /* Canvas: geen kleurzweem */
+  --glow: transparent;
+  --glow2: transparent;
 
   /* Zwevende zijbalk */
-  --float-shadow: 0 14px 36px rgba(32, 41, 37, 0.1), 0 2px 8px rgba(32, 41, 37, 0.05);
+  --float-shadow: 0 14px 36px rgba(24, 24, 26, 0.1), 0 2px 8px rgba(24, 24, 26, 0.05);
 
-  --shadow: 0 1px 2px rgba(32, 41, 37, 0.03), 0 8px 22px rgba(32, 41, 37, 0.04);
+  --shadow: 0 1px 2px rgba(24, 24, 26, 0.04), 0 8px 22px rgba(24, 24, 26, 0.05);
 
-  /* Kaartoppervlak: dekkend wit met fijne contour en zachte schaduw */
+  /* Kaartoppervlak: dekkend wit met fijne neutrale contour */
   --card-surface-bg: #ffffff;
-  --card-surface-border: 1px solid #e0e6e1;
-  --card-surface-shadow: 0 1px 2px rgba(32, 41, 37, 0.03), 0 8px 22px rgba(32, 41, 37, 0.04);
+  --card-surface-border: 1px solid #dedede;
+  --card-surface-shadow: 0 1px 2px rgba(24, 24, 26, 0.04), 0 8px 22px rgba(24, 24, 26, 0.05);
 
   /* Knoppen */
-  --btn-primary-bg: #245d52;
-  --btn-primary-hover: #1f5046;
-  --btn-primary-active: #1a453c;
+  --btn-primary-bg: linear-gradient(180deg, #4387e8 0%, #245fb8 100%);
+  --btn-primary-hover: linear-gradient(180deg, #4f92ef 0%, #2a6ac9 100%);
+  --btn-primary-active: linear-gradient(180deg, #3a7bda 0%, #2156a6 100%);
   --btn-primary-ink: #ffffff;
-  --btn-primary-hl: rgba(255, 255, 255, 0.22);
-  --btn-secondary-bg: #edf2ee;
-  --btn-secondary-hover: #e4ece6;
-  --btn-secondary-active: #dce6df;
-  --btn-secondary-line: #d8e2da;
-  --btn-secondary-line-strong: #c6d5ca;
-  --btn-secondary-ink: #202925;
-  --btn-secondary-hl: rgba(255, 255, 255, 0.7);
+  --btn-primary-hl: rgba(255, 255, 255, 0.45);
+  --btn-secondary-bg: rgba(255, 255, 255, 0.5);
+  --btn-secondary-hover: rgba(240, 240, 240, 0.8);
+  --btn-secondary-active: rgba(230, 230, 230, 0.92);
+  --btn-secondary-line: #d5d5d5;
+  --btn-secondary-line-strong: #c2c2c2;
+  --btn-secondary-ink: #1b1e21;
+  --btn-secondary-hl: rgba(255, 255, 255, 0.8);
 }
 
 .dark {
@@ -297,42 +297,55 @@ button {
 
 /* ---------- Knoppen ---------- */
 
-/* Primaire actie: volledig gevuld petrol met witte semibold tekst. */
+/* Primaire actie: blauw Liquid Glass met witte semibold tekst. */
 .btn-primary {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-ink);
   font-weight: 600;
   box-shadow:
     inset 0 1px 0 var(--btn-primary-hl),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.14),
-    0 1px 2px rgba(32, 41, 37, 0.14);
-  transition: background-color 120ms ease, box-shadow 120ms ease;
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    0 2px 6px rgba(24, 24, 26, 0.16);
+  transition: background-color 120ms ease, box-shadow 120ms ease, filter 120ms ease;
 }
 
 .btn-primary:hover {
   background: var(--btn-primary-hover);
+  filter: brightness(1.03);
 }
 
 .btn-primary:active {
   background: var(--btn-primary-active);
   box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.18),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+    inset 0 1px 2px rgba(0, 0, 0, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  filter: brightness(0.98);
 }
 
 .btn-primary:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   box-shadow: none;
+  filter: none;
 }
 
-/* Secundaire actie: lichte saliegrijze vulling met zichtbare fijne rand. */
+/* Secundaire actie: transparant wit Liquid Glass met neutrale contour. */
 .btn-secondary {
   background: var(--btn-secondary-bg);
   color: var(--btn-secondary-ink);
   border: 1px solid var(--btn-secondary-line);
-  box-shadow: inset 0 1px 0 var(--btn-secondary-hl);
-  transition: background-color 120ms ease, border-color 120ms ease;
+  box-shadow:
+    inset 0 1px 0 var(--btn-secondary-hl),
+    0 1px 3px rgba(24, 24, 26, 0.09);
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .btn-secondary {
+    -webkit-backdrop-filter: blur(10px) saturate(115%);
+    backdrop-filter: blur(10px) saturate(115%);
+  }
 }
 
 .btn-secondary:hover {
@@ -342,7 +355,7 @@ button {
 
 .btn-secondary:active {
   background: var(--btn-secondary-active);
-  box-shadow: inset 0 1px 2px rgba(32, 41, 37, 0.1);
+  box-shadow: inset 0 1px 2px rgba(24, 24, 26, 0.08);
 }
 
 .btn-secondary:disabled {
