@@ -9,7 +9,7 @@ const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
  * so "info@example.com" and "<info@example.com>" both read as "info".
  */
 export function senderDisplayName(from?: string | null, fromEmail?: string | null): string {
-  const name = (from ?? "").trim();
+  const name = (from ?? "").trim().replace(/^["']+|["']+$/g, "").trim();
   const email = (fromEmail ?? "").trim();
   if (name && name !== "Onbekend" && !name.includes("@")) return name;
   const address = email.includes("@") ? email : name.includes("@") ? name : "";
