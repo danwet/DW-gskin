@@ -14,6 +14,25 @@ export function supabaseAvailable(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
+/**
+ * Supabase is the only persistent store. Callers throw this instead of silently
+ * falling back to local files, so a misconfiguration is visible immediately.
+ */
+export function requireSupabase(): void {
+  if (!supabaseAvailable()) {
+    throw new Error(
+      "Supabase is niet geconfigureerd. Zet NEXT_PUBLIC_SUPABASE_URL en SUPABASE_SERVICE_ROLE_KEY in .env.local én in Vercel.",
+    );
+  }
+}
+
+/** Thrown when Supabase is configured but the expected table is missing. */
+export function missingTableError(table: string): Error {
+  return new Error(
+    `Supabase-tabel "${table}" is niet bereikbaar. Draai supabase/migrate-nextauth.sql in de Supabase SQL Editor.`,
+  );
+}
+
 export type JsonTable = "dw_agent_state" | "dw_user_state" | "dw_agent_settings";
 export type IdColumn = "id" | "user_id";
 

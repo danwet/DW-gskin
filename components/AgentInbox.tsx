@@ -75,7 +75,10 @@ export function useInbox() {
         window.location.assign("/login");
         return;
       }
-      if (!response.ok) throw new Error("Inbox could not be loaded.");
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? "Inbox could not be loaded.");
+      }
       const data = (await response.json()) as InboxPayload;
       setItems(data.items);
       setMeta(data.meta);

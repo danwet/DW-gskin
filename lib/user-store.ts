@@ -3,7 +3,7 @@ import "server-only";
 import { createHash } from "crypto";
 import { mkdir, readdir, readFile, rename, writeFile } from "fs/promises";
 import path from "path";
-import { supabaseReadJson, supabaseWriteJson } from "./supabase/kv";
+import { missingTableError, requireSupabase, supabaseReadJson, supabaseWriteJson } from "./supabase/kv";
 import type { InvoiceData } from "./epc";
 import type { BriefRun, RawMessage, UserWorkspace } from "./types";
 
@@ -226,18 +226,23 @@ async function writeRecordToFile(record: UserRecord) {
 }
 
 async function readRecord(userId: string, email: string): Promise<UserRecord> {
+  // The verification harness sets an explicit directory; everything else must use Supabase.
+  if (directoryOverride !== null) return readRecordFromFile(userId, email);
+  requireSupabase();
   const doc = await supabaseReadJson("dw_user_state", "user_id", userId);
-  if (doc.ok) {
-    const parsed = (doc.value ?? {}) as Partial<UserRecord>;
-    return normalize(parsed, userId, email);
-  }
-  return readRecordFromFile(userId, email);
+  if (!doc.ok) throw missingTableError("dw_user_state");
+  const parsed = (doc.value ?? {}) as Partial<UserRecord>;
+  return normalize(parsed, userId, email);
 }
 
 async function writeRecord(record: UserRecord) {
+  if (directoryOverride !== null) {
+    await writeRecordToFile(record);
+    return;
+  }
+  requireSupabase();
   const written = await supabaseWriteJson("dw_user_state", "user_id", record.userId, record);
-  if (written) return;
-  await writeRecordToFile(record);
+  if (!written) throw missingTableError("dw_user_state");
 }
 
 function enqueue<T>(userId: string, task: () => Promise<T>): Promise<T> {

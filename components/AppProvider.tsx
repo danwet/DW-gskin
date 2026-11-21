@@ -187,9 +187,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         if (!result.ok || !result.data) {
-          setSourceBrief(emptyBrief("Dashboard could not be loaded."));
-          setCalendarError("Dashboard could not be loaded.");
-          setMailError("Dashboard could not be loaded.");
+          const message =
+            (result.data as { error?: string } | null)?.error ?? "Dashboard could not be loaded.";
+          setSourceBrief(emptyBrief(message));
+          setCalendarError(message);
+          setMailError(message);
           setReady(true);
           return;
         }

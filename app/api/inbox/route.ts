@@ -9,20 +9,25 @@ export async function GET() {
   const user = await sessionUser();
   if (!user) return unauthorized();
 
-  // Seed the demo/fixture data on first use when the store has never run yet.
-  const initialMeta = await readMeta();
-  if (!initialMeta.lastRunAt) {
-    await runMailAgent();
-  }
+  try {
+    // Seed the demo/fixture data on first use when the store has never run yet.
+    const initialMeta = await readMeta();
+    if (!initialMeta.lastRunAt) {
+      await runMailAgent();
+    }
 
-  const [items, meta, config] = await Promise.all([readAssessments(), readMeta(), loadAgentConfig()]);
-  const provider = config.providers[config.defaultProvider];
-  const model = provider?.apiKey ? (provider.model || config.defaultProvider) : "rule";
-  return Response.json({
-    items,
-    meta,
-    model,
-  });
+    const [items, meta, config] = await Promise.all([readAssessments(), readMeta(), loadAgentConfig()]);
+    const provider = config.providers[config.defaultProvider];
+    const model = provider?.apiKey ? (provider.model || config.defaultProvider) : "rule";
+    return Response.json({
+      items,
+      meta,
+      model,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Inbox kon niet worden geladen.";
+    return Response.json({ error: message }, { status: 503 });
+  }
 }
 
 export async function POST(request: Request) {

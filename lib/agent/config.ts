@@ -2,7 +2,13 @@ import "server-only";
 
 import { mkdir, readFile, rename, writeFile } from "fs/promises";
 import path from "path";
-import { supabaseAvailable, supabaseReadJson, supabaseWriteJson } from "../supabase/kv";
+import {
+  missingTableError,
+  requireSupabase,
+  supabaseAvailable,
+  supabaseReadJson,
+  supabaseWriteJson,
+} from "../supabase/kv";
 
 export type MailSource = "auto" | "fixtures" | "gmail";
 
@@ -49,25 +55,25 @@ async function writeFileConfig(config: AgentConfig): Promise<void> {
   }
 }
 
-/** Reads the persisted config from Supabase when available, else from the local file. */
+/**
+ * Reads the persisted config from Supabase. Reads degrade to defaults (plus env
+ * fallbacks) when the table is missing so that the settings diagnostic can still
+ * render; writes are strict and throw instead of silently doing nothing.
+ */
 async function readPersistedConfig(): Promise<Record<string, unknown>> {
-  if (supabaseAvailable()) {
-    const doc = await supabaseReadJson("dw_agent_settings", "id", "singleton");
-    if (doc.ok && doc.value && typeof doc.value === "object" && !Array.isArray(doc.value)) {
-      return doc.value as Record<string, unknown>;
-    }
-    return {};
+  if (!supabaseAvailable()) return {};
+  const doc = await supabaseReadJson("dw_agent_settings", "id", "singleton");
+  if (doc.ok && doc.value && typeof doc.value === "object" && !Array.isArray(doc.value)) {
+    return doc.value as Record<string, unknown>;
   }
-  return readFileConfig();
+  return {};
 }
 
-/** Persists the full config to Supabase when available, else to the local file. */
+/** Persists the full config to Supabase. Throws when the table is missing. */
 async function persistConfig(config: AgentConfig): Promise<void> {
-  if (supabaseAvailable()) {
-    await supabaseWriteJson("dw_agent_settings", "id", "singleton", config);
-    return;
-  }
-  await writeFileConfig(config);
+  requireSupabase();
+  const written = await supabaseWriteJson("dw_agent_settings", "id", "singleton", config);
+  if (!written) throw missingTableError("dw_agent_settings");
 }
 
 function pickSource(value: unknown): MailSource {

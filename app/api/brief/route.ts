@@ -3,7 +3,7 @@ import { todayCalendarEvents } from "@/lib/calendar";
 import { validTimeZone } from "@/lib/calendar-events";
 import { NO_MAIL_SOURCE } from "@/lib/empty-brief";
 import { briefFromMailbox, type MailboxRead } from "@/lib/mailbox";
-import { readUser, toWorkspace, updateUser } from "@/lib/user-store";
+import { readUser, toWorkspace, updateUser, type UserRecord } from "@/lib/user-store";
 
 export const dynamic = "force-dynamic";
 
@@ -14,11 +14,18 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const timeZone = validTimeZone(url.searchParams.get("timeZone"));
   const refresh = url.searchParams.get("refresh") === "1";
-  const record = refresh
-    ? await updateUser(user.id, user.email, (current) => {
-        current.lastRun = new Date().toISOString();
-      })
-    : await readUser(user.id, user.email);
+
+  let record: UserRecord;
+  try {
+    record = refresh
+      ? await updateUser(user.id, user.email, (current) => {
+          current.lastRun = new Date().toISOString();
+        })
+      : await readUser(user.id, user.email);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Dashboard kon niet worden geladen.";
+    return Response.json({ error: message }, { status: 503 });
+  }
 
   const calendar = await todayCalendarEvents(request, timeZone);
   const empty = record.messages.length === 0 && record.invoices.length === 0;
@@ -32,19 +39,23 @@ export async function GET(request: Request) {
 
   let finalRecord = record;
   if (refresh) {
-    finalRecord = await updateUser(user.id, user.email, (current) => {
-      current.runs = [
-        {
-          at: new Date().toISOString(),
-          messageCount: brief.messageCount,
-          drafts: brief.drafts.length,
-          quiet: brief.quiet.length,
-          actions: brief.actions.length,
-          upcoming: brief.upcoming.length,
-        },
-        ...(current.runs ?? []),
-      ].slice(0, 50);
-    });
+    try {
+      finalRecord = await updateUser(user.id, user.email, (current) => {
+        current.runs = [
+          {
+            at: new Date().toISOString(),
+            messageCount: brief.messageCount,
+            drafts: brief.drafts.length,
+            quiet: brief.quiet.length,
+            actions: brief.actions.length,
+            upcoming: brief.upcoming.length,
+          },
+          ...(current.runs ?? []),
+        ].slice(0, 50);
+      });
+    } catch {
+      // A failed run-history write must not lose the dashboard payload.
+    }
   }
 
   return Response.json({

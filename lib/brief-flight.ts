@@ -82,7 +82,10 @@ async function performFetch(input: BriefRequest, fetchImpl: FetchLike): Promise<
   const params = new URLSearchParams({ timeZone: input.timeZone });
   if (input.refresh) params.set("refresh", "1");
   const response = await fetchImpl(`/api/brief?${params.toString()}`, { cache: "no-store" });
-  if (!response.ok) return { ok: false, status: response.status, data: null };
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    return { ok: false, status: response.status, data: body };
+  }
   try {
     const data = (await response.json()) as unknown;
     return { ok: true, status: response.status, data };

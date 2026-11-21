@@ -2,7 +2,7 @@ import "server-only";
 
 import { mkdir, readFile, rename, writeFile } from "fs/promises";
 import path from "path";
-import { supabaseReadJson, supabaseWriteJson } from "../supabase/kv";
+import { missingTableError, requireSupabase, supabaseReadJson, supabaseWriteJson } from "../supabase/kv";
 import type { AgentMeta, MailAssessment, RunRecord } from "./types";
 
 type AgentState = {
@@ -83,15 +83,22 @@ async function writeStateToFile(state: AgentState): Promise<void> {
 }
 
 async function readState(): Promise<AgentState> {
+  // The verification harness sets an explicit directory; everything else must use Supabase.
+  if (directoryOverride !== null) return readStateFromFile();
+  requireSupabase();
   const doc = await supabaseReadJson("dw_agent_state", "id", "singleton");
-  if (doc.ok) return parseState(doc.value);
-  return readStateFromFile();
+  if (!doc.ok) throw missingTableError("dw_agent_state");
+  return parseState(doc.value);
 }
 
 async function writeState(state: AgentState): Promise<void> {
+  if (directoryOverride !== null) {
+    await writeStateToFile(state);
+    return;
+  }
+  requireSupabase();
   const written = await supabaseWriteJson("dw_agent_state", "id", "singleton", state);
-  if (written) return;
-  await writeStateToFile(state);
+  if (!written) throw missingTableError("dw_agent_state");
 }
 
 export function readAssessments(): Promise<MailAssessment[]> {
