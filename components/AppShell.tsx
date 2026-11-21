@@ -205,7 +205,7 @@ function SidebarContent({
         </div>
         <div className="mt-2 px-1">
           <img src="/dw-mark.png" alt="DW" className="h-auto w-full dark:invert" />
-          <p className="mt-1 pl-[0.34em] text-center text-[10px] font-semibold uppercase tracking-[0.34em] text-[var(--muted)]">
+          <p className="mt-1.5 pl-[0.52em] text-center text-[10px] font-light uppercase tracking-[0.52em] text-[var(--muted)]">
             GSKINS
           </p>
         </div>
