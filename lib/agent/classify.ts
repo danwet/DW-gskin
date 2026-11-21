@@ -333,9 +333,13 @@ function ruleAssess(messages: InboundMessage[]): AssessmentDraft {
     };
   }
 
-  const newsletter = /nieuwsbrief|newsletter|digest|weekly|bulletin|no-?reply|noreply|nieuws@|updates?|aanbieding|promo|marketing/i.test(
-    `${latest?.from ?? ""} ${latest?.fromEmail ?? ""} ${latest?.subject ?? ""}`,
-  );
+  // Bulk mail is recognized by its sender/subject or by the usual "you are
+  // receiving this" wording in the body — a newsletter that also asks for a
+  // donation is still a newsletter.
+  const header = `${latest?.from ?? ""} ${latest?.fromEmail ?? ""} ${latest?.subject ?? ""}`;
+  const newsletter =
+    /nieuwsbrief|newsletter|digest|weekly|bulletin|no-?reply|noreply|nieuws@|updates?|aanbieding|promo|marketing/i.test(header) ||
+    /je ontvangt deze e-?mail|deze e-?mail ontvang je|nieuwsbrief|newsletter|uitschrijven|unsubscribe/i.test(text);
   if (newsletter) {
     return {
       classification: "info",
