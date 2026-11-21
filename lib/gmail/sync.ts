@@ -169,7 +169,7 @@ export async function triageStep(userId: string): Promise<StepResult> {
     const target = conversation.length > 0 ? conversation : grouped.get(thread.conversationId) ?? [thread.latest];
     try {
       const draft = await classifyConversation(target, { provider, apiKey, model });
-      updates.push(buildAssessment(target, draft, new Date()));
+      updates.push(buildAssessment(target, draft, new Date(), "gmail"));
       await markThreadTriaged(userId, threadId);
     } catch (error) {
       errors.push(error instanceof Error ? error.message : "Classificatie mislukt.");

@@ -83,6 +83,8 @@ export type MailAssessment = {
   scanMime?: string;
   /** When the user manually marked a scanned invoice as paid. */
   paidAt?: string;
+  /** Which mailbox produced this assessment. Untagged rows are test data. */
+  mailbox?: "gmail" | "fixtures";
   /** Proposal summary attached by the inbox API (not stored in the assessment). */
   proposal?: {
     id: string;

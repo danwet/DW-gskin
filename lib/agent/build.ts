@@ -27,7 +27,12 @@ export function groupByConversation(messages: InboundMessage[]): Map<string, Inb
   return grouped;
 }
 
-export function buildAssessment(conversation: InboundMessage[], draft: AssessmentDraft, now: Date): MailAssessment {
+export function buildAssessment(
+  conversation: InboundMessage[],
+  draft: AssessmentDraft,
+  now: Date,
+  mailbox: "gmail" | "fixtures" = "fixtures",
+): MailAssessment {
   const latest = conversation[conversation.length - 1];
   const invoice = draft.invoice
     ? {
@@ -49,6 +54,7 @@ export function buildAssessment(conversation: InboundMessage[], draft: Assessmen
       }
     : undefined;
   return {
+    mailbox,
     conversationId: conversationKey(latest),
     subject: latest.subject,
     from: latest.from,

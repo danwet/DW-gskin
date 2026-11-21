@@ -192,7 +192,7 @@ export async function runMailAgentOnMessages(
 
     try {
       const draft = await classifyConversation(conversation, { provider, apiKey, model });
-      updates.push(buildAssessment(conversation, draft, now));
+      updates.push(buildAssessment(conversation, draft, now, source));
     } catch (error) {
       errors.push(error instanceof Error ? error.message : "unknown classification error");
     }

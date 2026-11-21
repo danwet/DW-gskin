@@ -66,8 +66,11 @@ export async function GET() {
   try {
     const config = await loadAgentConfig();
     const connection = await getGmailConnection(user.id).catch(() => null);
-    const gmailReady = Boolean(connection && connection.status === "connected") || gmailConfigured(config);
-    const source = resolveMailSource(config, gmailReady);
+    const connectionUsable = connection?.status === "connected";
+    const legacyGmail = gmailConfigured(config);
+    const gmailReady = connectionUsable || legacyGmail;
+    // A linked account always wins over test data, even while it needs a reconnect.
+    const source = resolveMailSource(config, Boolean(connection) || legacyGmail);
     const provider = config.providers[config.defaultProvider];
     const model = provider?.apiKey ? provider.model || config.defaultProvider : "rule";
     const gmailEmail = connection?.email ?? null;
@@ -85,12 +88,14 @@ export async function GET() {
           gmail: connection
             ? { email: connection.email, status: connection.status, scopes: connection.scopes, connectedAt: connection.connectedAt }
             : null,
-          error:
-            "Gmail is nog niet gekoppeld. Koppel Gmail bij Instellingen → Verbindingen, of kies Testdata als mailbron.",
+          error: connection
+            ? `De Gmail-koppeling van ${connection.email} is verlopen of ingetrokken. Koppel opnieuw bij Instellingen → Verbindingen.`
+            : "Gmail is nog niet gekoppeld. Koppel Gmail bij Instellingen → Verbindingen.",
         });
       }
 
-      const raw = await readAssessments();
+      // Only live Gmail assessments: the demo cards never join this list.
+      const raw = (await readAssessments()).filter((item) => item.mailbox === "gmail");
       const items = await attachProposals(user.id, raw, gmailEmail);
       const assessed = new Set(raw.map((item) => item.conversationId));
       const progress: SyncProgress = await getSyncProgress(user.id).catch(() => ({
@@ -112,7 +117,9 @@ export async function GET() {
       await runMailAgent();
     }
 
-    const [rawItems, latestMeta] = await Promise.all([readAssessments(), readMeta()]);
+    const [allItems, latestMeta] = await Promise.all([readAssessments(), readMeta()]);
+    // Test data only: anything assessed from a linked Gmail account stays out.
+    const rawItems = allItems.filter((item) => item.mailbox !== "gmail");
     const items = await attachProposals(user.id, rawItems, gmailEmail);
     return Response.json({
       items,
