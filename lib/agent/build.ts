@@ -35,15 +35,38 @@ export function amountFromInvoiceText(text: string): number | null {
 }
 
 /**
- * The account to pay, taken from the attachment. Masked numbers (NL04KNAB****)
- * never match, so the customer's own account cannot win by accident.
+ * The account to pay, taken from the attachment. A supplier puts its own
+ * account near the payment instructions or in the footer, while the customer's
+ * account shows up next to "afgeschreven van" or "uw rekening" — so candidates
+ * are scored rather than taken in order of appearance.
  */
 export function ibanFromInvoiceText(text: string): string | null {
-  const candidates = text.match(/\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/g) ?? [];
-  for (const candidate of candidates) {
-    if (isValidIban(candidate)) return candidate.toUpperCase();
+  const pattern = /\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/g;
+  const scored: { iban: string; score: number; at: number }[] = [];
+
+  for (const match of text.matchAll(pattern)) {
+    const iban = match[0].toUpperCase();
+    if (!isValidIban(iban)) continue;
+
+    const at = match.index ?? 0;
+    const before = text.slice(Math.max(0, at - 90), at).toLowerCase();
+    const after = text.slice(at + iban.length, at + iban.length + 40).toLowerCase();
+
+    let score = 0;
+    if (/(te betalen|overmaken|betalen op|betaal|maak.{0,10}over|iban|rekeningnummer)/.test(before)) score += 3;
+    if (/(afgeschreven van|van rekening|uw rekening|mijn rekening|jouw rekening|eigen rekening)/.test(before)) score -= 4;
+    if (/(afgeschreven|incasso|machtiging)/.test(after)) score -= 2;
+    // Invoices commonly carry the supplier's details in the footer.
+    if (at > text.length * 0.75) score += 2;
+    if (/(b\.v\.|n\.v\.|bv|nv|kvk|btw)/.test(before)) score += 2;
+
+    scored.push({ iban, score, at });
   }
-  return null;
+
+  if (scored.length === 0) return null;
+  // Highest score wins; on a tie the later one (footer) is more likely the supplier.
+  scored.sort((a, b) => b.score - a.score || b.at - a.at);
+  return scored[0].iban;
 }
 
 /** Subjects always start with a capital letter. */
@@ -129,7 +152,7 @@ export function buildAssessment(
 
   const invoice = draft.invoice
     ? {
-        supplier: draft.invoice.supplier || undefined,
+        supplier: draft.invoice.supplier || counterparty.from || undefined,
         invoiceNumber: draft.invoice.invoiceNumber || undefined,
         amount: draft.invoice.amount ?? attachmentAmount ?? undefined,
         currency: draft.invoice.currency || undefined,
