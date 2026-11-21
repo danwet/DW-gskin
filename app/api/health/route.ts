@@ -11,6 +11,8 @@ export async function GET(request: Request) {
   const supabase = await supabaseProbe();
   return Response.json({
     gmailRedirectUri: gmailCallbackUri(new URL(request.url).origin),
+    // Marker so a deploy can be verified from the outside.
+    pdfAttachments: true,
     ok: true,
     env: {
       supabaseUrlFromServer: Boolean(process.env.SUPABASE_URL?.trim()),

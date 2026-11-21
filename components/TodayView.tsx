@@ -112,9 +112,9 @@ export function TodayView() {
   }, [syncing, inbox.reload]);
 
   const nowMs = Date.now();
-  // Mail the agent archived itself (order status) leaves the overview but stays
-  // available for the shipments panel.
-  const visibleItems = inbox.items.filter((item) => !item.archivedAt);
+  // Bewaren moves a mail out of Focus, and order mail the agent archived itself
+  // leaves too (it stays available for the shipments panel).
+  const visibleItems = inbox.items.filter((item) => !item.archivedAt && !item.savedAt);
 
   const activeItems = visibleItems.filter(
     (item) =>

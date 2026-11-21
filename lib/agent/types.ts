@@ -153,6 +153,8 @@ export type InboundMessage = {
   link?: string;
   attachmentUrl?: string;
   attachmentName?: string;
+  /** PDF attachments found in the mail, so invoice details can be read from them. */
+  pdfAttachments?: { attachmentId: string; filename: string }[];
   /** Raw List-Unsubscribe header value, if present. */
   listUnsubscribe?: string;
   /** Raw List-Unsubscribe-Post header value, if present. */

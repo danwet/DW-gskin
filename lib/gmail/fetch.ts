@@ -1,5 +1,7 @@
 import "server-only";
 
+import { extractTextFromBuffer } from "../scan/extract";
+
 import type { InboundMessage } from "../agent/types";
 
 const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me";
@@ -125,6 +127,31 @@ function headerValue(payload: unknown, name: string): string {
 }
 
 /** Maps a Gmail `format=full` resource to the app's inbound-message shape. */
+/** Walks the payload and collects real PDF attachments. */
+function findPdfParts(payload: unknown): { attachmentId: string; filename: string }[] {
+  const found: { attachmentId: string; filename: string }[] = [];
+
+  const walk = (node: unknown) => {
+    if (!node || typeof node !== "object") return;
+    const part = node as {
+      mimeType?: string;
+      filename?: string;
+      body?: { attachmentId?: string; size?: number };
+      parts?: unknown[];
+    };
+    const mime = (part.mimeType ?? "").toLowerCase();
+    const filename = part.filename ?? "";
+    const isPdf = mime === "application/pdf" || (mime === "application/octet-stream" && /\.pdf$/i.test(filename));
+    if (isPdf && part.body?.attachmentId) {
+      found.push({ attachmentId: part.body.attachmentId, filename: filename || "factuur.pdf" });
+    }
+    for (const child of part.parts ?? []) walk(child);
+  };
+
+  walk(payload);
+  return found;
+}
+
 export function mapGmailMessage(data: unknown): InboundMessage | null {
   if (!data || typeof data !== "object") return null;
   const message = data as {
@@ -166,7 +193,27 @@ export function mapGmailMessage(data: unknown): InboundMessage | null {
     listUnsubscribe: headerValue(message.payload, "List-Unsubscribe") || undefined,
     listUnsubscribePost: headerValue(message.payload, "List-Unsubscribe-Post") || undefined,
     messageIdHeader: headerValue(message.payload, "Message-ID") || undefined,
+    pdfAttachments: findPdfParts(message.payload),
   };
+}
+
+/** Downloads one attachment and returns its text, so invoices can be read. */
+async function fetchAttachmentText(accessToken: string, messageId: string, attachmentId: string): Promise<string> {
+  const response = await fetch(
+    `${GMAIL_API}/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!response.ok) return "";
+
+  const data = (await response.json().catch(() => null)) as { data?: string } | null;
+  if (!data?.data) return "";
+
+  const buffer = Buffer.from(data.data.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+  try {
+    return await extractTextFromBuffer(buffer, "application/pdf");
+  } catch {
+    return "";
+  }
 }
 
 export async function fetchGmailMessage(accessToken: string, id: string): Promise<InboundMessage | null> {
@@ -174,7 +221,18 @@ export async function fetchGmailMessage(accessToken: string, id: string): Promis
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!response.ok) return null;
-  return mapGmailMessage(await response.json().catch(() => null));
+  const mapped = mapGmailMessage(await response.json().catch(() => null));
+  if (!mapped) return null;
+
+  // Invoice details live in the PDF, not in the mail text: read the first one.
+  const pdf = mapped.pdfAttachments?.[0];
+  if (pdf) {
+    const text = await fetchAttachmentText(accessToken, id, pdf.attachmentId);
+    if (text) {
+      mapped.body = `${mapped.body ?? ""}\n\n--- Factuurbijlage: ${pdf.filename} ---\n${text}`.trim();
+    }
+  }
+  return mapped;
 }
 
 /** One page of the inbox, newest first (Gmail returns newest first by default). */
