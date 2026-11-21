@@ -297,7 +297,7 @@ export function InboxCard({
         }
       }}
       style={{ "--card-z": zIndex } as React.CSSProperties}
-      className={`glass-panel focus-ring relative z-[var(--card-z)] flex min-h-[270px] cursor-pointer flex-col items-center rounded-2xl px-4 pt-4 pb-6 text-center transition-transform hover:z-40 hover:-translate-y-0.5 hover:rotate-0 sm:min-h-[410px] ${tilt} ${overlap} ${rowOverlap}`}
+      className={`card-surface focus-ring relative z-[var(--card-z)] flex min-h-[270px] cursor-pointer flex-col items-center rounded-2xl px-4 pt-4 pb-6 text-center transition-transform hover:z-40 hover:-translate-y-0.5 hover:rotate-0 sm:min-h-[410px] ${tilt} ${overlap} ${rowOverlap}`}
     >
       <div className="absolute top-3 right-3 z-10">
         <UrgencyPill tone={urgency.tone} label={urgency.label} />
@@ -348,9 +348,7 @@ export function InboxCard({
                   openCta();
                 }}
                 className={`focus-ring relative flex-1 rounded-full px-3 py-2 text-[13px] font-medium ${
-                  isPrimaryCta(item)
-                    ? "glass-active"
-                    : "glass-chip text-[var(--ink)]"
+                  isPrimaryCta(item) ? "btn-primary" : "btn-secondary"
                 }`}
               >
                 {cta}
@@ -364,7 +362,7 @@ export function InboxCard({
                   until.setHours(0, 0, 0, 0);
                   onSnooze(item, until.toISOString());
                 }}
-                className="glass-chip focus-ring shrink-0 rounded-full px-3 py-2 text-[13px] font-medium text-[var(--ink)]"
+                className="btn-secondary focus-ring shrink-0 rounded-full px-3 py-2 text-[13px] font-medium"
               >
                 Snooze
               </button>
@@ -716,7 +714,7 @@ export function InboxModal({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="glass-chip focus-ring rounded-full px-3 py-1.5 text-[12px] font-medium text-[var(--ink)]"
+                  className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[12px] font-medium"
                 >
                   Kies bestanden
                 </button>
@@ -768,7 +766,7 @@ export function InboxModal({
                 type="button"
                 onClick={() => void sendDraft()}
                 disabled={sending || sent || !draft.trim()}
-                className="glass-active relative rounded-full px-4 py-2 text-[13px] font-medium disabled:opacity-50"
+                className="btn-primary relative rounded-full px-4 py-2 text-[13px] font-medium"
               >
                 {sent ? "Verzonden" : sending ? "Versturen…" : "Verstuur"}
               </button>
@@ -779,7 +777,7 @@ export function InboxModal({
                   setSaved(next);
                   onSave?.(item, next);
                 }}
-                className="glass-chip focus-ring rounded-full px-4 py-2 text-[13px] font-medium text-[var(--ink)]"
+                className="btn-secondary focus-ring rounded-full px-4 py-2 text-[13px] font-medium"
               >
                 {saved ? "Bewaard" : "Bewaren"}
               </button>
@@ -790,7 +788,7 @@ export function InboxModal({
                     setHandled((value) => !value);
                     onToggleHandled(item);
                   }}
-                  className="glass-chip focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium text-[var(--ink)]"
+                  className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
                 >
                   {handled ? "Ongedaan maken" : "Afhandelen"}
                 </button>
@@ -806,7 +804,7 @@ export function InboxModal({
                 if (next && item.invoice && !declaration) setShowDeclarePrompt(true);
               }}
               className={`focus-ring relative rounded-full px-3 py-1.5 text-[13px] font-medium ${
-                handled ? "glass-chip text-[var(--muted)]" : "glass-active"
+                handled ? "btn-secondary text-[var(--muted)]" : "btn-primary"
               }`}
             >
               {handled ? "Ongedaan maken" : doneLabel}
@@ -817,7 +815,7 @@ export function InboxModal({
               type="button"
               onClick={onUnsubscribe}
               disabled={unsubState === "sending" || unsubState === "sent"}
-              className="glass-chip focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium text-[var(--ink)] disabled:opacity-60"
+              className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium disabled:opacity-60"
             >
               {unsubLabel(unsub)}
             </button>
@@ -832,7 +830,7 @@ export function InboxModal({
                 setDeclaration("declared");
                 onDeclare(item, "declared");
               }}
-              className="glass-chip focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium text-[var(--ink)]"
+              className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
             >
               Gedeclareerd
             </button>
@@ -851,7 +849,7 @@ export function InboxModal({
                   onDeclare(item, "pending");
                   setShowDeclarePrompt(false);
                 }}
-                className="glass-active focus-ring rounded-full px-4 py-1.5 text-[13px] font-medium"
+                className="btn-primary focus-ring rounded-full px-4 py-1.5 text-[13px] font-medium"
               >
                 Ja, declareren
               </button>
@@ -862,7 +860,7 @@ export function InboxModal({
                   onDeclare(item, "none");
                   setShowDeclarePrompt(false);
                 }}
-                className="glass-chip focus-ring rounded-full px-4 py-1.5 text-[13px] font-medium text-[var(--ink)]"
+                className="btn-secondary focus-ring rounded-full px-4 py-1.5 text-[13px] font-medium"
               >
                 Nee
               </button>

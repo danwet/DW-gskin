@@ -209,7 +209,7 @@ export function ScanView() {
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="glass-active focus-ring rounded-full px-5 py-2.5 text-[14px] font-medium"
+              className="btn-primary focus-ring rounded-full px-5 py-2.5 text-[14px] font-medium"
             >
               Kies bestand
             </button>
@@ -323,7 +323,7 @@ export function ScanView() {
                     <button
                       type="button"
                       onClick={() => void save({ attachTo: duplicate.conversationId })}
-                      className="glass-active focus-ring rounded-full px-4 py-2 text-[13px] font-medium"
+                      className="btn-primary focus-ring rounded-full px-4 py-2 text-[13px] font-medium"
                     >
                       Scan toevoegen aan bestaande factuur
                     </button>
@@ -414,7 +414,7 @@ export function ScanView() {
                   type="button"
                   onClick={() => void save()}
                   disabled={!dueValid || stage === "saving"}
-                  className="glass-active focus-ring rounded-full px-5 py-2.5 text-[14px] font-medium disabled:opacity-50"
+                  className="btn-primary focus-ring rounded-full px-5 py-2.5 text-[14px] font-medium disabled:opacity-50"
                 >
                   {stage === "saving" ? "Opslaan…" : "Factuur opslaan"}
                 </button>
@@ -436,10 +436,10 @@ export function ScanView() {
             {paid ? "De factuur is als betaald gemarkeerd en blijft vindbaar bij je scans." : "De factuur staat nu in je aandachtsoverzicht."}
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/" className="glass-active focus-ring rounded-full px-5 py-2.5 text-[14px] font-medium">
+            <Link href="/" className="btn-primary focus-ring rounded-full px-5 py-2.5 text-[14px] font-medium">
               Naar dashboard
             </Link>
-            <button type="button" onClick={reset} className="glass-chip focus-ring rounded-full px-5 py-2.5 text-[14px] font-medium">
+            <button type="button" onClick={reset} className="btn-secondary focus-ring rounded-full px-5 py-2.5 text-[14px] font-medium">
               Nog een factuur inscannen
             </button>
           </div>

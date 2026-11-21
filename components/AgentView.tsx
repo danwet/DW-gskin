@@ -66,7 +66,7 @@ export function AgentView() {
               type="button"
               onClick={() => void refresh()}
               disabled={refreshing || !ready}
-              className="glass-active focus-ring rounded-full px-4 py-2.5 text-[14px] font-medium disabled:opacity-60"
+              className="btn-primary focus-ring rounded-full px-4 py-2.5 text-[14px] font-medium disabled:opacity-60"
             >
               {refreshing ? "Bijwerken…" : "Bijwerken"}
             </button>

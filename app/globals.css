@@ -6,24 +6,24 @@
   color-scheme: light;
 
   /* Oppervlakken */
-  --page: #ffffff;
-  --bg: #fafaf9;
-  --surface: #fafaf9;
-  --sidebar: rgba(255, 255, 255, 0.76);
+  --page: #f0f3f1;
+  --bg: #f7f9f6;
+  --surface: #f7f9f6;
+  --sidebar: rgba(249, 251, 248, 0.82);
   --card: #ffffff;
 
   /* Tekst */
-  --ink: #17181a;
-  --muted: #5b6068;
-  --faint: #8a8f98;
+  --ink: #202925;
+  --muted: #56635d;
+  --faint: #87908a;
 
   /* Lijnen */
-  --line: #e5e6e8;
+  --line: #e0e6e1;
 
   /* Acties / nadruk */
-  --accent: #245bb5;
-  --blue: #245bb5;
-  --blue-soft: #f4f7fd;
+  --accent: #245d52;
+  --blue: #245d52;
+  --blue-soft: #deede6;
   --purple: #6b5bd2;
   --green: #1b7f4b;
   --green-soft: rgba(27, 127, 75, 0.12);
@@ -32,33 +32,54 @@
   --danger: #c93a3a;
   --danger-soft: rgba(201, 58, 58, 0.12);
 
-  /* Liquid Glass (neutraal, kleurloos) */
-  --glass-fallback: #fbfbfa;
-  --glass-bg: rgba(255, 255, 255, 0.76);
-  --glass-bg-strong: rgba(255, 255, 255, 0.92);
-  --glass-bg-soft: rgba(255, 255, 255, 0.5);
-  --glass-hl: rgba(255, 255, 255, 0.9);
-  --glass-hl2: rgba(255, 255, 255, 0.55);
-  --glass-edge: rgba(255, 255, 255, 0.65);
-  --glass-bottom: rgba(20, 24, 34, 0.07);
-  --glass-reflect: rgba(255, 255, 255, 0.2);
-  --glass-shadow: 0 12px 32px rgba(24, 24, 28, 0.1), 0 2px 8px rgba(24, 24, 28, 0.05);
+  /* Liquid Glass (licht getint, salie) */
+  --glass-fallback: #f9fbf8;
+  --glass-bg: rgba(249, 251, 248, 0.82);
+  --glass-bg-strong: rgba(255, 255, 255, 0.9);
+  --glass-bg-soft: rgba(237, 242, 238, 0.7);
+  --glass-hl: rgba(255, 255, 255, 0.95);
+  --glass-hl2: rgba(255, 255, 255, 0.6);
+  --glass-edge: #dce4de;
+  --glass-bottom: rgba(32, 41, 37, 0.06);
+  --glass-reflect: rgba(255, 255, 255, 0.3);
+  --glass-shadow: 0 10px 26px rgba(32, 41, 37, 0.06), 0 2px 6px rgba(32, 41, 37, 0.04);
+  --glass-border: 1px solid #dce4de;
+  --chip-border: 1px solid #d8e2da;
 
-  /* Actieve navigatie (wit glas, donkerblauwe tekst, fijne contour) */
-  --active-bg: rgba(255, 255, 255, 0.85);
-  --active-bg-deep: rgba(255, 255, 255, 0.95);
-  --active-ink: #245bb5;
+  /* Zachte petrolselectie (filters + actieve navigatie) */
+  --active-bg: #deede6;
+  --active-bg-deep: #d3e6dc;
+  --active-ink: #245d52;
   --active-hl: rgba(255, 255, 255, 0.9);
-  --active-line: rgba(24, 24, 28, 0.12);
+  --active-line: #c8dcd1;
 
-  /* Geen blauwe waas in light mode */
-  --glow: transparent;
-  --glow2: transparent;
+  /* Brede, zachte lichtval van boven */
+  --glow: rgba(247, 249, 246, 0.95);
+  --glow2: rgba(247, 249, 246, 0.5);
 
-  /* Zwevende zijbalk: zachte, neutrale schaduw */
-  --float-shadow: 0 12px 32px rgba(24, 24, 28, 0.12), 0 2px 8px rgba(24, 24, 28, 0.06);
+  /* Zwevende zijbalk */
+  --float-shadow: 0 14px 36px rgba(32, 41, 37, 0.1), 0 2px 8px rgba(32, 41, 37, 0.05);
 
-  --shadow: 0 1px 2px rgba(24, 24, 28, 0.04), 0 12px 32px rgba(24, 24, 28, 0.05);
+  --shadow: 0 1px 2px rgba(32, 41, 37, 0.03), 0 8px 22px rgba(32, 41, 37, 0.04);
+
+  /* Kaartoppervlak: dekkend wit met fijne contour en zachte schaduw */
+  --card-surface-bg: #ffffff;
+  --card-surface-border: 1px solid #e0e6e1;
+  --card-surface-shadow: 0 1px 2px rgba(32, 41, 37, 0.03), 0 8px 22px rgba(32, 41, 37, 0.04);
+
+  /* Knoppen */
+  --btn-primary-bg: #245d52;
+  --btn-primary-hover: #1f5046;
+  --btn-primary-active: #1a453c;
+  --btn-primary-ink: #ffffff;
+  --btn-primary-hl: rgba(255, 255, 255, 0.22);
+  --btn-secondary-bg: #edf2ee;
+  --btn-secondary-hover: #e4ece6;
+  --btn-secondary-active: #dce6df;
+  --btn-secondary-line: #d8e2da;
+  --btn-secondary-line-strong: #c6d5ca;
+  --btn-secondary-ink: #202925;
+  --btn-secondary-hl: rgba(255, 255, 255, 0.7);
 }
 
 .dark {
@@ -107,6 +128,27 @@
   --float-shadow: 0 20px 48px rgba(16, 20, 30, 0.28);
 
   --shadow: none;
+
+  /* Dark behoudt de glas-look voor kaarten */
+  --card-surface-bg: var(--glass-bg);
+  --card-surface-border: none;
+  --card-surface-shadow: var(--glass-shadow);
+
+  /* Dark houdt de bestaande glas-look: geen extra randen, glazen knoppen */
+  --glass-border: none;
+  --chip-border: none;
+  --btn-primary-bg: rgba(41, 88, 163, 0.55);
+  --btn-primary-hover: rgba(41, 88, 163, 0.65);
+  --btn-primary-active: rgba(32, 74, 142, 0.7);
+  --btn-primary-ink: #f3f5f8;
+  --btn-primary-hl: rgba(255, 255, 255, 0.18);
+  --btn-secondary-bg: rgba(46, 52, 64, 0.88);
+  --btn-secondary-hover: rgba(53, 60, 72, 0.92);
+  --btn-secondary-active: rgba(46, 52, 64, 0.95);
+  --btn-secondary-line: rgba(255, 255, 255, 0.12);
+  --btn-secondary-line-strong: rgba(255, 255, 255, 0.18);
+  --btn-secondary-ink: #f3f5f8;
+  --btn-secondary-hl: rgba(255, 255, 255, 0.14);
 }
 
 * {
@@ -154,6 +196,7 @@ button {
 
 .glass-panel {
   background: var(--glass-fallback);
+  border: var(--glass-border);
   box-shadow: var(--glass-shadow);
 }
 
@@ -179,9 +222,35 @@ button {
   }
 }
 
+/*
+ * Kaarten: in light mode een rustig, dekkend wit vlak met fijne contour en één
+ * zachte schaduw (geen dure backdrop-filter per kaart). Dark behoudt het glas.
+ */
+.card-surface {
+  background: var(--card-surface-bg);
+  border: var(--card-surface-border);
+  box-shadow: var(--card-surface-shadow);
+}
+
+.dark .card-surface {
+  box-shadow:
+    inset 0 1px 0 var(--glass-hl),
+    inset 1px 0 0 var(--glass-hl2),
+    inset 0 -1px 0 var(--glass-bottom),
+    var(--glass-shadow);
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .dark .card-surface {
+    -webkit-backdrop-filter: blur(20px) saturate(135%);
+    backdrop-filter: blur(20px) saturate(135%);
+  }
+}
+
 .glass-chip {
   position: relative;
   background: var(--glass-bg-strong);
+  border: var(--chip-border);
   box-shadow:
     inset 0 1px 0 var(--glass-hl),
     inset 0 -1px 0 var(--glass-bottom),
@@ -224,6 +293,61 @@ button {
   height: 1px;
   background: var(--active-hl);
   pointer-events: none;
+}
+
+/* ---------- Knoppen ---------- */
+
+/* Primaire actie: volledig gevuld petrol met witte semibold tekst. */
+.btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-ink);
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 var(--btn-primary-hl),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.14),
+    0 1px 2px rgba(32, 41, 37, 0.14);
+  transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.btn-primary:hover {
+  background: var(--btn-primary-hover);
+}
+
+.btn-primary:active {
+  background: var(--btn-primary-active);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Secundaire actie: lichte saliegrijze vulling met zichtbare fijne rand. */
+.btn-secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-ink);
+  border: 1px solid var(--btn-secondary-line);
+  box-shadow: inset 0 1px 0 var(--btn-secondary-hl);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.btn-secondary:hover {
+  background: var(--btn-secondary-hover);
+  border-color: var(--btn-secondary-line-strong);
+}
+
+.btn-secondary:active {
+  background: var(--btn-secondary-active);
+  box-shadow: inset 0 1px 2px rgba(32, 41, 37, 0.1);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* Zwevende zijbalk */
