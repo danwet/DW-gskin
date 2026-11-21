@@ -226,13 +226,18 @@ function preparedLabel(item: MailAssessment): string {
 function ctaLabel(item: MailAssessment): string {
   if (item.declaration === "pending") return "Gedeclareerd";
   if (item.source === "scan") return "Bekijk scan";
-  if (hasPayableInvoice(item)) return item.handledByUser ? "Betaald" : "Betalen";
+  if (hasPayableInvoice(item)) {
+    // A receipt for a payment that already went through is never payable.
+    const settled = item.invoice?.paymentStatus === "paid_confirmed" || item.handledByUser;
+    return settled ? "Betaald" : "Betalen";
+  }
   if (item.classification === "reply_needed") return "Goedkeuren";
   if (item.classification === "action_needed") return "Afhandelen";
   return "Bekijken";
 }
 
 function isPrimaryCta(item: MailAssessment): boolean {
+  if (item.invoice?.paymentStatus === "paid_confirmed") return false;
   return hasPayableInvoice(item) || item.classification === "reply_needed";
 }
 
