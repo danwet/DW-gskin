@@ -207,7 +207,7 @@ function SidebarContent({
   const importTotal = syncingNow && total ? total : null;
   const percent = importTotal ? Math.min(100, Math.round((shown / importTotal) * 100)) : 0;
   const progressLabel = triaging ? "Beoordelen" : "Indexeren";
-  const progressUnit = triaging ? "gesprekken" : "berichten";
+  const progressUnit = "berichten";
 
   return (
     <div className="sidebar-enter relative z-10 flex min-h-0 flex-1 flex-col">
