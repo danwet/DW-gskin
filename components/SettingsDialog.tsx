@@ -98,6 +98,21 @@ export function SettingsDialog() {
     return () => window.removeEventListener("keydown", onKey);
   }, [settingsOpen, setSettingsOpen]);
 
+  async function disconnectGmail() {
+    setSaving(true);
+    setNotice(null);
+    try {
+      const response = await fetch("/api/gmail/disconnect", { method: "POST" });
+      if (!response.ok) throw new Error("ontkoppelen mislukt");
+      await load();
+      setNotice("Gmail is ontkoppeld.");
+    } catch {
+      setNotice("Ontkoppelen mislukt.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function load() {
     try {
       const response = await fetch("/api/settings");
@@ -255,6 +270,7 @@ export function SettingsDialog() {
               signature={signature}
               setSignature={setSignature}
               saving={saving}
+              onDisconnect={() => void disconnectGmail()}
               onSaveGmail={() => void save({ gmailRefreshToken: gmailToken }, "Gmail-token opgeslagen (server-side).")}
               onSaveSignature={() => void save({ emailSignature: signature }, "E-mailhandtekening opgeslagen.")}
             />
@@ -453,6 +469,7 @@ function ConnectionsSection({
   signature,
   setSignature,
   saving,
+  onDisconnect,
   onSaveGmail,
   onSaveSignature,
 }: {
@@ -462,6 +479,7 @@ function ConnectionsSection({
   signature: string;
   setSignature: (v: string) => void;
   saving: boolean;
+  onDisconnect: () => void;
   onSaveGmail: () => void;
   onSaveSignature: () => void;
 }) {
@@ -495,28 +513,25 @@ function ConnectionsSection({
             </div>
             <Status
               dot={connection?.status === "connected"}
-              label={
-                connection
-                  ? connection.status === "connected"
-                    ? "Gekoppeld"
-                    : "Opnieuw koppelen"
-                  : "Niet gekoppeld"
-              }
+              label={connection ? "Gekoppeld" : "Niet gekoppeld"}
             />
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <a
-              href="/api/gmail/connect"
-              className={`${primaryClass} inline-block text-center no-underline`}
-            >
-              {connection ? "Opnieuw koppelen" : "Gmail koppelen"}
-            </a>
-            <span className="text-[12px] text-[var(--muted)]">scope: gmail.readonly</span>
+            {connection ? (
+              <button type="button" onClick={onDisconnect} disabled={saving} className={primaryClass}>
+                Ontkoppelen
+              </button>
+            ) : (
+              <a href="/api/gmail/connect" className={`${primaryClass} inline-block text-center no-underline`}>
+                Gmail koppelen
+              </a>
+            )}
+            <span className="text-[12px] text-[var(--muted)]">scope: gmail.modify</span>
           </div>
 
           <p className="mt-2 text-[12px] leading-5 text-[var(--muted)]">
-            Alleen lezen. De refresh token wordt versleuteld op de server bewaard en nooit naar de browser gestuurd.
+            Lezen, archiveren en verwijderen. De refresh token wordt versleuteld op de server bewaard en nooit naar de browser gestuurd.
           </p>
           {server?.gmail.redirectUri ? (
             <p className="mt-1 break-all text-[11px] leading-5 text-[var(--muted)]">

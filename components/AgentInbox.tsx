@@ -35,6 +35,7 @@ type InboxPayload = {
   meta: AgentMeta;
   model: string;
   gmail?: { email: string; status: string } | null;
+  undoable?: boolean;
   error?: string | null;
 };
 
@@ -91,6 +92,7 @@ export function useInbox() {
   const [pending, setPending] = useState<PendingMessage[]>([]);
   const [progress, setProgress] = useState<InboxProgress | null>(null);
   const [gmail, setGmail] = useState<{ email: string; status: string } | null>(null);
+  const [undoable, setUndoable] = useState(false);
   const [meta, setMeta] = useState<AgentMeta | null>(null);
   const [model, setModel] = useState("rule");
   const [loading, setLoading] = useState(true);
@@ -113,6 +115,7 @@ export function useInbox() {
       setPending(data.pending ?? []);
       setProgress(data.progress ?? null);
       setGmail(data.gmail ?? null);
+      setUndoable(Boolean(data.undoable));
       setSyncProgress(data.progress ?? null);
       setMeta(data.meta);
       setModel(data.model);
@@ -232,7 +235,20 @@ export function useInbox() {
     }
   }, []);
 
-  return { items, pending, progress, meta, model, gmail, loading, error, reload, toggleHandled, snoozeItem, declareInvoice, saveItem };
+  const undo = useCallback(async () => {
+    try {
+      const response = await fetch("/api/gmail/undo", { method: "POST" });
+      if (response.ok) await reload();
+    } catch {
+      // Nothing changed; the card simply stays away.
+    }
+  }, [reload]);
+
+  const removeItem = useCallback((conversationId: string) => {
+    setItems((current) => current.filter((entry) => entry.conversationId !== conversationId));
+  }, []);
+
+  return { items, pending, progress, meta, model, gmail, undoable, undo, loading, error, reload, removeItem, toggleHandled, snoozeItem, declareInvoice, saveItem };
 }
 
 export function InboxListCard({

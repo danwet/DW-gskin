@@ -133,6 +133,8 @@ export type AgentMeta = {
   runs?: RunRecord[];
   /** Gmail history cursor for reconciling deletions and archive actions. */
   gmailHistoryId?: string;
+  /** Snapshot of the last archive/trash, so it can be undone. */
+  lastAction?: LastMailAction | null;
 };
 
 export type InboundMessage = {
@@ -164,4 +166,13 @@ export type ThreadMessage = {
   subject: string;
   body?: string;
   receivedAt: string;
+};
+
+/** One archive/trash action, kept so the user can undo it. */
+export type LastMailAction = {
+  conversationId: string;
+  action: "archive" | "trash";
+  messageIds: string[];
+  assessment: MailAssessment;
+  at: string;
 };

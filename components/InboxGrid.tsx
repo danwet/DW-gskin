@@ -24,6 +24,7 @@ export function InboxGrid({
   onDeclare,
   onSave,
   onReload,
+  onRemove,
 }: {
   items: MailAssessment[];
   infoItems: MailAssessment[];
@@ -35,6 +36,7 @@ export function InboxGrid({
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
   onSave: (item: MailAssessment, saved: boolean) => void;
   onReload?: () => void;
+  onRemove?: (conversationId: string) => void;
 }) {
   const [selected, setSelected] = useState<MailAssessment | null>(null);
   const [activeTab, setActiveTab] = useState<"urgent" | "later" | "info" | "declare">("urgent");
@@ -176,7 +178,8 @@ export function InboxGrid({
             setSelected(null);
             setProposalId(id);
           }}
-          onActed={onReload}
+          onRemove={onRemove}
+          onReload={onReload}
         />
       ) : null}
 
@@ -433,7 +436,8 @@ export function InboxModal({
   onSnooze,
   onSave,
   onOpenProposal,
-  onActed,
+  onRemove,
+  onReload,
 }: {
   item: MailAssessment;
   now: Date;
@@ -444,7 +448,8 @@ export function InboxModal({
   onSnooze?: (item: MailAssessment, until: string, tier?: "later" | "info") => void;
   onSave?: (item: MailAssessment, saved: boolean) => void;
   onOpenProposal?: (id: string) => void;
-  onActed?: () => void;
+  onRemove?: (conversationId: string) => void;
+  onReload?: () => void;
 }) {
   const urgency = urgencyFor(item, now, timeZone);
   const [handled, setHandled] = useState(item.handledByUser === true);
@@ -526,32 +531,32 @@ export function InboxModal({
   };
 
   const [busyAction, setBusyAction] = useState<"archive" | "trash" | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
 
   // This one does reach Gmail: archive removes the INBOX label, trash moves it
   // to the prullenbak (recoverable for 30 days).
-  const runAction = async (action: "archive" | "trash") => {
+  // Optimistic: close and drop the card at once; Gmail syncs in the background.
+  const runAction = (action: "archive" | "trash") => {
     if (busyAction) return;
     setBusyAction(action);
-    setActionError(null);
-    try {
-      const response = await fetch("/api/gmail/action", {
+    void (async () => {
+      // The request starts right away; the eye only gets a short beat so the
+      // click feels acknowledged before the popup disappears.
+      const request = fetch("/api/gmail/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId: item.conversationId, action }),
       });
-      const data = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) {
-        setActionError(data?.error ?? "Actie mislukt.");
-        return;
-      }
-      onActed?.();
+      await new Promise((resolve) => setTimeout(resolve, 140));
       onClose();
-    } catch {
-      setActionError("Actie mislukt.");
-    } finally {
-      setBusyAction(null);
-    }
+      onRemove?.(item.conversationId);
+      try {
+        const response = await request;
+        // If Gmail refused, bring the card back so the state stays honest.
+        if (!response.ok) onReload?.();
+      } catch {
+        onReload?.();
+      }
+    })();
   };
 
   return (
@@ -791,9 +796,6 @@ export function InboxModal({
         ) : null}
 
         <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-[var(--line)] pt-4">
-          {actionError ? (
-            <p className="w-full text-[12px] leading-5 text-[var(--danger)]">{actionError}</p>
-          ) : null}
           {item.draftReply ? (
             <>
               <button
@@ -864,21 +866,39 @@ export function InboxModal({
               </button>
             </>
           ) : tier === "urgent" ? (
-            <button
-              type="button"
-              onClick={() => {
-                const next = !handled;
-                setHandled(next);
-                onToggleHandled(item);
-                if (next && hasPayableInvoice(item) && !declaration) setShowDeclarePrompt(true);
-                if (!next) setShowDeclarePrompt(false);
-              }}
-              className={`focus-ring relative rounded-full px-3 py-1.5 text-[13px] font-medium ${
-                handled ? "btn-secondary text-[var(--muted)]" : "btn-primary"
-              }`}
-            >
-              {handled ? "Ongedaan maken" : doneLabel}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !handled;
+                  setHandled(next);
+                  onToggleHandled(item);
+                  if (next && hasPayableInvoice(item) && !declaration) setShowDeclarePrompt(true);
+                  if (!next) setShowDeclarePrompt(false);
+                }}
+                className={`focus-ring relative rounded-full px-3 py-1.5 text-[13px] font-medium ${
+                  handled ? "btn-secondary text-[var(--muted)]" : "btn-primary"
+                }`}
+              >
+                {handled ? "Ongedaan maken" : doneLabel}
+              </button>
+              <button
+                type="button"
+                onClick={() => void runAction("archive")}
+                disabled={Boolean(busyAction)}
+                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+              >
+                Archiveren
+              </button>
+              <button
+                type="button"
+                onClick={() => void runAction("trash")}
+                disabled={Boolean(busyAction)}
+                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+              >
+                Verwijderen
+              </button>
+            </>
           ) : null}
           {tier === "info" && !item.draftReply && onOpenProposal ? (
             <>

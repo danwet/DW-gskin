@@ -10,7 +10,7 @@ import { LegacyLoopsCard } from "./LegacyLoopsCard";
 import { TodayHeader } from "./TodayHeader";
 
 const GMAIL_NOTICES: Record<string, { tone: "ok" | "warn"; text: string }> = {
-  connected: { tone: "ok", text: "Gmail is gekoppeld (alleen lezen). De eerste import start automatisch." },
+  connected: { tone: "ok", text: "Gmail is gekoppeld. De eerste import start automatisch." },
   denied: { tone: "warn", text: "Je hebt geen toestemming gegeven voor Gmail. Koppel opnieuw om te proberen." },
   scope_rejected: {
     tone: "warn",
@@ -132,6 +132,8 @@ export function TodayView() {
         lastSyncAt={inbox.meta?.lastRunAt ?? null}
         onToggleHandled={inbox.toggleHandled}
         onDeclare={inbox.declareInvoice}
+        undoable={inbox.undoable}
+        onUndo={() => void inbox.undo()}
       />
       <div className="mt-8 grid gap-0 lg:grid-cols-3 lg:gap-8">
         <div className="lg:col-span-2">
@@ -147,6 +149,7 @@ export function TodayView() {
               onDeclare={inbox.declareInvoice}
               onSave={inbox.saveItem}
               onReload={inbox.reload}
+              onRemove={inbox.removeItem}
             />
 
             <LegacyLoopsCard />

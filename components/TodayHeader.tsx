@@ -11,12 +11,16 @@ export function TodayHeader({
   lastSyncAt,
   onToggleHandled,
   onDeclare,
+  undoable,
+  onUndo,
 }: {
   missedItems: MailAssessment[];
   /** Last successful agent run, read from Supabase (meta.lastRunAt). */
   lastSyncAt?: string | null;
   onToggleHandled: (item: MailAssessment) => void;
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
+  undoable?: boolean;
+  onUndo?: () => void;
 }) {
   const { ready, lastRun, refreshing, refresh } = useApp();
   const shownSync = lastSyncAt ?? lastRun;
@@ -34,6 +38,16 @@ export function TodayHeader({
         <p className="mt-1.5 text-right text-[15px] text-[var(--muted)]">{dateText}</p>
       </div>
       <div className="flex flex-wrap items-start gap-5 sm:mt-0.5">
+        <button
+          type="button"
+          onClick={onUndo}
+          disabled={!undoable || !onUndo}
+          aria-label="Laatste actie terugzetten"
+          title={undoable ? "Laatste actie terugzetten" : "Nog niets om terug te zetten"}
+          className="glass-chip focus-ring grid h-8 w-8 place-items-center rounded-full text-[var(--ink)] disabled:opacity-40"
+        >
+          <UndoIcon />
+        </button>
         <NotificationsBell items={missedItems} onToggleHandled={onToggleHandled} onDeclare={onDeclare} />
         <div className="flex items-center gap-2">
           <button
@@ -52,6 +66,25 @@ export function TodayHeader({
         <WeatherChip />
       </div>
     </header>
+  );
+}
+
+function UndoIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 14 4 9l5-5" />
+      <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H9" />
+    </svg>
   );
 }
 

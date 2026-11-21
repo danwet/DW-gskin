@@ -148,6 +148,14 @@ export function attachScanToAssessment(
 }
 
 /** Assessments and meta from a single read, for the inbox first paint. */
+export function restoreAssessment(item: MailAssessment): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    state.assessments[item.conversationId] = item;
+    await writeState(state);
+  });
+}
+
 export function removeAssessments(conversationIds: string[]): Promise<void> {
   if (conversationIds.length === 0) return Promise.resolve();
   return withLock(async () => {

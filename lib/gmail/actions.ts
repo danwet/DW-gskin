@@ -56,3 +56,29 @@ export function runGmailAction(refreshToken: string, messageId: string, action: 
     ? archiveGmailMessage(refreshToken, messageId)
     : trashGmailMessage(refreshToken, messageId);
 }
+
+/** Puts the message back: the INBOX label for an archive, out of trash otherwise. */
+export async function restoreGmailMessage(
+  refreshToken: string,
+  messageId: string,
+  action: MailAction,
+): Promise<MailActionResult> {
+  const token = await accessToken(refreshToken);
+  if (!token) return { ok: false, reason: "auth", message: "Gmail-token kon niet worden vernieuwd." };
+
+  const url =
+    action === "archive"
+      ? `${GMAIL_API}/messages/${encodeURIComponent(messageId)}/modify`
+      : `${GMAIL_API}/messages/${encodeURIComponent(messageId)}/untrash`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: action === "archive" ? JSON.stringify({ addLabelIds: ["INBOX"] }) : undefined,
+  });
+  if (response.ok) return { ok: true };
+  if (response.status === 403) {
+    return { ok: false, reason: "scope", message: "De koppeling heeft geen schrijfrechten. Koppel Gmail opnieuw." };
+  }
+  return { ok: false, reason: "api", message: `Terugzetten mislukte (${response.status}).` };
+}

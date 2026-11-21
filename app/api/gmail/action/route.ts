@@ -2,7 +2,7 @@ import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { getGmailRefreshToken, resolveGmailConnection } from "@/lib/gmail/connection";
 import { runGmailAction, type MailAction } from "@/lib/gmail/actions";
 import { listStoredMessages, purgeMessages } from "@/lib/gmail/store";
-import { readAssessments, removeAssessments } from "@/lib/agent/store";
+import { readAssessments, removeAssessments, updateMeta } from "@/lib/agent/store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -48,6 +48,19 @@ export async function POST(request: Request) {
         { status: result.reason === "scope" ? 403 : 502 },
       );
     }
+  }
+
+  // Keep a snapshot first, so the actie terug te zetten is.
+  if (assessment) {
+    await updateMeta({
+      lastAction: {
+        conversationId,
+        action,
+        messageIds: ids,
+        assessment,
+        at: new Date().toISOString(),
+      },
+    });
   }
 
   // Mirror it locally so the card disappears straight away.

@@ -89,7 +89,7 @@ export async function GET() {
       const raw = stateDoc.assessments.filter((item) => item.mailbox === "gmail");
       const items = await attachProposals(user.id, raw, gmailEmail);
 
-      return Response.json({ items, pending: [], progress, meta, model, gmail: connection });
+      return Response.json({ items, pending: [], progress, meta, model, gmail: connection, undoable: Boolean(meta.lastAction) });
     }
 
     // Fixtures: seed the demo data on first use when the store has never run.
@@ -108,6 +108,7 @@ export async function GET() {
       meta: latestMeta,
       model,
       gmail: connection,
+      undoable: Boolean(latestMeta.lastAction),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Inbox kon niet worden geladen.";
