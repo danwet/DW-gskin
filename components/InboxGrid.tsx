@@ -760,7 +760,9 @@ export function InboxModal({
             {item.consequence?.senderSays ? (
               <DetailRow label="Afzender meldt">{item.consequence.senderSays}</DetailRow>
             ) : null}
-            {item.consequence?.possible ? (
+            {/* Identical to "Wat als je niks doet" is pure repetition. */}
+            {item.consequence?.possible &&
+            item.consequence.possible.trim().toLowerCase() !== (item.impact ?? "").trim().toLowerCase() ? (
               <DetailRow label="Mogelijk gevolg">{item.consequence.possible}</DetailRow>
             ) : null}
           </dl>
