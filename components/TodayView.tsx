@@ -137,40 +137,6 @@ export function TodayView() {
       <div className="mt-8 grid gap-0 lg:grid-cols-3 lg:gap-8">
         <div className="lg:col-span-2">
           <div className="mx-auto w-full max-w-[720px] space-y-6">
-            {syncing && progress ? (
-              <div className="card-surface rounded-2xl px-4 py-3">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="text-[13px] font-semibold text-[var(--ink)]">
-                    {progress.phase === "importing" ? "Inbox ophalen…" : "Beoordelen…"}
-                  </p>
-                  <p className="text-[12px] text-[var(--muted)]">
-                    Ophalen: {progress.imported}
-                    {progress.total ? ` van ~${progress.total}` : ""} · Beoordeeld: {progress.triaged} · Nog te
-                    beoordelen: {progress.pending}
-                  </p>
-                </div>
-                {progress.lastError ? (
-                  <p className="mt-1 text-[12px] leading-5 text-[var(--danger)]">{progress.lastError}</p>
-                ) : null}
-                <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--line)]">
-                  <div
-                    className="h-1 rounded-full bg-[var(--accent)] transition-[width] duration-500"
-                    style={{
-                      width: `${
-                        progress.phase === "importing"
-                          ? progress.total
-                            ? Math.min(100, Math.round((progress.imported / progress.total) * 100))
-                            : 30
-                          : progress.threadsImported
-                            ? Math.min(100, Math.round((progress.triaged / progress.threadsImported) * 100))
-                            : 0
-                      }%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ) : null}
-
             <InboxGrid
               items={activeItems}
               infoItems={infoItems}

@@ -25,6 +25,16 @@ import {
 import { toFahrenheit } from "@/lib/weather";
 import type { Brief, BriefRun, ConnectionStatus, DraftReply, OpenLoop, Settings, UserWorkspace, WeatherNow } from "@/lib/types";
 
+export type SyncProgressView = {
+  phase: "idle" | "importing" | "triaging" | "done" | "error";
+  imported: number;
+  total: number | null;
+  threadsImported: number;
+  triaged: number;
+  pending: number;
+  lastError: string | null;
+};
+
 type AppContextValue = {
   ready: boolean;
   now: Date;
@@ -36,6 +46,9 @@ type AppContextValue = {
   refreshing: boolean;
   /** Increments after a manual sync so the inbox reloads its cards. */
   syncNonce: number;
+  /** Live Gmail import progress, shown in the sidebar. */
+  syncProgress: SyncProgressView | null;
+  setSyncProgress: (value: SyncProgressView | null) => void;
   refresh: () => Promise<void>;
   weather: WeatherNow | null;
   weatherError: string | null;
@@ -101,6 +114,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [runs, setRuns] = useState<BriefRun[]>([]);
   const [refreshing, setRefreshing] = useState(() => briefInFlight());
   const [syncNonce, setSyncNonce] = useState(0);
+  const [syncProgress, setSyncProgress] = useState<SyncProgressView | null>(null);
   const [sourceBrief, setSourceBrief] = useState<Brief>(emptyBrief());
   const [account, setAccount] = useState<Account | null>(null);
   const [calendarError, setCalendarError] = useState<string | null>(null);
@@ -584,6 +598,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     runs,
     refreshing,
     syncNonce,
+    syncProgress,
+    setSyncProgress,
     refresh,
     weather,
     weatherError,

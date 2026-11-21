@@ -85,7 +85,7 @@ function formatDate(iso: string | undefined): string {
 }
 
 export function useInbox() {
-  const { syncNonce } = useApp();
+  const { syncNonce, setSyncProgress } = useApp();
   const [items, setItems] = useState<MailAssessment[]>([]);
   const [pending, setPending] = useState<PendingMessage[]>([]);
   const [progress, setProgress] = useState<InboxProgress | null>(null);
@@ -110,6 +110,7 @@ export function useInbox() {
       setItems(data.items);
       setPending(data.pending ?? []);
       setProgress(data.progress ?? null);
+      setSyncProgress(data.progress ?? null);
       setMeta(data.meta);
       setModel(data.model);
       if (data.error) setError(data.error);

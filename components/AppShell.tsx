@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { signOutOfDashboard } from "@/app/login/actions";
-import { useApp } from "./AppProvider";
+import { useApp, type SyncProgressView } from "./AppProvider";
 import { DraftDialog } from "./DraftDialog";
 import { LoopPreview } from "./LoopPreview";
 import { PaymentModal } from "./PaymentModal";
@@ -20,7 +20,7 @@ const NAV = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { setSettingsOpen, account, settings, updateSettings } = useApp();
+  const { setSettingsOpen, account, settings, updateSettings, syncProgress } = useApp();
 
   const pinned = settings.sidebarMode === "pinned";
   const [floatingOpen, setFloatingOpen] = useState(false);
@@ -86,6 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       email={account?.email}
       initial={initial}
       settingsTheme={settings.theme}
+      syncProgress={syncProgress}
       pinned={pinned}
       onTogglePinned={() => {
         const next = pinned ? "floating" : "pinned";
@@ -175,6 +176,7 @@ function SidebarContent({
   email,
   initial,
   settingsTheme,
+  syncProgress,
   pinned,
   onTogglePinned,
   onOpenSettings,
@@ -185,11 +187,18 @@ function SidebarContent({
   email: string | undefined;
   initial: string;
   settingsTheme: string;
+  syncProgress: SyncProgressView | null;
   pinned: boolean;
   onTogglePinned: () => void;
   onOpenSettings: () => void;
   onNavigate: () => void;
 }) {
+  // Demo: always show a full bar so the placement is visible. Set to false for live data.
+  const IMPORT_DEMO_FULL = true;
+  const importTotal = syncProgress?.total ?? (IMPORT_DEMO_FULL ? 201 : null);
+  const shownImported = IMPORT_DEMO_FULL ? (importTotal ?? 0) : (syncProgress?.imported ?? 0);
+  const importPercent = importTotal ? Math.min(100, Math.round((shownImported / importTotal) * 100)) : 0;
+
   return (
     <div className="sidebar-enter relative z-10 flex min-h-0 flex-1 flex-col">
       <div className="shrink-0 px-3 pt-5 pb-5">
@@ -229,6 +238,16 @@ function SidebarContent({
       </nav>
 
       <div className="mt-auto pt-4">
+        {importTotal ? (
+          <div className="mb-3 px-2">
+            <p className="text-[11px] leading-4 text-[var(--muted)]">
+              Ophalen {shownImported} van {importTotal} emails
+            </p>
+            <div className="mt-1 h-[3px] w-full overflow-hidden rounded-full bg-[var(--line)]">
+              <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${importPercent}%` }} />
+            </div>
+          </div>
+        ) : null}
         <div className="flex items-center gap-2.5 rounded-xl px-2 py-1.5">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--ink)] text-[13px] font-semibold text-[var(--surface)]">
             {initial}
