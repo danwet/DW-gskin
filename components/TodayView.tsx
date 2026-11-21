@@ -130,6 +130,7 @@ export function TodayView() {
       <GmailNotice />
       <TodayHeader
         missedItems={missedItems}
+        lastSyncAt={inbox.meta?.lastRunAt ?? null}
         onToggleHandled={inbox.toggleHandled}
         onDeclare={inbox.declareInvoice}
       />

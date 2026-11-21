@@ -8,14 +8,18 @@ import { WeatherChip } from "./WeatherChip";
 
 export function TodayHeader({
   missedItems,
+  lastSyncAt,
   onToggleHandled,
   onDeclare,
 }: {
   missedItems: MailAssessment[];
+  /** Last successful agent run, read from Supabase (meta.lastRunAt). */
+  lastSyncAt?: string | null;
   onToggleHandled: (item: MailAssessment) => void;
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
 }) {
   const { ready, lastRun, refreshing, refresh } = useApp();
+  const shownSync = lastSyncAt ?? lastRun;
   const dateText = new Date().toLocaleDateString("nl-NL", {
     weekday: "long",
     day: "numeric",
@@ -42,7 +46,7 @@ export function TodayHeader({
             <RefreshIcon spinning={refreshing} />
           </button>
           <span className="tnum text-[12px] leading-none text-[var(--muted)]">
-            {refreshing ? "…" : lastRun ? formatClock(new Date(lastRun)) : "—"}
+            {refreshing ? "…" : shownSync ? formatClock(new Date(shownSync)) : "—"}
           </span>
         </div>
         <WeatherChip />
