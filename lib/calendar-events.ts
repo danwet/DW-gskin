@@ -1,4 +1,5 @@
 import type { CalendarEvent } from "./types";
+import { DAY_ROLLOVER_HOUR } from "./day-boundary";
 
 const tones: CalendarEvent["tone"][] = ["blue", "green", "orange", "purple"];
 
@@ -34,6 +35,20 @@ export function zonedDay(timeZone: string, now = new Date()): string {
   }).format(now);
 }
 
+/**
+ * The day the dashboard treats as today. Before 05:00 local time that is still
+ * yesterday, so the agenda only rolls over in the morning.
+ */
+export function logicalDay(timeZone: string, now = new Date()): string {
+  const day = zonedDay(timeZone, now);
+  const hour = Number(
+    new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", hourCycle: "h23" }).format(now),
+  );
+  if (hour >= DAY_ROLLOVER_HOUR || Number.isNaN(hour)) return day;
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, date - 1)).toISOString().slice(0, 10);
+}
+
 function offsetMs(timeZone: string, date: Date): number {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
@@ -66,7 +81,7 @@ export function dayWindow(
   now = new Date(),
   dayOffset = 0,
 ): { start: Date; end: Date; day: string } {
-  const day = zonedDay(timeZone, now);
+  const day = logicalDay(timeZone, now);
   const [year, month, date] = day.split("-").map(Number);
   const start = new Date(Date.UTC(year, month - 1, date + dayOffset));
   const end = new Date(Date.UTC(year, month - 1, date + dayOffset + 1));

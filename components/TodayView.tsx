@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { AgendaPanel } from "./AgendaPanel";
+import { startOfLogicalDay } from "@/lib/day-boundary";
 import type { MailAssessment, ShipmentInfo } from "@/lib/agent/types";
 import { useInbox, type InboxProgress } from "./AgentInbox";
 import { useApp } from "./AppProvider";
@@ -236,10 +237,9 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
       byKey.set(key, { shipment: item.shipment, receivedAt: item.receivedAt });
     }
   }
-  // A delivered order is only relevant on the day it arrived; after midnight
-  // it drops out of the panel.
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  // A delivered order is relevant until 05:00 the next morning; then the
+  // dashboard day rolls over and it drops out of the panel.
+  const startOfToday = startOfLogicalDay();
 
   // Payment confirmations sit in the same panel, grouped per supplier so a
   // second receipt shows as "Leverancier (2)".
@@ -347,12 +347,11 @@ function DaySummary({
   dailyChanges?: { date: string; orderStatus: number; paymentStatus: number };
 }) {
   // Counters only apply to today; yesterday's numbers must not linger.
-  const today = new Date().toLocaleDateString("sv-SE");
+  const today = startOfLogicalDay().toLocaleDateString("sv-SE");
   const orderChanges = dailyChanges?.date === today ? dailyChanges.orderStatus : 0;
   const paymentChanges = dailyChanges?.date === today ? dailyChanges.paymentStatus : 0;
 
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const startOfToday = startOfLogicalDay();
   const isToday = (iso?: string) => Boolean(iso) && new Date(iso!).getTime() >= startOfToday.getTime();
 
   let beantwoord = 0;

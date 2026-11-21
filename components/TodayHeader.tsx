@@ -1,11 +1,14 @@
 "use client";
 
+import { shiftToLogicalDay } from "@/lib/day-boundary";
+
 /**
  * Page title for Focus. The notification/undo/sync/weather cluster lives in the
  * shell (TopBar) so it sits at the same spot on every page.
  */
 export function TodayHeader() {
-  const dateText = new Date().toLocaleDateString("nl-NL", {
+  // Before 05:00 the dashboard still shows the previous day.
+  const dateText = shiftToLogicalDay().toLocaleDateString("nl-NL", {
     weekday: "long",
     day: "numeric",
     month: "long",
