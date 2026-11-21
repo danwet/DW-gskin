@@ -11,6 +11,7 @@ type InboxPayload = {
   items: MailAssessment[];
   meta: AgentMeta;
   model: string;
+  error?: string | null;
 };
 
 export type InboxFilter = "active" | "info" | "all";
@@ -83,6 +84,7 @@ export function useInbox() {
       setItems(data.items);
       setMeta(data.meta);
       setModel(data.model);
+      if (data.error) setError(data.error);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Inbox could not be loaded.");
     } finally {

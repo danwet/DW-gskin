@@ -1,6 +1,7 @@
 import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { markHandled, readAssessments, readMeta, saveConversation, setDeclaration, snoozeConversation } from "@/lib/agent/store";
 import { loadAgentConfig } from "@/lib/agent/config";
+import { gmailConfigured, resolveMailSource } from "@/lib/agent/mail-source";
 import { runMailAgent } from "@/lib/agent/pipeline";
 
 export const dynamic = "force-dynamic";
@@ -10,18 +11,49 @@ export async function GET() {
   if (!user) return unauthorized();
 
   try {
-    // Seed the demo/fixture data on first use when the store has never run yet.
-    const initialMeta = await readMeta();
-    if (!initialMeta.lastRunAt) {
+    const config = await loadAgentConfig();
+    const source = resolveMailSource(config);
+    const provider = config.providers[config.defaultProvider];
+    const model = provider?.apiKey ? (provider.model || config.defaultProvider) : "rule";
+
+    let meta = await readMeta();
+
+    if (source === "gmail") {
+      // A deliberate switch to Gmail must never keep showing fixture cards.
+      if (!gmailConfigured(config)) {
+        return Response.json({
+          items: [],
+          meta,
+          model: "rule",
+          error:
+            "Gmail is nog niet gekoppeld. Koppel Gmail bij Instellingen → Verbindingen, of kies Testdata als mailbron.",
+        });
+      }
+      if (meta.source !== "gmail") {
+        // First real Gmail run replaces the fixture view with live mail.
+        await runMailAgent();
+        meta = await readMeta();
+      }
+      if (meta.source !== "gmail") {
+        return Response.json({
+          items: [],
+          meta,
+          model,
+          error: "Gmail is gekoppeld, maar de mailbox kon nog niet gelezen worden. Probeer het later opnieuw.",
+        });
+      }
+      return Response.json({ items: await readAssessments(), meta, model });
+    }
+
+    // Fixtures: seed the demo data on first use when the store has never run.
+    if (!meta.lastRunAt) {
       await runMailAgent();
     }
 
-    const [items, meta, config] = await Promise.all([readAssessments(), readMeta(), loadAgentConfig()]);
-    const provider = config.providers[config.defaultProvider];
-    const model = provider?.apiKey ? (provider.model || config.defaultProvider) : "rule";
+    const [items, latestMeta] = await Promise.all([readAssessments(), readMeta()]);
     return Response.json({
       items,
-      meta,
+      meta: latestMeta,
       model,
     });
   } catch (error) {
