@@ -1,14 +1,16 @@
 import { supabaseProbe, supabaseScanBucketReady } from "@/lib/supabase/kv";
+import { gmailCallbackUri } from "@/lib/gmail/oauth";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Public, read-only diagnostic. Reports only booleans (never values) so the
- * deployment's effective environment can be checked from the outside.
+ * Public, read-only diagnostic. Reports booleans (never secrets) plus the
+ * exact Gmail redirect URI, so the Google Cloud registration can be verified.
  */
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await supabaseProbe();
   return Response.json({
+    gmailRedirectUri: gmailCallbackUri(new URL(request.url).origin),
     ok: true,
     env: {
       supabaseUrlFromServer: Boolean(process.env.SUPABASE_URL?.trim()),

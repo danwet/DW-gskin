@@ -16,7 +16,10 @@ export function gmailOAuthConfigured(): boolean {
   return Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET);
 }
 
+/** GMAIL_REDIRECT_URI wins, so the callback is identical in every environment. */
 export function gmailCallbackUri(origin: string): string {
+  const override = process.env.GMAIL_REDIRECT_URI?.trim();
+  if (override) return override.replace(/\/$/, "");
   return `${origin.replace(/\/$/, "")}${GMAIL_CALLBACK_PATH}`;
 }
 
