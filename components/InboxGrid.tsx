@@ -147,7 +147,6 @@ export function InboxGrid({
           onSnooze={onSnooze}
           onDeclare={onDeclare}
           onOpen={(item) => setSelected(item)}
-          onOpenProposal={setProposalId}
         />
       )}
 
@@ -179,7 +178,6 @@ function CardGrid({
   onSnooze,
   onDeclare,
   onOpen,
-  onOpenProposal,
 }: {
   items: MailAssessment[];
   now: Date;
@@ -187,7 +185,6 @@ function CardGrid({
   onSnooze: (item: MailAssessment, until: string) => void;
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
   onOpen: (item: MailAssessment) => void;
-  onOpenProposal: (id: string) => void;
 }) {
   return (
     <div className="grid gap-x-3 gap-y-0 sm:grid-cols-2">
@@ -201,7 +198,6 @@ function CardGrid({
           onSnooze={onSnooze}
           onDeclare={onDeclare}
           onClick={() => onOpen(item)}
-          onOpenProposal={onOpenProposal}
         />
       ))}
     </div>
@@ -266,7 +262,6 @@ export function InboxCard({
   onSnooze,
   onDeclare,
   onClick,
-  onOpenProposal,
 }: {
   item: MailAssessment;
   index: number;
@@ -275,7 +270,6 @@ export function InboxCard({
   onSnooze: (item: MailAssessment, until: string) => void;
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
   onClick: () => void;
-  onOpenProposal?: (id: string) => void;
 }) {
   const urgency = urgencyFor(item, now, timeZone);
   const tilts = ["rotate-[2.5deg]", "-rotate-[1.5deg]", "-rotate-[3deg]", "rotate-[2deg]"];
@@ -377,23 +371,6 @@ export function InboxCard({
                 Snooze
               </button>
             </div>
-            {item.proposal && onOpenProposal ? (
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onOpenProposal(item.proposal!.id);
-                }}
-                className="btn-secondary focus-ring mt-2 w-full rounded-full px-3 py-2 text-[12px] font-medium"
-              >
-                Bekijk voorstel
-                {item.proposal.status === "approved"
-                  ? " · goedgekeurd (niet uitgevoerd)"
-                  : item.proposal.status === "rejected"
-                    ? " · afgewezen"
-                    : ""}
-              </button>
-            ) : null}
           </div>
       </div>
     </div>
