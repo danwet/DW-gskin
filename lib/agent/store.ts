@@ -7,6 +7,8 @@ import type { AgentMeta, MailAssessment, RunRecord } from "./types";
 
 type AgentState = {
   assessments: Record<string, MailAssessment>;
+  /** User decisions, kept apart so indexing can never overwrite them. */
+  userState: Record<string, UserMailState>;
   meta: AgentMeta;
 };
 
@@ -46,6 +48,36 @@ function withLock<T>(task: () => Promise<T>): Promise<T> {
   return run;
 }
 
+/** Everything the user decides about a mail. Indexing never touches this. */
+export type UserMailState = {
+  handledByUser?: boolean;
+  handledAt?: string;
+  declaration?: "none" | "pending" | "declared";
+  savedAt?: string;
+  archivedAt?: string;
+  paidAt?: string;
+  sentAt?: string;
+  snoozedUntil?: string;
+  snoozedTier?: "later" | "info";
+};
+
+/** Applies the user layer on top of a freshly indexed assessment. */
+function withUserState(item: MailAssessment, user?: UserMailState): MailAssessment {
+  if (!user) return item;
+  return {
+    ...item,
+    ...(user.handledByUser !== undefined ? { handledByUser: user.handledByUser } : {}),
+    ...(user.handledAt ? { handledAt: user.handledAt } : {}),
+    ...(user.declaration ? { declaration: user.declaration } : {}),
+    ...(user.savedAt ? { savedAt: user.savedAt } : {}),
+    ...(user.archivedAt ? { archivedAt: user.archivedAt } : {}),
+    ...(user.paidAt ? { paidAt: user.paidAt } : {}),
+    ...(user.sentAt ? { sentAt: user.sentAt } : {}),
+    ...(user.snoozedUntil ? { snoozedUntil: user.snoozedUntil } : {}),
+    ...(user.snoozedTier ? { snoozedTier: user.snoozedTier } : {}),
+  };
+}
+
 function parseState(raw: unknown): AgentState {
   const parsed = (raw ?? {}) as Partial<AgentState>;
   const assessments: Record<string, MailAssessment> = {};
@@ -54,8 +86,15 @@ function parseState(raw: unknown): AgentState {
       if (value && typeof value === "object") assessments[key] = value as MailAssessment;
     }
   }
+  const userState: Record<string, UserMailState> = {};
+  if (parsed.userState && typeof parsed.userState === "object") {
+    for (const [key, value] of Object.entries(parsed.userState)) {
+      if (value && typeof value === "object") userState[key] = value as UserMailState;
+    }
+  }
   return {
     assessments,
+    userState,
     meta: parsed.meta ? { ...EMPTY_META, ...parsed.meta } : { ...EMPTY_META },
   };
 }
@@ -65,7 +104,7 @@ async function readStateFromFile(): Promise<AgentState> {
     const raw = await readFile(stateFile(), "utf8");
     return parseState(JSON.parse(raw));
   } catch {
-    return { assessments: {}, meta: { ...EMPTY_META } };
+    return { assessments: {}, userState: {}, meta: { ...EMPTY_META } };
   }
 }
 
@@ -102,11 +141,18 @@ async function writeState(state: AgentState): Promise<void> {
 }
 
 export function readAssessments(): Promise<MailAssessment[]> {
-  return withLock(async () => Object.values((await readState()).assessments));
+  return withLock(async () => {
+    const state = await readState();
+    return Object.values(state.assessments).map((item) => withUserState(item, state.userState?.[item.conversationId]));
+  });
 }
 
 export function readAssessment(conversationId: string): Promise<MailAssessment | null> {
-  return withLock(async () => (await readState()).assessments[conversationId] ?? null);
+  return withLock(async () => {
+    const state = await readState();
+    const item = state.assessments[conversationId];
+    return item ? withUserState(item, state.userState?.[conversationId]) : null;
+  });
 }
 
 /** Finds an existing invoice (mail or scan) that matches the same invoice number, or supplier + number. */
@@ -164,8 +210,10 @@ export function markArchivedByAgent(conversationIds: string[]): Promise<void> {
     let changed = false;
     for (const id of conversationIds) {
       const item = state.assessments[id];
-      if (item && !item.archivedAt) {
-        item.archivedAt = now;
+      if (!item) continue;
+      const user = (state.userState[id] ??= {});
+      if (!user.archivedAt) {
+        user.archivedAt = now;
         changed = true;
       }
     }
@@ -213,6 +261,7 @@ export function removeAssessments(conversationIds: string[]): Promise<void> {
         changed = true;
       }
     }
+    for (const id of conversationIds) delete state.userState[id];
     if (changed) await writeState(state);
   });
 }
@@ -241,13 +290,14 @@ export function upsertAssessments(updates: MailAssessment[]): Promise<MailAssess
       const existing = state.assessments[update.conversationId];
       if (existing) {
         const isNewMessage = update.sourceMessageId !== existing.sourceMessageId;
-        // A manual "afgehandeld" choice always survives a re-run.
-        update.handledByUser = existing.handledByUser;
-        update.handledAt = existing.handledAt;
-        update.snoozedUntil = isNewMessage ? undefined : existing.snoozedUntil;
+        // User decisions live in their own layer, so nothing to copy here.
         if (!isNewMessage) {
           update.needsAttention = existing.needsAttention;
           update.attentionReason = existing.attentionReason;
+        } else if (state.userState[update.conversationId]?.handledByUser) {
+          // A new message in a conversation the user had handled deserves a nudge.
+          update.needsAttention = true;
+          update.attentionReason = update.attentionReason ?? "Nieuw bericht in dit gesprek.";
         } else if (existing.handledByUser) {
           update.needsAttention = true;
           update.attentionReason = update.attentionReason ?? "Nieuw bericht in dit gesprek.";
@@ -266,14 +316,15 @@ export function markHandled(conversationId: string, handled: boolean): Promise<M
     const state = await readState();
     const existing = state.assessments[conversationId];
     if (!existing) return null;
-    existing.handledByUser = handled;
-    existing.handledAt = handled ? new Date().toISOString() : undefined;
+    const user = (state.userState[conversationId] ??= {});
+    user.handledByUser = handled;
+    user.handledAt = handled ? new Date().toISOString() : undefined;
     if (handled) {
       existing.needsAttention = false;
       existing.attentionReason = undefined;
     }
     await writeState(state);
-    return existing;
+    return withUserState(existing, user);
   });
 }
 
@@ -297,10 +348,11 @@ export function snoozeConversation(
     const state = await readState();
     const existing = state.assessments[conversationId];
     if (!existing) return null;
-    existing.snoozedUntil = until ?? undefined;
-    existing.snoozedTier = until ? tier ?? undefined : undefined;
+    const user = (state.userState[conversationId] ??= {});
+    user.snoozedUntil = until ?? undefined;
+    user.snoozedTier = until ? tier ?? undefined : undefined;
     await writeState(state);
-    return existing;
+    return withUserState(existing, user);
   });
 }
 
@@ -325,11 +377,11 @@ export function saveConversation(conversationId: string, saved: boolean): Promis
     const state = await readState();
     const existing = state.assessments[conversationId];
     if (!existing) return null;
-    if (saved) existing.savedAt = new Date().toISOString();
-    else delete existing.savedAt;
-    existing.updatedAt = new Date().toISOString();
+    const user = (state.userState[conversationId] ??= {});
+    if (saved) user.savedAt = new Date().toISOString();
+    else delete user.savedAt;
     await writeState(state);
-    return existing;
+    return withUserState(existing, user);
   });
 }
 
@@ -341,11 +393,11 @@ export function setDeclaration(
     const state = await readState();
     const existing = state.assessments[conversationId];
     if (!existing) return null;
-    if (declaration) existing.declaration = declaration;
-    else delete existing.declaration;
-    existing.updatedAt = new Date().toISOString();
+    const user = (state.userState[conversationId] ??= {});
+    if (declaration) user.declaration = declaration;
+    else delete user.declaration;
     await writeState(state);
-    return existing;
+    return withUserState(existing, user);
   });
 }
 
@@ -385,6 +437,6 @@ export function updateMeta(patch: Partial<AgentMeta>): Promise<void> {
 /** Clears everything; used by the verification harness to start from a clean slate. */
 export function resetAgentStore(): Promise<void> {
   return withLock(async () => {
-    await writeState({ assessments: {}, meta: { ...EMPTY_META } });
+    await writeState({ assessments: {}, userState: {}, meta: { ...EMPTY_META } });
   });
 }

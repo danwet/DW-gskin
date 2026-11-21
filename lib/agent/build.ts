@@ -69,6 +69,18 @@ export function ibanFromInvoiceText(text: string): string | null {
   return scored[0].iban;
 }
 
+/**
+ * A payment action names the amount, so the card reads "Betaal € 42,84"
+ * instead of a bare command.
+ */
+export function withInvoiceAmount(nextAction: string, amount?: number | null, currency?: string): string {
+  if (amount == null || !/^betaal/i.test(nextAction.trim())) return nextAction;
+  const code = (currency ?? "").toUpperCase();
+  const symbol = code === "USD" ? "$" : code === "GBP" ? "£" : "€";
+  const formatted = amount.toFixed(2).replace(".", ",");
+  return symbol === "€" ? `Betaal € ${formatted}` : `Betaal ${symbol}${formatted}`;
+}
+
 /** Subjects always start with a capital letter. */
 /**
  * Keeps the action label consistent with the structured invoice data: when the
@@ -177,7 +189,11 @@ export function buildAssessment(
     fromEmail: counterparty.fromEmail,
     link: latest.link,
     classification: draft.classification,
-    nextAction: normalizeNextAction(draft.nextAction || "Bekijk deze mail.", invoice?.amount),
+    nextAction: withInvoiceAmount(
+      normalizeNextAction(draft.nextAction || "Bekijk deze mail.", invoice?.amount),
+      invoice?.amount,
+      invoice?.currency,
+    ),
     priorityReason: draft.priorityReason || "",
     deadline: draft.deadline ?? undefined,
     consequence,

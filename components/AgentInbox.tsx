@@ -77,7 +77,9 @@ export function formatRunAt(iso: string | null | undefined): string {
 function formatMoney(amount: number | undefined, currency: string | undefined): string {
   if (amount == null) return "Onbekend";
   const symbol = currency?.toUpperCase() === "USD" ? "$" : currency?.toUpperCase() === "GBP" ? "£" : "€";
-  return `${symbol}${amount.toFixed(2)}`;
+  // Dutch notation: a space after the symbol and a comma as decimal separator.
+  const formatted = amount.toFixed(2).replace(".", ",");
+  return symbol === "€" ? `€ ${formatted}` : `${symbol}${formatted}`;
 }
 
 function formatDate(iso: string | undefined): string {
