@@ -179,7 +179,7 @@ export async function importStep(userId: string, refreshToken: string): Promise<
  * the existing model config. Messages are marked triaged so a resume neither
  * repeats work nor creates duplicate cards.
  */
-export async function triageStep(userId: string): Promise<StepResult> {
+export async function triageStep(userId: string, ownerEmail?: string | null): Promise<StepResult> {
   const config = await loadAgentConfig().catch(() => null);
   const provider: ProviderId = config?.defaultProvider ?? "openai";
   const entry = config?.providers?.[provider];
@@ -207,7 +207,7 @@ export async function triageStep(userId: string): Promise<StepResult> {
     const target = conversation.length > 0 ? conversation : grouped.get(thread.conversationId) ?? [thread.latest];
     try {
       const draft = await classifyConversation(target, { provider, apiKey, model });
-      updates.push(buildAssessment(target, draft, new Date(), "gmail"));
+      updates.push(buildAssessment(target, draft, new Date(), "gmail", ownerEmail));
       await markThreadTriaged(userId, threadId);
     } catch (error) {
       errors.push(error instanceof Error ? error.message : "Classificatie mislukt.");
@@ -242,6 +242,7 @@ export async function triageStep(userId: string): Promise<StepResult> {
 export async function syncStep(
   userId: string,
   refreshToken: string,
+  ownerEmail?: string | null,
 ): Promise<{ ok: boolean; imported: number; triaged: number; progress: SyncProgress; error?: string }> {
   const state = await getImportState(userId);
   let imported = 0;
@@ -256,7 +257,7 @@ export async function syncStep(
     if (!step.ok) error = step.error;
   }
 
-  const triage = await triageStep(userId);
+  const triage = await triageStep(userId, ownerEmail);
   if (!triage.ok && !error) error = triage.error;
 
   return { ok: !error, imported, triaged: triage.processed, progress: await readProgress(userId), error };

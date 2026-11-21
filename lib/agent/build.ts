@@ -32,8 +32,17 @@ export function buildAssessment(
   draft: AssessmentDraft,
   now: Date,
   mailbox: "gmail" | "fixtures" = "fixtures",
+  ownerEmail?: string | null,
 ): MailAssessment {
   const latest = conversation[conversation.length - 1];
+
+  // A card names the other party, never your own last reply. Prefer the first
+  // message that did not come from the mailbox owner.
+  const owner = (ownerEmail ?? "").trim().toLowerCase();
+  const counterparty =
+    (owner ? conversation.find((message) => message.fromEmail && message.fromEmail.toLowerCase() !== owner) : undefined) ??
+    conversation[0] ??
+    latest;
   const invoice = draft.invoice
     ? {
         supplier: draft.invoice.supplier || undefined,
@@ -57,8 +66,8 @@ export function buildAssessment(
     mailbox,
     conversationId: conversationKey(latest),
     subject: latest.subject,
-    from: latest.from,
-    fromEmail: latest.fromEmail,
+    from: counterparty.from,
+    fromEmail: counterparty.fromEmail,
     link: latest.link,
     classification: draft.classification,
     nextAction: draft.nextAction || "Bekijk deze mail.",

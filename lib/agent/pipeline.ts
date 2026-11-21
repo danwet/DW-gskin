@@ -74,7 +74,7 @@ export async function runMailAgent(now = new Date(), options?: { force?: boolean
       };
     }
 
-    const step = await syncStep(connection.userId, connection.refreshToken);
+    const step = await syncStep(connection.userId, connection.refreshToken, connection.email);
     await updateMeta({
       lastRunAt: now.toISOString(),
       lastSuccessfulRunAt: step.ok ? now.toISOString() : undefined,

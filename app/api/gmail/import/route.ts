@@ -21,7 +21,7 @@ export async function POST() {
   const user = await sessionUser();
   if (!user) return unauthorized();
 
-  await resolveGmailConnection(user.id, user.email).catch(() => null);
+  const connection = await resolveGmailConnection(user.id, user.email).catch(() => null);
   const refreshToken = await getGmailRefreshToken(user.id);
   if (!refreshToken) {
     return Response.json({ error: "Gmail is nog niet gekoppeld." }, { status: 400 });
@@ -33,7 +33,7 @@ export async function POST() {
   }
 
   try {
-    const result = await syncStep(user.id, refreshToken);
+    const result = await syncStep(user.id, refreshToken, connection?.email ?? user.email);
     // Keep the visible "last sync" honest while the import/triage loop runs.
     const now = new Date().toISOString();
     await updateMeta(
