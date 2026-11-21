@@ -3,6 +3,36 @@ import type { InboundMessage, MailAssessment } from "./types";
 import { detectUnsubscribe } from "./unsubscribe";
 import { detectShipment } from "./shipment";
 
+/** The text that came out of a PDF attachment, if the mail carried one. */
+export function extractAttachmentText(body?: string): string {
+  if (!body) return "";
+  const marker = body.indexOf("--- Factuurbijlage:");
+  return marker === -1 ? "" : body.slice(marker);
+}
+
+/**
+ * Reads the amount to pay from invoice text. Totaal/Door u te betalen wins,
+ * otherwise the largest amount, so subtotals do not win by accident.
+ */
+export function amountFromInvoiceText(text: string): number | null {
+  const toNumber = (raw: string): number | null => {
+    const cleaned = raw.replace(/[^\d.,]/g, "").replace(/\.(?=\d{3}\b)/g, "").replace(",", ".");
+    const value = Number.parseFloat(cleaned);
+    return Number.isFinite(value) ? value : null;
+  };
+
+  const total = /(?:door\s+u\s+te\s+betalen|te\s+betalen|totaal(?:bedrag)?|total)\D{0,40}?(\d[\d.,]*)/i.exec(text);
+  if (total) {
+    const value = toNumber(total[1]);
+    if (value !== null) return value;
+  }
+
+  const all = [...text.matchAll(/€\s*(\d[\d.,]*)/g)]
+    .map((match) => toNumber(match[1]))
+    .filter((value): value is number => value !== null);
+  return all.length > 0 ? Math.max(...all) : null;
+}
+
 /** Subjects always start with a capital letter. */
 /**
  * Keeps the action label consistent with the structured invoice data: when the
@@ -78,11 +108,16 @@ export function buildAssessment(
     (owner ? conversation.find((message) => message.fromEmail && message.fromEmail.toLowerCase() !== owner) : undefined) ??
     conversation[0] ??
     latest;
+  // The attachment text is authoritative for the amount: models routinely miss
+  // it when the PDF splits the currency symbol from the number.
+  const attachmentText = extractAttachmentText(latest.body);
+  const attachmentAmount = attachmentText ? amountFromInvoiceText(attachmentText) : null;
+
   const invoice = draft.invoice
     ? {
         supplier: draft.invoice.supplier || undefined,
         invoiceNumber: draft.invoice.invoiceNumber || undefined,
-        amount: draft.invoice.amount ?? undefined,
+        amount: draft.invoice.amount ?? attachmentAmount ?? undefined,
         currency: draft.invoice.currency || undefined,
         iban: draft.invoice.iban || undefined,
         dueDate: draft.invoice.dueDate ?? undefined,

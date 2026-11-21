@@ -226,7 +226,10 @@ async function pdfTextFromPayload(part: PdfPart, accessToken: string, messageId:
 
   if (!raw) return "";
   try {
-    return await extractTextFromBuffer(base64UrlToBuffer(raw), "application/pdf");
+    const text = await extractTextFromBuffer(base64UrlToBuffer(raw), "application/pdf");
+    // PDF layouts often put the currency symbol on its own line, which defeats
+    // every amount pattern: "€\n \n42,84" becomes "€ 42,84".
+    return text.replace(/€\s*\n\s*/g, "€ ");
   } catch {
     return "";
   }
