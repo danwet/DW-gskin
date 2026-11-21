@@ -341,14 +341,14 @@ export function InboxCard({
 
         <div className={isNewsletter ? "mt-auto w-full" : "w-full"}>
           <p className="text-[12px] font-medium text-[var(--muted)]">{prepared}</p>
-            <div className="mt-2 flex gap-2">
+            <div className="mt-2 flex justify-center">
               <button
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
                   openCta();
                 }}
-                className={`focus-ring relative flex-1 rounded-full px-3 py-2 text-[13px] font-medium ${
+                className={`focus-ring relative w-[60%] rounded-full px-3 py-2 text-[13px] font-medium ${
                   isPrimaryCta(item) ? "btn-primary" : "btn-secondary"
                 }`}
               >
