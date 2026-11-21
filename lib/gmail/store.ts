@@ -143,12 +143,12 @@ export async function saveMessages(
     user_id: userId,
     message_id: message.id,
     thread_id: message.threadId ?? message.id,
-    from_name: message.from,
-    from_email: message.fromEmail,
-    subject: message.subject,
-    snippet: message.snippet,
-    body: (message.body ?? "").slice(0, 20_000),
-    body_html: keepHeadAndTail(message.bodyHtml ?? "", 40_000),
+    from_name: sanitizeText(message.from),
+    from_email: sanitizeText(message.fromEmail),
+    subject: sanitizeText(message.subject),
+    snippet: sanitizeText(message.snippet),
+    body: sanitizeText(message.body ?? "").slice(0, 20_000),
+    body_html: sanitizeText(keepHeadAndTail(message.bodyHtml ?? "", 40_000)),
     received_at: message.receivedAt,
     imported_at: new Date().toISOString(),
   }));
@@ -220,6 +220,15 @@ export async function countUntriaged(userId: string): Promise<number> {
     .eq("user_id", userId)
     .is("triaged_at", null);
   return count ?? 0;
+}
+
+/**
+ * Postgres rejects NUL bytes in text columns, and PDF extraction produces them
+ * for unmapped glyphs. Strip control characters, keep normal whitespace.
+ */
+export function sanitizeText(value: string): string {
+  // eslint-disable-next-line no-control-regex
+  return (value ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
 }
 
 /**
