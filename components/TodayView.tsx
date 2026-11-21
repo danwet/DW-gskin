@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AgendaPanel } from "./AgendaPanel";
 import type { MailAssessment, ShipmentInfo } from "@/lib/agent/types";
@@ -85,6 +85,13 @@ export function TodayView() {
   // Client-driven runner: repeats the resumable step until the import and the
   // triage are done, then reloads the cards. Every step is persisted in
   // Supabase, so closing the tab only pauses it.
+  // Keep the loop alive across re-renders: only a phase change may stop it,
+  // otherwise every progress update cancelled the runner halfway.
+  const reloadRef = useRef(inbox.reload);
+  useEffect(() => {
+    reloadRef.current = inbox.reload;
+  }, [inbox.reload]);
+
   useEffect(() => {
     if (!syncing) return;
     let cancelled = false;
@@ -109,14 +116,14 @@ export function TodayView() {
           await new Promise((resolve) => setTimeout(resolve, 3000));
         }
       }
-      if (!cancelled) void inbox.reload();
+      if (!cancelled) void reloadRef.current();
     };
 
     void run();
     return () => {
       cancelled = true;
     };
-  }, [syncing, inbox.reload]);
+  }, [syncing]);
 
   const nowMs = Date.now();
   // Bewaren moves a mail out of Focus, and order mail the agent archived itself

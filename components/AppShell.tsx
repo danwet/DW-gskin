@@ -197,8 +197,11 @@ function SidebarContent({
   // counter during triage made the bar look stuck.
   const triaging = syncProgress?.phase === "triaging";
   const syncingNow = syncProgress?.phase === "importing" || triaging;
+  // During triage the useful total is what still needs judging plus what is
+  // already done; threadsImported is 0 when nothing new arrived.
+  const remaining = syncProgress?.pending ?? 0;
   const total = triaging
-    ? (syncProgress?.threadsImported ?? null)
+    ? (syncProgress?.triaged ?? 0) + remaining || null
     : (syncProgress?.total ?? null);
   const shown = triaging ? (syncProgress?.triaged ?? 0) : (syncProgress?.imported ?? 0);
   const importTotal = syncingNow && total ? total : null;
