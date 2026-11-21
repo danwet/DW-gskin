@@ -2,7 +2,9 @@ import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { loadAgentConfig } from "@/lib/agent/config";
 import { getGmailRefreshToken } from "@/lib/gmail/connection";
 import { sendGmailReply, type Attachment } from "@/lib/agent/gmail-send";
-import { markSent, readAssessments, saveDraft } from "@/lib/agent/store";
+import { markArchivedByAgent, markSent, readAssessments, saveDraft } from "@/lib/agent/store";
+import { archiveGmailMessage } from "@/lib/gmail/actions";
+import { listStoredMessages } from "@/lib/gmail/store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -57,6 +59,27 @@ async function sendReply(request: Request) {
 
   if (result.ok) {
     const updated = await markSent(conversationId);
+
+    // A replied mail has served its purpose: out of the inbox, marked read.
+    try {
+      const ids = (await listStoredMessages(user.id))
+        .filter((row) => row.thread_id === conversationId)
+        .map((row) => row.message_id);
+      const targets = ids.length > 0 ? ids : item.sourceMessageId ? [item.sourceMessageId] : [];
+
+      let archived = targets.length > 0;
+      for (const id of targets) {
+        const outcome = await archiveGmailMessage(refreshToken, id);
+        if (!outcome.ok) {
+          archived = false;
+          break;
+        }
+      }
+      if (archived) await markArchivedByAgent([conversationId]);
+    } catch {
+      // The reply is sent; archiving is a follow-up we can retry next sync.
+    }
+
     return Response.json({ ok: true, item: updated });
   }
 
