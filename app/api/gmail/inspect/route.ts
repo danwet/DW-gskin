@@ -144,5 +144,5 @@ export async function GET(request: Request) {
     });
   }
 
-  return Response.json({ query, results });
+  return Response.json({ v: 2, query, results });
 }
