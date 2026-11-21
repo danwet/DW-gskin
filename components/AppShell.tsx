@@ -239,7 +239,7 @@ function SidebarContent({
 
       <div className="mt-auto pt-4">
         {importTotal ? (
-          <div className="mb-3 px-2">
+          <div className="mb-[22px] px-2">
             <p className="text-[11px] leading-4 text-[var(--muted)]">
               Ophalen {shownImported} van {importTotal} emails
             </p>
