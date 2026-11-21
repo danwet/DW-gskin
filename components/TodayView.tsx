@@ -355,7 +355,6 @@ function DaySummary({
 
   let beantwoord = 0;
   let betaald = 0;
-  let betaaldBedrag = 0;
   let afgehandeld = 0;
   let gescand = 0;
 
@@ -365,14 +364,11 @@ function DaySummary({
     if (item.handledByUser && isToday(item.handledAt ?? item.paidAt)) {
       if (item.invoice) {
         betaald += 1;
-        betaaldBedrag += item.invoice.amount ?? 0;
       } else {
         afgehandeld += 1;
       }
     }
   }
-
-  const bedrag = betaaldBedrag > 0 ? ` €${betaaldBedrag % 1 === 0 ? betaaldBedrag : betaaldBedrag.toFixed(2)}` : "";
 
   return (
     <section className="mt-6">
@@ -395,7 +391,7 @@ function DaySummary({
           {betaald > 0 ? (
             <li className="flex items-center gap-2.5">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--green)" }} />
-              <span>{betaald} {betaald === 1 ? "factuur betaald" : "facturen betaald"}{bedrag}</span>
+              <span>{betaald} {betaald === 1 ? "factuur betaald" : "facturen betaald"}</span>
             </li>
           ) : null}
           {afgehandeld > 0 ? (
