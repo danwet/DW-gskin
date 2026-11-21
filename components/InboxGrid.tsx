@@ -135,12 +135,13 @@ export function InboxGrid({
 
   useEffect(() => {
     const tick = () => setClock(new Date());
-    const untilMidnight = (() => {
+    const untilMorning = (() => {
       const next = new Date();
-      next.setHours(24, 0, 0, 0);
+      next.setHours(6, 0, 0, 0);
+      if (next.getTime() <= Date.now()) next.setDate(next.getDate() + 1);
       return next.getTime() - Date.now() + 1000;
     })();
-    const timer = window.setTimeout(tick, untilMidnight);
+    const timer = window.setTimeout(tick, untilMorning);
     const onVisibility = () => {
       if (document.visibilityState === "visible") tick();
     };
@@ -588,9 +589,10 @@ export function InboxModal({
 
   const snoozeTomorrow = () => {
     if (!onSnooze || !nextTier) return;
+    // A snooze ends in the morning, not at midnight: 06:00.
     const until = new Date();
     until.setDate(until.getDate() + 1);
-    until.setHours(0, 0, 0, 0);
+    until.setHours(6, 0, 0, 0);
     onSnooze(item, until.toISOString(), nextTier);
     onClose();
   };

@@ -141,6 +141,8 @@ export function snoozeUntil(label: SnoozeLabel, now = new Date()): string {
   else if (label === "One week") end.setDate(end.getDate() + 7);
   else if (label === "Two weeks") end.setDate(end.getDate() + 14);
   else end.setMonth(end.getMonth() + 1);
+  // Ends in the morning, so a snooze never expires in the middle of the night.
+  end.setHours(6, 0, 0, 0);
   return end.toISOString();
 }
 
