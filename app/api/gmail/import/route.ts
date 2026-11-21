@@ -33,7 +33,25 @@ export async function POST() {
   }
 
   try {
-    const result = await syncStep(user.id, refreshToken, connection?.email ?? user.email);
+    // Do as much as fits in one request instead of one step per round trip: a
+    // short-lived tab then still finishes, and the loop is far less chatty.
+    const deadline = Date.now() + 45_000;
+    let result = await syncStep(user.id, refreshToken, connection?.email ?? user.email);
+    let imported = result.imported;
+    let triaged = result.triaged;
+    let removed = result.removed;
+    let autoArchived = result.autoArchived;
+
+    while (Date.now() < deadline && (result.progress.phase === "importing" || result.progress.phase === "triaging")) {
+      result = await syncStep(user.id, refreshToken, connection?.email ?? user.email);
+      imported += result.imported;
+      triaged += result.triaged;
+      removed += result.removed;
+      autoArchived += result.autoArchived;
+      if (!result.ok && result.error) break;
+    }
+
+    result = { ...result, imported, triaged, removed, autoArchived };
     // Keep the visible "last sync" honest while the import/triage loop runs.
     const now = new Date().toISOString();
     await updateMeta(
