@@ -70,12 +70,16 @@ async function readStateFromFile(): Promise<AgentState> {
 }
 
 async function writeStateToFile(state: AgentState): Promise<void> {
-  const folder = directory();
-  await mkdir(folder, { recursive: true });
-  const target = stateFile();
-  const temp = `${target}.${process.pid}.tmp`;
-  await writeFile(temp, JSON.stringify(state), "utf8");
-  await rename(temp, target);
+  try {
+    const folder = directory();
+    await mkdir(folder, { recursive: true });
+    const target = stateFile();
+    const temp = `${target}.${process.pid}.tmp`;
+    await writeFile(temp, JSON.stringify(state), "utf8");
+    await rename(temp, target);
+  } catch {
+    // Read-only filesystems (e.g. Vercel without Supabase) should not crash the request.
+  }
 }
 
 async function readState(): Promise<AgentState> {

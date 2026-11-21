@@ -213,12 +213,16 @@ async function readRecordFromFile(userId: string, email: string): Promise<UserRe
 }
 
 async function writeRecordToFile(record: UserRecord) {
-  const folder = directory();
-  await mkdir(folder, { recursive: true });
-  const target = fileFor(record.userId);
-  const temp = `${target}.${process.pid}.tmp`;
-  await writeFile(temp, JSON.stringify(record), "utf8");
-  await rename(temp, target);
+  try {
+    const folder = directory();
+    await mkdir(folder, { recursive: true });
+    const target = fileFor(record.userId);
+    const temp = `${target}.${process.pid}.tmp`;
+    await writeFile(temp, JSON.stringify(record), "utf8");
+    await rename(temp, target);
+  } catch {
+    // Read-only filesystems (e.g. Vercel without Supabase) should not crash the request.
+  }
 }
 
 async function readRecord(userId: string, email: string): Promise<UserRecord> {

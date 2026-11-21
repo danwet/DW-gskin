@@ -38,11 +38,15 @@ async function readFileConfig(): Promise<Record<string, unknown>> {
 }
 
 async function writeFileConfig(config: AgentConfig): Promise<void> {
-  const folder = path.dirname(filePath());
-  await mkdir(folder, { recursive: true });
-  const tmp = `${filePath()}.${process.pid}.tmp`;
-  await writeFile(tmp, JSON.stringify(config, null, 2), "utf8");
-  await rename(tmp, filePath());
+  try {
+    const folder = path.dirname(filePath());
+    await mkdir(folder, { recursive: true });
+    const tmp = `${filePath()}.${process.pid}.tmp`;
+    await writeFile(tmp, JSON.stringify(config, null, 2), "utf8");
+    await rename(tmp, filePath());
+  } catch {
+    // Read-only filesystems (e.g. Vercel without Supabase) should not crash the request.
+  }
 }
 
 /** Reads the persisted config from Supabase when available, else from the local file. */
