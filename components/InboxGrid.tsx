@@ -203,10 +203,20 @@ function CardGrid({
   );
 }
 
+/**
+ * An invoice only drives the card when the mail actually expects action.
+ * Informational mail (security alerts, newsletters, order confirmations) must
+ * never show a pay button, even if the model attached invoice fields.
+ */
+function hasPayableInvoice(item: MailAssessment): boolean {
+  if (!item.invoice) return false;
+  return item.classification !== "info" && item.classification !== "unclassified";
+}
+
 function preparedLabel(item: MailAssessment): string {
   if (item.preparedAction) return item.preparedAction;
-  if (item.invoice?.iban) return "QR-code aangemaakt";
-  if (item.invoice) return "Factuurgegevens voorbereid";
+  if (hasPayableInvoice(item) && item.invoice?.iban) return "QR-code aangemaakt";
+  if (hasPayableInvoice(item)) return "Factuurgegevens voorbereid";
   if (item.classification === "reply_needed") return "Concept gemaakt";
   if (item.classification === "info") return "Gefilterd";
   if (item.classification === "waiting") return "Wacht op reactie";
@@ -216,14 +226,14 @@ function preparedLabel(item: MailAssessment): string {
 function ctaLabel(item: MailAssessment): string {
   if (item.declaration === "pending") return "Gedeclareerd";
   if (item.source === "scan") return "Bekijk scan";
-  if (item.invoice) return item.handledByUser ? "Betaald" : "Betalen";
+  if (hasPayableInvoice(item)) return item.handledByUser ? "Betaald" : "Betalen";
   if (item.classification === "reply_needed") return "Goedkeuren";
   if (item.classification === "action_needed") return "Afhandelen";
   return "Bekijken";
 }
 
 function isPrimaryCta(item: MailAssessment): boolean {
-  return Boolean(item.invoice) || item.classification === "reply_needed";
+  return hasPayableInvoice(item) || item.classification === "reply_needed";
 }
 
 function balanceTwoLines(text: string): [string, string | null] {
@@ -433,7 +443,7 @@ export function InboxModal({
   }, [onClose]);
 
   const prepared = preparedLabel(item);
-  const doneLabel = item.invoice ? "Betaald" : "Afhandelen";
+  const doneLabel = hasPayableInvoice(item) ? "Betaald" : "Afhandelen";
   const isNewsletter =
     Boolean(item.unsubscribe) || item.classification === "info" || item.classification === "unclassified";
 
@@ -518,7 +528,7 @@ export function InboxModal({
               {item.subject}
             </p>
             <p className="mt-3 text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">
-              {item.invoice ? "Uiterste betaaldatum" : "Uiterste reactiedatum"}
+              {hasPayableInvoice(item) ? "Uiterste betaaldatum" : "Uiterste reactiedatum"}
             </p>
             <p className={`tnum mt-0.5 text-[13px] font-medium ${TONE_TEXT[urgency.tone]}`}>{urgency.deadlineText}</p>
           </div>
@@ -576,7 +586,7 @@ export function InboxModal({
           </dl>
         ) : null}
 
-        {item.invoice ? (
+        {hasPayableInvoice(item) ? (
           <div className="mt-4">
             <InvoiceBlock item={item} />
           </div>
@@ -755,7 +765,7 @@ export function InboxModal({
                 const next = !handled;
                 setHandled(next);
                 onToggleHandled(item);
-                if (next && item.invoice && !declaration) setShowDeclarePrompt(true);
+                if (next && hasPayableInvoice(item) && !declaration) setShowDeclarePrompt(true);
               }}
               className={`focus-ring relative rounded-full px-3 py-1.5 text-[13px] font-medium ${
                 handled ? "btn-secondary text-[var(--muted)]" : "btn-primary"

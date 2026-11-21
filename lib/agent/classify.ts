@@ -85,6 +85,7 @@ const INSTRUCTIONS = [
   "priorityReason: the sharp reason why this needs attention now, max ~8 words. Examples: 'Kickoff hangt van jou af', 'Escalatie dreigt', 'Incasso dreigt', 'De ander is aan zet'. Never use soft phrasing like 'controleer of al betaald is'.",
   "deadline: the explicit date as YYYY-MM-DD, or null when none is stated.",
   "senderSays: only what the sender explicitly claims will happen if you do not act (for example a collection agency, suspension, or cancellation). possibleConsequence: your own inference, used only when the sender did not state one. Both null when nothing concrete is known.",
+  "Only fill the invoice object for an actual supplier invoice, payment reminder or payment confirmation. Security alerts, sign-in or verification codes, newsletters, order and shipping confirmations and other notifications must return invoice null — never invent amounts, IBANs or invoice numbers.",
   "If the conversation concerns an invoice, fill the invoice object. A received invoice does NOT prove it is unpaid: use paymentStatus unknown and paymentAdvice 'Controleer of deze factuur al betaald is'. Use open_per_sender only for an explicit reminder/overdue notice, and paid_confirmed only for an explicit payment confirmation for the same invoice. Mark handled items as the user resolves them, not by inference.",
   "Extract supplier, invoice number, amount, currency, IBAN, and due date from the body when present; use empty string or null for unknown values. If a relevant attachment (for example a PDF) is present but its contents are not in the text, set unreadAttachment.",
   "impact: summarize the consequence in a short phrase (max ~8 words), e.g. 'Dan wacht er iemand op antwoord', 'Incassokosten', 'Kickoff vertraagt'. For an unpaid invoice always name the escalating consequence ('Aanmaning volgt' or 'Incassokosten'). Never use a payment status such as 'Onbetaald' here. Null only when there is really no consequence.",
@@ -119,7 +120,7 @@ function normalizeInvoice(value: unknown): InvoiceDraft | null {
   if (typeof value !== "object" || Array.isArray(value)) return null;
   const row = value as Record<string, unknown>;
   const paymentStatus = STATUSES.includes(row.paymentStatus as PaymentStatus) ? (row.paymentStatus as PaymentStatus) : "unknown";
-  return {
+  const invoice = {
     supplier: str(row.supplier),
     invoiceNumber: str(row.invoiceNumber),
     amount: normalizeAmount(row.amount),
@@ -130,6 +131,15 @@ function normalizeInvoice(value: unknown): InvoiceDraft | null {
     paymentAdvice: str(row.paymentAdvice),
     unreadAttachment: str(row.unreadAttachment),
   };
+  // The model must always return an invoice object, so an empty one is common
+  // for non-invoice mail. Without real payment data it is not an invoice.
+  const meaningful =
+    invoice.amount != null ||
+    Boolean(invoice.dueDate) ||
+    Boolean(invoice.iban) ||
+    Boolean(invoice.invoiceNumber) ||
+    paymentStatus !== "unknown";
+  return meaningful ? invoice : null;
 }
 
 /** Validates a model or fallback result into a clean AssessmentDraft, throwing on unusable output. */
