@@ -5,6 +5,12 @@ import { orderNewestFirst, urgencyFor, type UrgencyTone } from "@/lib/agent/urge
 import type { MailAssessment } from "@/lib/agent/types";
 import { InvoiceBlock, timeZoneOf, UrgencyPill } from "./AgentInbox";
 
+/** No deadline is neutral: grey, not the urgency colour. */
+function deadlineClass(urgency: { tone: UrgencyTone; deadlineText: string }): string {
+  if (!urgency.deadlineText || urgency.deadlineText === "Geen deadline") return "text-[var(--muted)]";
+  return TONE_TEXT[urgency.tone];
+}
+
 const TONE_TEXT: Record<UrgencyTone, string> = {
   red: "text-[var(--danger)]",
   orange: "text-[var(--orange)]",
@@ -276,7 +282,7 @@ function preparedLabel(item: MailAssessment): string {
 }
 
 function ctaLabel(item: MailAssessment): string {
-  if (item.declaration === "pending") return "Gedeclareerd";
+  if (item.declaration === "pending") return "Declareer";
   if (item.source === "scan") return "Bekijk scan";
   if (hasPayableInvoice(item)) {
     // A receipt for a payment that already went through is never payable.
@@ -405,10 +411,10 @@ export function InboxCard({
 
       <div className="flex w-full flex-1 flex-col justify-between py-4">
         {!isNewsletter ? (
-          <div className="flex flex-col items-center gap-1">
-            <p className="text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">Actie:</p>
+          <div className="flex w-full flex-col items-center gap-1 rounded-2xl border-2 border-[var(--ink)]/30 bg-[var(--bg)] px-3 py-2.5 shadow-[0_2px_8px_rgba(16,24,40,0.12)]">
+            <p className="text-[11px] font-semibold tracking-[0.08em] text-[var(--muted)]">Actie:</p>
             <BalancedText
-              text={item.nextAction}
+              text={item.declaration === "pending" ? "Declareer factuur" : item.nextAction}
               className="flex min-h-[40px] w-full flex-col justify-start text-[16px] font-semibold leading-5 text-[var(--ink)]"
             />
           </div>
@@ -416,8 +422,8 @@ export function InboxCard({
 
         {!isNewsletter ? (
           <div className="flex w-full flex-col items-center gap-1">
-            <p className="text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">Uiterste reactiedatum:</p>
-            <p className={`tnum text-[13px] font-medium ${TONE_TEXT[urgency.tone]}`}>{urgency.deadlineText}</p>
+            <p className="translate-y-[7px] text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">Uiterste datum:</p>
+            <p className={`tnum text-[13px] font-medium ${deadlineClass(urgency)}`}>{urgency.deadlineText}</p>
           </div>
         ) : null}
 
@@ -690,9 +696,9 @@ export function InboxModal({
               {item.subject}
             </p>
             <p className="mt-3 text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">
-              {hasPayableInvoice(item) ? "Uiterste betaaldatum" : "Uiterste reactiedatum"}
+              {hasPayableInvoice(item) ? "Uiterste betaaldatum" : "Uiterste datum"}
             </p>
-            <p className={`tnum mt-0.5 text-[13px] font-medium ${TONE_TEXT[urgency.tone]}`}>{urgency.deadlineText}</p>
+            <p className={`tnum mt-0.5 text-[13px] font-medium ${deadlineClass(urgency)}`}>{urgency.deadlineText}</p>
           </div>
         </div>
 

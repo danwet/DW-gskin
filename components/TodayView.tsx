@@ -172,7 +172,9 @@ export function TodayView() {
   const infoItems = visibleItems.filter(
     (item) => item.classification === "info" || (item.source === "scan" && item.handledByUser === true),
   );
-  const declareItems = visibleItems.filter((item) => item.invoice && item.declaration === "pending");
+  // A paid invoice that still has to be declared keeps its card, even though the
+  // mail itself is already archived.
+  const declareItems = inbox.items.filter((item) => item.invoice && item.declaration === "pending");
   const missedItems = visibleItems.filter((item) => item.classification === "unclassified");
 
   return (

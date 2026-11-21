@@ -108,7 +108,7 @@ export function urgencyFor(
 }
 
 function deadlineText(deadline: Date | null): string {
-  return deadline ? formatDeadline(deadline) : "Geen deadline gevonden";
+  return deadline ? formatDeadline(deadline) : "Geen deadline";
 }
 
 /** Order by tone, then by earliest deadline, then most recent message. */
