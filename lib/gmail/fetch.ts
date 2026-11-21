@@ -19,12 +19,27 @@ const DEPARTMENT_HINT =
  * "Gasservice Noordholland | Installatie afdeling" is really
  * "Gasservice Noordholland": keep the segment that is not a department.
  */
+/** A role or practice behind a comma, e.g. "Susan Binnewijzend, mondhygiënist". */
+const ROLE_HINT =
+  /^(mondhygi[eë]nist|tandarts|huisarts|fysiotherapeut|therapeut|specialist|assistent|praktijk|kliniek|adviseur|consulent|apotheek|dierenarts|notaris|advocaat|accountant|makelaar|coach|debiteurenbeheer|administratie|facturatie|sales|support|hr)\b/i;
+
 export function simplifySenderName(name: string): string {
-  const parts = name
+  const trimmed = (name ?? "").trim();
+
+  // "Susan Binnewijzend, mondhygiënist" -> "Susan Binnewijzend"
+  const comma = /^([^,]{2,60}),\s*(.{2,60})$/.exec(trimmed);
+  if (comma) {
+    const [, head, tail] = comma;
+    const explicitRole = ROLE_HINT.test(tail) || DEPARTMENT_HINT.test(tail);
+    const shortTail = tail.split(/\s+/).length <= 2 && head.split(/\s+/).length >= 2;
+    if (explicitRole || shortTail) return head.trim();
+  }
+
+  const parts = trimmed
     .split(/\s*[|·]\s*/)
     .map((part) => part.trim())
     .filter(Boolean);
-  if (parts.length < 2) return name;
+  if (parts.length < 2) return trimmed;
   return parts.find((part) => !DEPARTMENT_HINT.test(part)) ?? parts[0];
 }
 
