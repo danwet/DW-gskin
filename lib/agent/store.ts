@@ -2,6 +2,7 @@ import "server-only";
 
 import { mkdir, readFile, rename, writeFile } from "fs/promises";
 import path from "path";
+import { supabaseReadJson, supabaseWriteJson } from "../supabase/kv";
 import type { AgentMeta, MailAssessment, RunRecord } from "./types";
 
 type AgentState = {
@@ -45,32 +46,48 @@ function withLock<T>(task: () => Promise<T>): Promise<T> {
   return run;
 }
 
-async function readState(): Promise<AgentState> {
+function parseState(raw: unknown): AgentState {
+  const parsed = (raw ?? {}) as Partial<AgentState>;
+  const assessments: Record<string, MailAssessment> = {};
+  if (parsed.assessments && typeof parsed.assessments === "object") {
+    for (const [key, value] of Object.entries(parsed.assessments)) {
+      if (value && typeof value === "object") assessments[key] = value as MailAssessment;
+    }
+  }
+  return {
+    assessments,
+    meta: parsed.meta ? { ...EMPTY_META, ...parsed.meta } : { ...EMPTY_META },
+  };
+}
+
+async function readStateFromFile(): Promise<AgentState> {
   try {
     const raw = await readFile(stateFile(), "utf8");
-    const parsed = JSON.parse(raw) as Partial<AgentState>;
-    const assessments: Record<string, MailAssessment> = {};
-    if (parsed.assessments && typeof parsed.assessments === "object") {
-      for (const [key, value] of Object.entries(parsed.assessments)) {
-        if (value && typeof value === "object") assessments[key] = value as MailAssessment;
-      }
-    }
-    return {
-      assessments,
-      meta: parsed.meta ? { ...EMPTY_META, ...parsed.meta } : { ...EMPTY_META },
-    };
+    return parseState(JSON.parse(raw));
   } catch {
     return { assessments: {}, meta: { ...EMPTY_META } };
   }
 }
 
-async function writeState(state: AgentState): Promise<void> {
+async function writeStateToFile(state: AgentState): Promise<void> {
   const folder = directory();
   await mkdir(folder, { recursive: true });
   const target = stateFile();
   const temp = `${target}.${process.pid}.tmp`;
   await writeFile(temp, JSON.stringify(state), "utf8");
   await rename(temp, target);
+}
+
+async function readState(): Promise<AgentState> {
+  const doc = await supabaseReadJson("dw_agent_state", "id", "singleton");
+  if (doc.ok) return parseState(doc.value);
+  return readStateFromFile();
+}
+
+async function writeState(state: AgentState): Promise<void> {
+  const written = await supabaseWriteJson("dw_agent_state", "id", "singleton", state);
+  if (written) return;
+  await writeStateToFile(state);
 }
 
 export function readAssessments(): Promise<MailAssessment[]> {

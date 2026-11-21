@@ -8,12 +8,12 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "DW Dashboard",
+  title: "DW Gskin",
   description: "What needs your attention after each email triage.",
-  applicationName: "DW Dashboard",
+  applicationName: "DW Gskin",
   appleWebApp: {
     capable: true,
-    title: "DW Dashboard",
+    title: "DW Gskin",
     statusBarStyle: "black",
   },
   icons: {

@@ -6,9 +6,11 @@
     "build": "next build",
     "start": "next start",
     "agent:run": "node scripts/run-agent.mjs",
-    "agent:verify": "node --conditions=react-server scripts/verify-agent.mjs"
+    "agent:verify": "node --conditions=react-server scripts/verify-agent.mjs",
+    "seed:demo": "node scripts/seed-demo.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.2",
     "next": "^15.5.4",
     "next-auth": "^5.0.0-beta.32",
     "pdfjs-dist": "^4.10.38",

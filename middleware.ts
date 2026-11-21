@@ -1,43 +1,42 @@
-import { auth } from "@/auth";
-import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
-const sessionGate = auth((req) => {
-  if (!req.auth?.user?.email) {
-    const login = req.nextUrl.clone();
-    login.pathname = "/login";
-    login.search = "";
-    return NextResponse.redirect(login);
+export async function middleware(request: NextRequest) {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) return NextResponse.next();
+
+  const secureCookie = request.url.startsWith('https://');
+  const token = await getToken({
+    req: request,
+    secret,
+    secureCookie,
+    cookieName: secureCookie ? '__Secure-authjs.session-token' : 'authjs.session-token',
+    salt: secureCookie ? '__Secure-authjs.session-token' : 'authjs.session-token',
+  });
+
+  const protectedPaths = ['/', '/scan', '/bewaren', '/agent', '/gemist'];
+  const isProtected = protectedPaths.some((path) =>
+    request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path + '/'),
+  );
+
+  const isAuthPath = request.nextUrl.pathname.startsWith('/login');
+
+  if (isProtected && !token) {
+    const redirectUrl = new URL('/login', request.url);
+    redirectUrl.searchParams.set('redirect', request.nextUrl.pathname);
+    return NextResponse.redirect(redirectUrl);
   }
+
+  if (isAuthPath && token) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
   return NextResponse.next();
-});
-
-function isPublic(pathname: string) {
-  return pathname === "/login" || pathname.startsWith("/api/auth");
-}
-
-export default async function middleware(request: NextRequest, event: NextFetchEvent) {
-  const { pathname } = request.nextUrl;
-  if (isPublic(pathname)) return NextResponse.next();
-  if (pathname.startsWith("/api/")) return NextResponse.next();
-
-  const login = request.nextUrl.clone();
-  login.pathname = "/login";
-  login.search = "";
-  if (!process.env.AUTH_SECRET) return NextResponse.redirect(login);
-
-  try {
-    const gate = sessionGate as unknown as (
-      request: NextRequest,
-      event: NextFetchEvent,
-    ) => Promise<Response>;
-    return await gate(request, event);
-  } catch {
-    return NextResponse.redirect(login);
-  }
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|mjs|txt|xml)$).*)"],
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$).*)',
+  ],
 };
-
-

@@ -103,7 +103,7 @@ export type RunRecord = {
   at: string;
   ok: boolean;
   source: "gmail" | "fixtures";
-  model: "openai" | "rule";
+  model: "openai" | "anthropic" | "gemini" | "openrouter" | "rule";
   conversations: number;
   messages: number;
   archived?: number;
@@ -115,7 +115,7 @@ export type AgentMeta = {
   lastSuccessfulRunAt: string | null;
   lastError: string | null;
   source: "gmail" | "fixtures";
-  model: "openai" | "rule";
+  model: "openai" | "anthropic" | "gemini" | "openrouter" | "rule";
   conversationsProcessed: number;
   messagesSeen: number;
   runs?: RunRecord[];

@@ -190,22 +190,22 @@ function SidebarContent({
   onNavigate: () => void;
 }) {
   return (
-    <div className="sidebar-enter flex min-h-0 flex-1 flex-col">
+    <div className="sidebar-enter relative z-10 flex min-h-0 flex-1 flex-col">
       <div className="shrink-0 px-3 pt-5 pb-2">
-      <div className="flex justify-start px-1">
-        <button
-          type="button"
-          onClick={onTogglePinned}
-          aria-label={pinned ? "Zijbalk losmaken" : "Zijbalk vastzetten"}
-          title={pinned ? "Zijbalk losmaken" : "Zijbalk vastzetten"}
-          className="glass-chip focus-ring hidden h-7 w-7 place-items-center rounded-full text-[var(--muted)] md:grid"
-        >
-          <PanelIcon />
-        </button>
-      </div>
-      <div className="mt-2 px-1">
-        <img src="/dw-mark.png" alt="DW" className="h-auto w-full dark:invert" />
-      </div>
+        <div className="flex justify-start px-1">
+          <button
+            type="button"
+            onClick={onTogglePinned}
+            aria-label={pinned ? "Zijbalk losmaken" : "Zijbalk vastzetten"}
+            title={pinned ? "Zijbalk losmaken" : "Zijbalk vastzetten"}
+            className="glass-chip focus-ring hidden h-7 w-7 place-items-center rounded-full text-[var(--muted)] md:grid"
+          >
+            <PanelIcon />
+          </button>
+        </div>
+        <div className="mt-2 px-1">
+          <img src="/dw-mark.png" alt="DW" className="h-auto w-full dark:invert" />
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-5">
@@ -235,14 +235,14 @@ function SidebarContent({
             {initial}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-[14px] font-medium leading-tight">{accountLabel}</span>
-            <span className="block truncate text-[12px] text-[var(--muted)]">{email || "Ingelogd"}</span>
+            <span className="block truncate text-[14px] font-medium leading-tight">{accountLabel || "Account"}</span>
+            <span className="block truncate text-[12px] text-[var(--muted)]">{email || "Geen e-mail"}</span>
           </span>
           <button
             type="button"
             onClick={onOpenSettings}
             aria-label="Instellingen openen"
-            className="focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[var(--muted)] hover:bg-[var(--glass-bg-soft)]"
+            className="focus-ring relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[var(--muted)] hover:bg-[var(--glass-bg-soft)]"
           >
             <GearIcon />
           </button>

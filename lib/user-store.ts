@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "crypto";
 import { mkdir, readdir, readFile, rename, writeFile } from "fs/promises";
 import path from "path";
+import { supabaseReadJson, supabaseWriteJson } from "./supabase/kv";
 import type { InvoiceData } from "./epc";
 import type { BriefRun, RawMessage, UserWorkspace } from "./types";
 
@@ -201,7 +202,7 @@ export function toWorkspace(record: UserRecord): UserWorkspace {
   };
 }
 
-async function readRecord(userId: string, email: string): Promise<UserRecord> {
+async function readRecordFromFile(userId: string, email: string): Promise<UserRecord> {
   try {
     const raw = await readFile(fileFor(userId), "utf8");
     const parsed = JSON.parse(raw) as Partial<UserRecord>;
@@ -211,13 +212,28 @@ async function readRecord(userId: string, email: string): Promise<UserRecord> {
   }
 }
 
-async function writeRecord(record: UserRecord) {
+async function writeRecordToFile(record: UserRecord) {
   const folder = directory();
   await mkdir(folder, { recursive: true });
   const target = fileFor(record.userId);
   const temp = `${target}.${process.pid}.tmp`;
   await writeFile(temp, JSON.stringify(record), "utf8");
   await rename(temp, target);
+}
+
+async function readRecord(userId: string, email: string): Promise<UserRecord> {
+  const doc = await supabaseReadJson("dw_user_state", "user_id", userId);
+  if (doc.ok) {
+    const parsed = (doc.value ?? {}) as Partial<UserRecord>;
+    return normalize(parsed, userId, email);
+  }
+  return readRecordFromFile(userId, email);
+}
+
+async function writeRecord(record: UserRecord) {
+  const written = await supabaseWriteJson("dw_user_state", "user_id", record.userId, record);
+  if (written) return;
+  await writeRecordToFile(record);
 }
 
 function enqueue<T>(userId: string, task: () => Promise<T>): Promise<T> {

@@ -76,8 +76,12 @@ export async function PUT(request: Request) {
       if (providerId in { openai: 0, anthropic: 0, gemini: 0, openrouter: 0 }) {
         const currentProvider = currentConfig.providers[providerId as ProviderId] || { apiKey: "", model: "", enabled: false };
         const updates = providerConfig as { apiKey?: string; model?: string; enabled?: boolean };
+        const apiKey =
+          typeof updates.apiKey === "string" && updates.apiKey.trim()
+            ? updates.apiKey.trim()
+            : currentProvider.apiKey;
         nextProviders[providerId as ProviderId] = {
-          apiKey: typeof updates.apiKey === "string" ? updates.apiKey : currentProvider.apiKey,
+          apiKey,
           model: typeof updates.model === "string" && updates.model.trim() ? updates.model.trim() : currentProvider.model,
           enabled: typeof updates.enabled === "boolean" ? updates.enabled : currentProvider.enabled,
         };

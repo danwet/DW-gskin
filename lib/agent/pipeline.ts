@@ -1,8 +1,8 @@
 import "server-only";
 
 import { buildAssessment, groupByConversation } from "./build";
-import { agentModel, classifyConversation, openAiConfigured } from "./classify";
-import { loadAgentConfig, type AgentConfig } from "./config";
+import { classifyConversation } from "./classify";
+import { loadAgentConfig, type AgentConfig, type ProviderId } from "./config";
 import { fetchInboxMessages, resolveMailSource } from "./mail-source";
 import { archiveGmailMessages } from "./gmail-archive";
 import { isShipmentRelated } from "./shipment";
@@ -21,23 +21,39 @@ export type RunResult = {
   note?: string;
 };
 
+function activeProvider(config?: AgentConfig): { provider: ProviderId; apiKey?: string; model?: string } {
+  const provider = config?.defaultProvider ?? "openai";
+  const providerConfig = config?.providers?.[provider];
+  return {
+    provider,
+    apiKey: providerConfig?.apiKey || undefined,
+    model: providerConfig?.model || undefined,
+  };
+}
+
+function modelLabelFor(provider: ProviderId, model?: string): string {
+  return model?.trim() || provider;
+}
+
 export async function runMailAgent(now = new Date()): Promise<RunResult> {
   const config = await loadAgentConfig();
   const source = resolveMailSource(config);
   const fetchResult = await fetchInboxMessages(config);
   if (!fetchResult.ok) {
-    const useOpenAi = openAiConfigured(config.providers.openai.apiKey);
+    const { provider, apiKey, model } = activeProvider(config);
+    const useModel = Boolean(apiKey);
+    const label = useModel ? modelLabelFor(provider, model) : "rule";
     await updateMeta({
       lastRunAt: now.toISOString(),
       lastError: fetchResult.reason,
       source,
-      model: useOpenAi ? "openai" : "rule",
+      model: useModel ? provider : "rule",
     });
     await appendRun({
       at: now.toISOString(),
       ok: false,
       source,
-      model: useOpenAi ? "openai" : "rule",
+      model: useModel ? provider : "rule",
       conversations: 0,
       messages: 0,
       error: fetchResult.reason,
@@ -45,7 +61,7 @@ export async function runMailAgent(now = new Date()): Promise<RunResult> {
     return {
       ok: false,
       source,
-      model: useOpenAi ? agentModel(config.providers.openai.model) : "rule",
+      model: label,
       processed: 0,
       messagesSeen: 0,
       conversations: 0,
@@ -63,8 +79,9 @@ export async function runMailAgentOnMessages(
   now = new Date(),
   config?: AgentConfig,
 ): Promise<RunResult> {
-  const useOpenAi = openAiConfigured(config?.providers.openai.apiKey);
-  const modelLabel = useOpenAi ? agentModel(config?.providers.openai.model) : "rule";
+  const { provider, apiKey, model } = activeProvider(config);
+  const useModel = Boolean(apiKey);
+  const label = useModel ? modelLabelFor(provider, model) : "rule";
   const meta = await readMeta();
 
   if (messages.length === 0) {
@@ -73,7 +90,7 @@ export async function runMailAgentOnMessages(
       lastSuccessfulRunAt: now.toISOString(),
       lastError: null,
       source,
-      model: useOpenAi ? "openai" : "rule",
+      model: useModel ? provider : "rule",
       conversationsProcessed: 0,
       messagesSeen: 0,
     });
@@ -81,12 +98,12 @@ export async function runMailAgentOnMessages(
       at: now.toISOString(),
       ok: true,
       source,
-      model: useOpenAi ? "openai" : "rule",
+      model: useModel ? provider : "rule",
       conversations: 0,
       messages: 0,
       error: null,
     });
-    return { ok: true, source, model: modelLabel, processed: 0, messagesSeen: 0, conversations: 0, errors: [] };
+    return { ok: true, source, model: label, processed: 0, messagesSeen: 0, conversations: 0, errors: [] };
   }
 
   const grouped = groupByConversation(messages);
@@ -95,7 +112,7 @@ export async function runMailAgentOnMessages(
 
   for (const conversation of grouped.values()) {
     try {
-      const draft = await classifyConversation(conversation, { apiKey: config?.providers.openai.apiKey, model: config?.providers.openai.model });
+      const draft = await classifyConversation(conversation, { provider, apiKey, model });
       updates.push(buildAssessment(conversation, draft, now));
     } catch (error) {
       errors.push(error instanceof Error ? error.message : "unknown classification error");
@@ -133,7 +150,7 @@ export async function runMailAgentOnMessages(
     lastSuccessfulRunAt: success ? now.toISOString() : meta.lastSuccessfulRunAt,
     lastError: success ? null : `Model failed for ${errors.length} conversation(s)`,
     source,
-    model: useOpenAi ? "openai" : "rule",
+    model: useModel ? provider : "rule",
     conversationsProcessed: grouped.size,
     messagesSeen: messages.length,
   });
@@ -141,7 +158,7 @@ export async function runMailAgentOnMessages(
     at: now.toISOString(),
     ok: success,
     source,
-    model: useOpenAi ? "openai" : "rule",
+    model: useModel ? provider : "rule",
     conversations: grouped.size,
     messages: messages.length,
     archived,
@@ -151,7 +168,7 @@ export async function runMailAgentOnMessages(
   return {
     ok: success,
     source,
-    model: modelLabel,
+    model: label,
     processed: updates.length,
     messagesSeen: messages.length,
     conversations: grouped.size,

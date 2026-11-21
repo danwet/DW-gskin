@@ -84,12 +84,12 @@ export function SettingsDialog() {
       if (response.ok) {
         const data = (await response.json()) as ServerSettings;
         setServer(data);
-        const firstProvider = Object.keys(data.providers)[0] || "openai";
-        setSelectedProvider(firstProvider);
-        const provider = data.providers[firstProvider] || { model: "", apiKeySet: false, enabled: false };
-        setModel(provider.model);
-        setApiKey("");
-        setProviderEnabled(provider.enabled);
+        const preferred =
+          data.defaultProvider && data.providers[data.defaultProvider]
+            ? data.defaultProvider
+            : Object.keys(data.providers)[0] || "openai";
+        setSelectedProvider(preferred);
+        applyProviderToForm(preferred, data.providers[preferred]);
         setMailSource(data.mail.source);
         setFixtureStage(data.mail.fixtureStage);
         setSignature(data.email.signature);
@@ -97,6 +97,18 @@ export function SettingsDialog() {
     } catch {
       setNotice("Instellingen konden niet worden geladen.");
     }
+  }
+
+  function applyProviderToForm(providerId: string, provider?: ProviderConfig) {
+    const defaults = PROVIDER_DEFAULTS[providerId];
+    setModel(provider?.model || defaults?.model || "");
+    setProviderEnabled(provider?.enabled ?? false);
+    setApiKey("");
+  }
+
+  function handleSelectProvider(providerId: string) {
+    setSelectedProvider(providerId);
+    applyProviderToForm(providerId, server?.providers?.[providerId]);
   }
 
   async function save(patch: Record<string, unknown>, okMessage: string) {
@@ -189,7 +201,7 @@ export function SettingsDialog() {
             <AgentsSection
               server={server}
               selectedProvider={selectedProvider}
-              setSelectedProvider={setSelectedProvider}
+              onSelectProvider={handleSelectProvider}
               apiKey={apiKey}
               setApiKey={setApiKey}
               model={model}
@@ -200,9 +212,10 @@ export function SettingsDialog() {
               onSaveProvider={() =>
                 void save(
                   {
+                    defaultProvider: selectedProvider,
                     providers: {
                       [selectedProvider]: {
-                        apiKey,
+                        ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
                         model: model.trim(),
                         enabled: providerEnabled,
                       },
@@ -323,7 +336,7 @@ function ProfileSection({
 function AgentsSection({
   server,
   selectedProvider,
-  setSelectedProvider,
+  onSelectProvider,
   apiKey,
   setApiKey,
   model,
@@ -335,7 +348,7 @@ function AgentsSection({
 }: {
   server: ServerSettings | null;
   selectedProvider: string;
-  setSelectedProvider: (v: string) => void;
+  onSelectProvider: (v: string) => void;
   apiKey: string;
   setApiKey: (v: string) => void;
   model: string;
@@ -358,7 +371,7 @@ function AgentsSection({
         <Field label="Provider">
           <select
             value={selectedProvider}
-            onChange={(event) => setSelectedProvider(event.target.value)}
+            onChange={(event) => onSelectProvider(event.target.value)}
             className={inputClass}
           >
             {PROVIDER_OPTIONS.map((opt) => (

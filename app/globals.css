@@ -6,23 +6,24 @@
   color-scheme: light;
 
   /* Oppervlakken */
-  --bg: #e4e7ed;
-  --surface: #f3f4f7;
-  --sidebar: rgba(220, 228, 242, 0.62);
-  --card: #f3f4f7;
+  --page: #ffffff;
+  --bg: #fafaf9;
+  --surface: #fafaf9;
+  --sidebar: rgba(255, 255, 255, 0.76);
+  --card: #ffffff;
 
   /* Tekst */
-  --ink: #151922;
-  --muted: #555d6c;
-  --faint: #8a93a3;
+  --ink: #17181a;
+  --muted: #5b6068;
+  --faint: #8a8f98;
 
   /* Lijnen */
-  --line: rgba(29, 42, 61, 0.13);
+  --line: #e5e6e8;
 
   /* Acties / nadruk */
-  --accent: #004ecb;
-  --blue: #004ecb;
-  --blue-soft: rgba(0, 78, 203, 0.1);
+  --accent: #245bb5;
+  --blue: #245bb5;
+  --blue-soft: #f4f7fd;
   --purple: #6b5bd2;
   --green: #1b7f4b;
   --green-soft: rgba(27, 127, 75, 0.12);
@@ -31,30 +32,39 @@
   --danger: #c93a3a;
   --danger-soft: rgba(201, 58, 58, 0.12);
 
-  /* Liquid Glass */
-  --glass-fallback: #eef1f6;
-  --glass-bg: rgba(220, 228, 242, 0.62);
-  --glass-bg-strong: rgba(228, 234, 246, 0.86);
-  --glass-bg-soft: rgba(220, 228, 242, 0.44);
-  --glass-hl: rgba(255, 255, 255, 0.7);
-  --glass-hl2: rgba(255, 255, 255, 0.34);
-  --glass-edge: rgba(255, 255, 255, 0.5);
-  --glass-bottom: rgba(29, 42, 61, 0.08);
-  --glass-reflect: rgba(255, 255, 255, 0.16);
-  --glass-shadow: 0 12px 32px rgba(29, 42, 61, 0.12), 0 2px 8px rgba(29, 42, 61, 0.06);
+  /* Liquid Glass (neutraal, kleurloos) */
+  --glass-fallback: #fbfbfa;
+  --glass-bg: rgba(255, 255, 255, 0.76);
+  --glass-bg-strong: rgba(255, 255, 255, 0.92);
+  --glass-bg-soft: rgba(255, 255, 255, 0.5);
+  --glass-hl: rgba(255, 255, 255, 0.9);
+  --glass-hl2: rgba(255, 255, 255, 0.55);
+  --glass-edge: rgba(255, 255, 255, 0.65);
+  --glass-bottom: rgba(20, 24, 34, 0.07);
+  --glass-reflect: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 12px 32px rgba(24, 24, 28, 0.1), 0 2px 8px rgba(24, 24, 28, 0.05);
 
-  /* Actieve navigatie (lichtblauw glas, donkerblauwe tekst) */
-  --active-bg: rgba(96, 150, 240, 0.32);
-  --active-bg-deep: rgba(78, 130, 224, 0.38);
-  --active-ink: #003a9b;
-  --active-hl: rgba(255, 255, 255, 0.6);
+  /* Actieve navigatie (wit glas, donkerblauwe tekst, fijne contour) */
+  --active-bg: rgba(255, 255, 255, 0.85);
+  --active-bg-deep: rgba(255, 255, 255, 0.95);
+  --active-ink: #245bb5;
+  --active-hl: rgba(255, 255, 255, 0.9);
+  --active-line: rgba(24, 24, 28, 0.12);
 
-  --shadow: 0 1px 2px rgba(22, 27, 45, 0.04), 0 12px 32px rgba(22, 27, 45, 0.05);
+  /* Geen blauwe waas in light mode */
+  --glow: transparent;
+  --glow2: transparent;
+
+  /* Zwevende zijbalk: zachte, neutrale schaduw */
+  --float-shadow: 0 12px 32px rgba(24, 24, 28, 0.12), 0 2px 8px rgba(24, 24, 28, 0.06);
+
+  --shadow: 0 1px 2px rgba(24, 24, 28, 0.04), 0 12px 32px rgba(24, 24, 28, 0.05);
 }
 
 .dark {
   color-scheme: dark;
 
+  --page: #1b1e24;
   --bg: #1b1e24;
   --surface: #242830;
   --sidebar: rgba(53, 60, 72, 0.62);
@@ -92,6 +102,9 @@
   --active-bg-deep: rgba(32, 74, 142, 0.62);
   --active-ink: #f3f5f8;
   --active-hl: rgba(255, 255, 255, 0.18);
+  --active-line: transparent;
+
+  --float-shadow: 0 20px 48px rgba(16, 20, 30, 0.28);
 
   --shadow: none;
 }
@@ -103,6 +116,7 @@
 html,
 body {
   min-height: 100%;
+  background-color: var(--page);
 }
 
 body {
@@ -111,7 +125,7 @@ body {
   background:
     radial-gradient(1200px 600px at 82% -10%, var(--glow, rgba(120, 160, 255, 0.16)), transparent 60%),
     radial-gradient(1000px 520px at -10% 110%, var(--glow2, rgba(140, 120, 255, 0.1)), transparent 55%),
-    var(--bg);
+    var(--page);
   background-attachment: fixed;
   font-family: var(--font-geist), "Avenir Next", "Segoe UI", sans-serif;
 }
@@ -182,11 +196,12 @@ button {
   }
 }
 
-/* Actieve navigatie: getint blauw glas met lichtpunt bovenaan */
+/* Actieve navigatie / filter: neutraal wit glas met fijne contour */
 .glass-active {
   background: var(--active-bg);
   color: var(--active-ink);
   box-shadow:
+    inset 0 0 0 1px var(--active-line),
     inset 0 1px 0 var(--active-hl),
     inset 0 -1px 0 rgba(0, 0, 0, 0.12),
     0 1px 2px rgba(22, 27, 45, 0.08);
@@ -218,7 +233,7 @@ button {
     inset 0 1px 0 var(--glass-hl),
     inset 1px 0 0 var(--glass-hl2),
     inset 0 -1px 0 var(--glass-bottom),
-    0 20px 48px rgba(16, 20, 30, 0.28);
+    var(--float-shadow);
 }
 
 @keyframes sidebar-enter {

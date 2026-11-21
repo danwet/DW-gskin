@@ -1,6 +1,7 @@
 import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { markHandled, readAssessments, readMeta, saveConversation, setDeclaration, snoozeConversation } from "@/lib/agent/store";
-import { openAiConfigured, agentModel } from "@/lib/agent/classify";
+import { loadAgentConfig } from "@/lib/agent/config";
+import { runMailAgent } from "@/lib/agent/pipeline";
 
 export const dynamic = "force-dynamic";
 
@@ -8,11 +9,19 @@ export async function GET() {
   const user = await sessionUser();
   if (!user) return unauthorized();
 
-  const [items, meta] = await Promise.all([readAssessments(), readMeta()]);
+  // Seed the demo/fixture data on first use when the store has never run yet.
+  const initialMeta = await readMeta();
+  if (!initialMeta.lastRunAt) {
+    await runMailAgent();
+  }
+
+  const [items, meta, config] = await Promise.all([readAssessments(), readMeta(), loadAgentConfig()]);
+  const provider = config.providers[config.defaultProvider];
+  const model = provider?.apiKey ? (provider.model || config.defaultProvider) : "rule";
   return Response.json({
     items,
     meta,
-    model: openAiConfigured() ? agentModel() : "rule",
+    model,
   });
 }
 

@@ -2,6 +2,7 @@ import "server-only";
 
 import { mkdir, readFile, rename, writeFile } from "fs/promises";
 import path from "path";
+import { supabaseAvailable, supabaseReadJson, supabaseWriteJson } from "../supabase/kv";
 
 export type MailSource = "auto" | "fixtures" | "gmail";
 
@@ -36,6 +37,35 @@ async function readFileConfig(): Promise<Record<string, unknown>> {
   }
 }
 
+async function writeFileConfig(config: AgentConfig): Promise<void> {
+  const folder = path.dirname(filePath());
+  await mkdir(folder, { recursive: true });
+  const tmp = `${filePath()}.${process.pid}.tmp`;
+  await writeFile(tmp, JSON.stringify(config, null, 2), "utf8");
+  await rename(tmp, filePath());
+}
+
+/** Reads the persisted config from Supabase when available, else from the local file. */
+async function readPersistedConfig(): Promise<Record<string, unknown>> {
+  if (supabaseAvailable()) {
+    const doc = await supabaseReadJson("dw_agent_settings", "id", "singleton");
+    if (doc.ok && doc.value && typeof doc.value === "object" && !Array.isArray(doc.value)) {
+      return doc.value as Record<string, unknown>;
+    }
+    return {};
+  }
+  return readFileConfig();
+}
+
+/** Persists the full config to Supabase when available, else to the local file. */
+async function persistConfig(config: AgentConfig): Promise<void> {
+  if (supabaseAvailable()) {
+    await supabaseWriteJson("dw_agent_settings", "id", "singleton", config);
+    return;
+  }
+  await writeFileConfig(config);
+}
+
 function pickSource(value: unknown): MailSource {
   return value === "fixtures" || value === "gmail" ? value : "auto";
 }
@@ -63,7 +93,7 @@ const DEFAULT_PROVIDERS: Record<ProviderId, ProviderConfig> = {
 };
 
 export async function loadAgentConfig(): Promise<AgentConfig> {
-  const file = await readFileConfig();
+  const file = await readPersistedConfig();
   
   // Type-safe access to providers
   const providers = (file.providers as Record<ProviderId, { apiKey?: string; model?: string; enabled?: boolean }>) || {};
@@ -112,10 +142,6 @@ export async function loadAgentConfig(): Promise<AgentConfig> {
 export async function saveAgentConfig(patch: Partial<AgentConfig>): Promise<AgentConfig> {
   const current = await loadAgentConfig();
   const next: AgentConfig = { ...current, ...patch };
-  const folder = path.dirname(filePath());
-  await mkdir(folder, { recursive: true });
-  const tmp = `${filePath()}.${process.pid}.tmp`;
-  await writeFile(tmp, JSON.stringify(next, null, 2), "utf8");
-  await rename(tmp, filePath());
+  await persistConfig(next);
   return next;
 }

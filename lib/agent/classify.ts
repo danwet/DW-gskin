@@ -3,6 +3,7 @@ import "server-only";
 import { detectLanguage, type MailLanguage } from "../language";
 import { isShipmentRelated } from "./shipment";
 import type { AgentClassification, InboundMessage, PaymentStatus } from "./types";
+import type { ProviderId } from "./config";
 
 export type InvoiceDraft = {
   supplier: string;
@@ -442,6 +443,38 @@ export function agentModel(model?: string): string {
   return (model ?? process.env.OPENAI_MODEL)?.trim() || "gpt-4o-mini";
 }
 
+const DEFAULT_MODEL: Record<ProviderId, string> = {
+  openai: "gpt-4o-mini",
+  anthropic: "claude-3-5-sonnet-20241022",
+  gemini: "gemini-1.5-pro",
+  openrouter: "openai/gpt-4o-mini",
+};
+
+function providerEnvKey(provider: ProviderId): string | undefined {
+  if (provider === "anthropic") return process.env.ANTHROPIC_API_KEY;
+  if (provider === "gemini") return process.env.GEMINI_API_KEY;
+  if (provider === "openrouter") return process.env.OPENROUTER_API_KEY;
+  return process.env.OPENAI_API_KEY;
+}
+
+function providerModel(provider: ProviderId, model?: string): string {
+  return model?.trim() || DEFAULT_MODEL[provider];
+}
+
+/** Parses a model's JSON output, tolerating prose or fences wrapped around the object. */
+function parseJsonText(text: string): unknown {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start >= 0 && end > start) parsed = JSON.parse(text.slice(start, end + 1));
+    else throw new Error("Model output was not valid JSON");
+  }
+  return parsed;
+}
+
 function extractOutputText(data: unknown): string {
   const record = data as Record<string, unknown>;
   if (typeof record.output_text === "string") return record.output_text;
@@ -495,27 +528,142 @@ export async function assessWithOpenAI(
   }
 
   const data = (await response.json().catch(() => null)) as unknown;
-  const text = extractOutputText(data);
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    // Fall back to scanning for the first JSON object if the model wrapped the output.
-    const start = text.indexOf("{");
-    const end = text.lastIndexOf("}");
-    if (start >= 0 && end > start) parsed = JSON.parse(text.slice(start, end + 1));
-    else throw new Error("OpenAI output was not valid JSON");
-  }
-  return normalizeDraft(parsed);
+  return normalizeDraft(parseJsonText(extractOutputText(data)));
 }
 
-/** Dispatches to the real model when configured, else to the deterministic rule classifier. */
-export function classifyConversation(
+export async function assessWithAnthropic(
   messages: InboundMessage[],
   opts?: { apiKey?: string; model?: string },
 ): Promise<AssessmentDraft> {
-  const apiKey = opts?.apiKey ?? process.env.OPENAI_API_KEY;
-  if (apiKey) return assessWithOpenAI(messages, { apiKey, model: opts?.model });
+  const apiKey = opts?.apiKey ?? process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
+  const model = providerModel("anthropic", opts?.model);
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 1200,
+      system: INSTRUCTIONS,
+      messages: [{ role: "user", content: conversationText(messages) }],
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Anthropic responded ${response.status}: ${body.slice(0, 300)}`);
+  }
+
+  const data = (await response.json().catch(() => null)) as {
+    content?: { type?: string; text?: string }[];
+  } | null;
+  const text = (data?.content ?? [])
+    .filter((part) => part.type === "text" && typeof part.text === "string")
+    .map((part) => part.text as string)
+    .join("\n");
+  if (!text) throw new Error("Anthropic response contained no text");
+  return normalizeDraft(parseJsonText(text));
+}
+
+export async function assessWithGemini(
+  messages: InboundMessage[],
+  opts?: { apiKey?: string; model?: string },
+): Promise<AssessmentDraft> {
+  const apiKey = opts?.apiKey ?? process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
+  const model = providerModel("gemini", opts?.model);
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "x-goog-api-key": apiKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: INSTRUCTIONS }] },
+      contents: [{ role: "user", parts: [{ text: conversationText(messages) }] }],
+      generationConfig: { responseMimeType: "application/json" },
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Gemini responded ${response.status}: ${body.slice(0, 300)}`);
+  }
+
+  const data = (await response.json().catch(() => null)) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+  } | null;
+  const text = (data?.candidates?.[0]?.content?.parts ?? [])
+    .filter((part) => typeof part.text === "string")
+    .map((part) => part.text as string)
+    .join("\n");
+  if (!text) throw new Error("Gemini response contained no text");
+  return normalizeDraft(parseJsonText(text));
+}
+
+export async function assessWithOpenRouter(
+  messages: InboundMessage[],
+  opts?: { apiKey?: string; model?: string },
+): Promise<AssessmentDraft> {
+  const apiKey = opts?.apiKey ?? process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY is not set");
+  const model = providerModel("openrouter", opts?.model);
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: INSTRUCTIONS },
+        { role: "user", content: conversationText(messages) },
+      ],
+      response_format: { type: "json_object" },
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`OpenRouter responded ${response.status}: ${body.slice(0, 300)}`);
+  }
+
+  const data = (await response.json().catch(() => null)) as {
+    choices?: { message?: { content?: string } }[];
+  } | null;
+  const text = data?.choices?.[0]?.message?.content?.trim() ?? "";
+  if (!text) throw new Error("OpenRouter response contained no content");
+  return normalizeDraft(parseJsonText(text));
+}
+
+async function assessWithProvider(
+  messages: InboundMessage[],
+  provider: ProviderId,
+  opts?: { apiKey?: string; model?: string },
+): Promise<AssessmentDraft> {
+  if (provider === "anthropic") return assessWithAnthropic(messages, opts);
+  if (provider === "gemini") return assessWithGemini(messages, opts);
+  if (provider === "openrouter") return assessWithOpenRouter(messages, opts);
+  return assessWithOpenAI(messages, opts);
+}
+
+/** Dispatches to the configured provider, else to the deterministic rule classifier. */
+export function classifyConversation(
+  messages: InboundMessage[],
+  opts?: { provider?: ProviderId; apiKey?: string; model?: string },
+): Promise<AssessmentDraft> {
+  const provider = opts?.provider ?? "openai";
+  const apiKey = opts?.apiKey ?? providerEnvKey(provider);
+  if (apiKey) return assessWithProvider(messages, provider, { apiKey, model: opts?.model });
   return Promise.resolve(ruleAssess(messages));
 }
 
