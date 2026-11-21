@@ -134,7 +134,12 @@ export async function saveMessages(
   const newThreads = threadIds.filter((id) => !knownThreads.has(id)).length;
   const newMessages = messages.filter((message) => !knownMessages.has(message.id)).length;
 
-  const rows = messages.map((message) => ({
+  // Gmail pages can overlap when the mailbox changes mid-walk; a duplicate id
+  // inside one upsert makes Postgres reject the whole batch.
+  const seen = new Map<string, (typeof messages)[number]>();
+  for (const message of messages) seen.set(message.id, message);
+
+  const rows = [...seen.values()].map((message) => ({
     user_id: userId,
     message_id: message.id,
     thread_id: message.threadId ?? message.id,
@@ -151,7 +156,10 @@ export async function saveMessages(
   const { error } = await supabase
     .from("dw_gmail_messages")
     .upsert(rows, { onConflict: "user_id,message_id" });
-  if (error) throw new Error("Berichten konden niet worden opgeslagen.");
+  if (error) {
+    // Keep the real reason: a generic message hid this for a long time.
+    throw new Error(`Berichten konden niet worden opgeslagen: ${error.message}${error.details ? ` (${error.details})` : ""}`);
+  }
 
   return { saved: messages.length, newMessages, newThreads };
 }
