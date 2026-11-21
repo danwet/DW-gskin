@@ -83,15 +83,25 @@ const SCAN_BUCKET = process.env.SUPABASE_SCAN_BUCKET?.trim() || "scanned-invoice
 
 export type SupabaseProbe = {
   configured: boolean;
+  missing: string[];
   agentStateReady: boolean;
   userStateReady: boolean;
   settingsReady: boolean;
 };
 
-/** Checks whether the three JSON tables are actually reachable (they must be created by the SQL migration). */
+/** Checks which credentials are missing and whether the three JSON tables are reachable. */
 export async function supabaseProbe(): Promise<SupabaseProbe> {
-  if (!supabaseAvailable()) {
-    return { configured: false, agentStateReady: false, userStateReady: false, settingsReady: false };
+  const missing: string[] = [];
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+  if (missing.length > 0) {
+    return {
+      configured: false,
+      missing,
+      agentStateReady: false,
+      userStateReady: false,
+      settingsReady: false,
+    };
   }
   const [agent, user, settings] = await Promise.all([
     supabaseReadJson("dw_agent_state", "id", "singleton"),
@@ -100,6 +110,7 @@ export async function supabaseProbe(): Promise<SupabaseProbe> {
   ]);
   return {
     configured: true,
+    missing: [],
     agentStateReady: agent.ok,
     userStateReady: user.ok,
     settingsReady: settings.ok,

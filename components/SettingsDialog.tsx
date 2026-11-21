@@ -18,6 +18,7 @@ type ServerSettings = {
   calendar: { configured: boolean };
   supabase: {
     configured: boolean;
+    missing: string[];
     agentStateReady: boolean;
     userStateReady: boolean;
     settingsReady: boolean;
@@ -578,6 +579,11 @@ function ServerSection({
             dot={server?.supabase.configured === true}
             label={server?.supabase.configured ? "Supabase geconfigureerd" : "Niet geconfigureerd — lokale bestanden"}
           />
+          {server && !server.supabase.configured && server.supabase.missing.length > 0 ? (
+            <p className="text-[12px] leading-5 text-[var(--muted)]">
+              Ontbreekt: <span className="font-mono">{server.supabase.missing.join(", ")}</span>
+            </p>
+          ) : null}
           <Status dot={server?.supabase.settingsReady === true} label="Tabel dw_agent_settings" />
           <Status dot={server?.supabase.agentStateReady === true} label="Tabel dw_agent_state" />
           <Status dot={server?.supabase.userStateReady === true} label="Tabel dw_user_state" />
