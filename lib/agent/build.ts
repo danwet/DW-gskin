@@ -1,6 +1,7 @@
 import type { AssessmentDraft } from "./classify";
 import type { InboundMessage, MailAssessment } from "./types";
 import { detectUnsubscribe } from "./unsubscribe";
+import { extractLogoUrl } from "../gmail/logo";
 import { detectShipment } from "./shipment";
 import { detectPayment } from "./payment";
 import { isValidIban } from "../epc";
@@ -149,6 +150,7 @@ export function buildAssessment(
   ownerEmail?: string | null,
 ): MailAssessment {
   const latest = conversation[conversation.length - 1];
+  const unsubscribeInfo = detectUnsubscribe(latest);
 
   // A card names the other party, never your own last reply. Prefer the first
   // message that did not come from the mailbox owner.
@@ -205,7 +207,18 @@ export function buildAssessment(
     sourceMessageId: latest.id,
     receivedAt: latest.receivedAt,
     updatedAt: now.toISOString(),
-    unsubscribe: detectUnsubscribe(latest) ?? undefined,
+    unsubscribe: unsubscribeInfo ?? undefined,
+    // Bulk mail may use its leading image; anything else only a picture that
+    // calls itself a logo, so a signature photo never ends up on the card.
+    logoUrl: latest.bodyHtml
+      ? extractLogoUrl(latest.bodyHtml, {
+          requireHint: !(
+            unsubscribeInfo ||
+            draft.classification === "info" ||
+            draft.classification === "unclassified"
+          ),
+        })
+      : undefined,
     body: latest.body || undefined,
     hasHtml: Boolean(latest.bodyHtml),
     shipment: detectShipment(latest) ?? undefined,

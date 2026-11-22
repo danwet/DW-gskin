@@ -100,6 +100,8 @@ export type MailAssessment = {
   body?: string;
   /** The original message has HTML we can render in the popup. */
   hasHtml?: boolean;
+  /** Brand mark found in a newsletter, shown on the card. */
+  logoUrl?: string;
   /** HTML body, retained so the newsletter reader can show images. */
   bodyHtml?: string;
   /** Detected shipment/tracking update, when present. */

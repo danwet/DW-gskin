@@ -392,12 +392,30 @@ export function InboxCard({
       <div className="absolute top-3 right-3 z-10">
         <UrgencyPill tone={urgency.tone} label={urgency.label} />
       </div>
+      {item.logoUrl && !isNewsletter ? (
+        <img
+          src={item.logoUrl}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          className="absolute top-3 left-3 z-10 h-6 w-auto max-w-[88px] object-contain"
+        />
+      ) : null}
+
       {item.needsAttention ? (
-        <span className="absolute top-3 left-3 rounded-full bg-[var(--orange-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--orange)]">
+        <span
+          className={`absolute left-3 rounded-full bg-[var(--orange-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--orange)] ${
+            item.logoUrl && !isNewsletter ? "top-11" : "top-3"
+          }`}
+        >
           Opnieuw
         </span>
       ) : isScan ? (
-        <span className="absolute top-3 left-3 rounded-full bg-[var(--blue-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--blue)]">
+        <span
+          className={`absolute left-3 rounded-full bg-[var(--blue-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--blue)] ${
+            item.logoUrl && !isNewsletter ? "top-11" : "top-3"
+          }`}
+        >
           Papieren factuur
         </span>
       ) : null}
@@ -409,6 +427,19 @@ export function InboxCard({
           className="flex min-h-[40px] w-full flex-col justify-start text-[14px] leading-5 text-[var(--muted)]"
         />
       </div>
+
+      {item.logoUrl && isNewsletter ? (
+        // Centred in the free space between the subject and the buttons below.
+        <div className="flex w-full flex-1 items-center justify-center py-2">
+          <img
+            src={item.logoUrl}
+            alt=""
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            className="max-h-12 w-1/2 object-contain"
+          />
+        </div>
+      ) : null}
 
       <div className="flex w-full flex-1 flex-col justify-between py-4">
         {!isNewsletter ? (
@@ -428,7 +459,7 @@ export function InboxCard({
           </div>
         ) : null}
 
-        <div className={isNewsletter ? "mt-auto w-full" : "w-full"}>
+        <div className={isNewsletter && !item.logoUrl ? "mt-auto w-full" : "w-full"}>
             <div className="mt-3 flex items-center justify-center gap-2">
               <button
                 type="button"
@@ -744,20 +775,38 @@ export function InboxModal({
           </div>
         ) : null}
 
-        {previewHtml ? (
+        {canPreview ? (
           <section className="mt-5">
             <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">Nieuwsbrief</p>
-            {/* Rendered as sent, so the layout and images survive. */}
-            <iframe
-              title={`Nieuwsbrief: ${item.subject}`}
-              srcDoc={previewHtml}
-              sandbox=""
-              className="mt-2 h-[440px] w-full rounded-2xl border border-[var(--line)] bg-white"
-            />
+            {previewHtml ? (
+              // Rendered as sent, so the layout and images survive.
+              <iframe
+                title={`Nieuwsbrief: ${item.subject}`}
+                srcDoc={previewHtml}
+                sandbox=""
+                className="mt-2 h-[440px] w-full rounded-2xl border border-[var(--line)] bg-white"
+              />
+            ) : (
+              <div className="mt-2 grid h-[440px] w-full place-items-center rounded-2xl border border-[var(--line)] bg-[var(--bg)]">
+                {previewFailed ? (
+                  <p className="px-6 text-center text-[13px] text-[var(--muted)]">De opmaak kon niet worden geladen.</p>
+                ) : (
+                  <div className="flex items-center gap-2" role="status" aria-label="Nieuwsbrief wordt geladen">
+                    {[0, 1, 2].map((dot) => (
+                      <span
+                        key={dot}
+                        className="dw-dot h-2.5 w-2.5 rounded-full bg-[var(--muted)]"
+                        style={{ animationDelay: `${dot * 0.16}s` }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </section>
         ) : null}
 
-        {(!previewHtml || previewFailed) &&
+        {(!canPreview || previewFailed) &&
         (item.unsubscribe ||
           item.classification === "info" ||
           item.classification === "unclassified" ||
