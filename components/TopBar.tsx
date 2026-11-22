@@ -60,7 +60,7 @@ export function TopBar() {
         >
           <RefreshIcon spinning={refreshing} />
         </button>
-        <span className="tnum text-[12px] leading-none text-[var(--muted)]">
+        <span className="text-[11px] leading-none text-[var(--muted)]">
           {refreshing ? "…" : shownSync ? formatClock(new Date(shownSync)) : "—"}
         </span>
       </div>
