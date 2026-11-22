@@ -1037,7 +1037,7 @@ export function InboxModal({
           </div>
         ) : null}
 
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+        <div className="mx-[5%] mt-5 flex flex-wrap items-center justify-center gap-2">
           {item.draftReply ? (
             <>
               <button
