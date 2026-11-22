@@ -32,6 +32,7 @@ export async function GET(request: Request) {
       lastRunAt: meta?.lastRunAt ?? null,
       rejectedAt: meta?.cronRejectedAt ?? null,
       rejectedCount: meta?.cronRejectedCount ?? 0,
+      rejectDetail: meta?.cronReject ?? null,
     },
     scanBucketReady: await supabaseScanBucketReady(),
   });

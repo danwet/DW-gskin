@@ -144,6 +144,15 @@ export type AgentMeta = {
   /** A run was attempted without the right secret; only the time is kept. */
   cronRejectedAt?: string | null;
   cronRejectedCount?: number;
+  /** What the rejected request looked like, without any secret value. */
+  cronReject?: {
+    at: string;
+    hadHeader: boolean;
+    headerScheme: string | null;
+    headerLength: number;
+    hadKey: boolean;
+    keyLength: number;
+  } | null;
   /** Gmail history cursor for reconciling deletions and archive actions. */
   gmailHistoryId?: string;
   /** Snapshot of the last archive/trash, so it can be undone. */

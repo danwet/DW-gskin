@@ -14,7 +14,17 @@ function authorized(request: Request): boolean {
 
 export async function GET(request: Request) {
   if (!authorized(request)) {
-    await noteCronRejected().catch(() => null);
+    // Describe the attempt, never the secret: that is what tells a wrong header
+    // apart from a scheduler that never calls at all.
+    const header = request.headers.get("authorization") ?? "";
+    const key = new URL(request.url).searchParams.get("key") ?? "";
+    await noteCronRejected({
+      hadHeader: header.length > 0,
+      headerScheme: header ? (header.split(" ")[0] ?? null) : null,
+      headerLength: header.length,
+      hadKey: key.length > 0,
+      keyLength: key.length,
+    }).catch(() => null);
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
