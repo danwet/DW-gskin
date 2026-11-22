@@ -139,10 +139,27 @@ export function useInbox() {
 
   const toggleHandled = useCallback(async (item: MailAssessment) => {
     const handled = !(item.handledByUser === true);
+    // Instant feedback: the tally moves with the click, the database follows.
+    if (item.invoice) {
+      setMeta((current) => {
+        if (!current) return current;
+        const today = new Date().toLocaleDateString("sv-SE");
+        const daily = current.dailyPaid?.date === today ? current.dailyPaid : { date: today, count: 0 };
+        const next = Math.max(0, daily.count + (handled ? 1 : -1));
+        return { ...current, dailyPaid: { date: today, count: next } };
+      });
+    }
     setItems((current) =>
       current.map((entry) =>
         entry.conversationId === item.conversationId
-          ? { ...entry, handledByUser: handled, needsAttention: handled ? false : entry.needsAttention }
+          ? {
+              ...entry,
+              handledByUser: handled,
+              // The stamp makes the counter move right away; without it the
+              // task only appears after the next full load.
+              handledAt: handled ? new Date().toISOString() : undefined,
+              needsAttention: handled ? false : entry.needsAttention,
+            }
           : entry,
       ),
     );
@@ -153,12 +170,13 @@ export function useInbox() {
         body: JSON.stringify({ conversationId: item.conversationId, handled }),
       });
       if (response.ok) {
-        const data = (await response.json()) as { item?: MailAssessment };
+        const data = (await response.json()) as { item?: MailAssessment; meta?: AgentMeta };
         if (data.item) {
           setItems((current) =>
             current.map((entry) => (entry.conversationId === item.conversationId ? data.item! : entry)),
           );
         }
+        if (data.meta) setMeta(data.meta);
       }
     } catch {
       // Keep the optimistic state; a reload re-syncs with the server.
@@ -255,6 +273,10 @@ export function useInbox() {
       // Nothing changed; the card simply stays away.
     }
   }, [reload]);
+
+  const updateItem = useCallback((next: MailAssessment) => {
+    setItems((current) => current.map((entry) => (entry.conversationId === next.conversationId ? next : entry)));
+  }, []);
 
   const removeItem = useCallback((conversationId: string) => {
     setItems((current) => current.filter((entry) => entry.conversationId !== conversationId));
@@ -385,7 +407,7 @@ export function useInbox() {
 
   useEffect(() => () => setTopBar(null), [setTopBar]);
 
-  return { items, pending, progress, meta, model, gmail, undoable, undo, notice, setNotice, loading, error, reload, removeItem, toggleHandled, snoozeItem, declareInvoice, saveItem };
+  return { items, pending, progress, meta, model, gmail, undoable, undo, notice, setNotice, loading, error, reload, removeItem, updateItem, toggleHandled, snoozeItem, declareInvoice, saveItem };
 }
 
 export function InboxListCard({

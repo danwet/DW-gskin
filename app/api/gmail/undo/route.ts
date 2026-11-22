@@ -4,7 +4,7 @@ import { getGmailRefreshToken, resolveGmailConnection } from "@/lib/gmail/connec
 import { restoreGmailMessage } from "@/lib/gmail/actions";
 import { fetchGmailMessage } from "@/lib/gmail/fetch";
 import { saveMessages } from "@/lib/gmail/store";
-import { readMeta, restoreAssessment, updateMeta } from "@/lib/agent/store";
+import { readMeta, restoreAssessment, unarchiveConversation, updateMeta } from "@/lib/agent/store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -48,7 +48,10 @@ export async function POST() {
     const found = messages.filter((message): message is NonNullable<typeof message> => Boolean(message));
     if (found.length > 0) await saveMessages(user.id, found);
   }
-  await restoreAssessment(last.assessment);
+  // The card comes back exactly as it was; without a card the re-imported mail
+  // is judged again, which rebuilds it.
+  if (last.assessment) await restoreAssessment(last.assessment);
+  await unarchiveConversation(last.conversationId);
   await updateMeta({ lastAction: null });
 
   return Response.json({ ok: true, action: last.action, conversationId: last.conversationId });

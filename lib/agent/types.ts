@@ -204,6 +204,7 @@ export type LastMailAction = {
   conversationId: string;
   action: "archive" | "trash";
   messageIds: string[];
-  assessment: MailAssessment;
+  /** Missing when the card was already gone; the mail is still restored. */
+  assessment?: MailAssessment;
   at: string;
 };

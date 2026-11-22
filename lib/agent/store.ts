@@ -3,6 +3,7 @@ import "server-only";
 import { mkdir, readFile, rename, writeFile } from "fs/promises";
 import path from "path";
 import { missingTableError, requireSupabase, supabaseReadJson, supabaseWriteJson } from "../supabase/kv";
+import type { LastMailAction } from "./types";
 import type { AgentMeta, MailAssessment, RunRecord } from "./types";
 
 type AgentState = {
@@ -203,6 +204,17 @@ export function restoreAssessment(item: MailAssessment): Promise<void> {
   });
 }
 
+/** Drops the archived flag so a restored card is visible again. */
+export function unarchiveConversation(conversationId: string): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    const user = state.userState[conversationId];
+    if (!user || !user.archivedAt) return;
+    delete user.archivedAt;
+    await writeState(state);
+  });
+}
+
 export function markArchivedByAgent(conversationIds: string[]): Promise<void> {
   if (conversationIds.length === 0) return Promise.resolve();
   return withLock(async () => {
@@ -222,23 +234,44 @@ export function markArchivedByAgent(conversationIds: string[]): Promise<void> {
   });
 }
 
+/** Writes the undo record before Gmail is touched, so a restore is always possible. */
+export function recordMailAction(snapshot: LastMailAction): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    state.meta.lastAction = snapshot;
+    await writeState(state);
+  });
+}
+
+export function clearMailAction(): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    if (!state.meta.lastAction) return;
+    state.meta.lastAction = null;
+    await writeState(state);
+  });
+}
+
 export function applyArchiveCleanup(opts: {
   conversationId: string;
   action: "archive" | "trash";
   messageIds: string[];
-  assessment: MailAssessment;
+  /** Skip the undo snapshot when it was already written up front. */
+  keepSnapshot?: boolean;
+  assessment?: MailAssessment;
 }): Promise<void> {
   return withLock(async () => {
     const state = await readState();
 
-    // Undo snapshot, so the action can be reversed later.
-    state.meta.lastAction = {
-      conversationId: opts.conversationId,
-      action: opts.action,
-      messageIds: opts.messageIds,
-      assessment: opts.assessment,
-      at: new Date().toISOString(),
-    };
+    if (!opts.keepSnapshot) {
+      state.meta.lastAction = {
+        conversationId: opts.conversationId,
+        action: opts.action,
+        messageIds: opts.messageIds,
+        assessment: opts.assessment,
+        at: new Date().toISOString(),
+      };
+    }
 
     // Drop this card and every other card that points at the same messages.
     const targets = new Set<string>([opts.conversationId]);

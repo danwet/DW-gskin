@@ -134,7 +134,10 @@ export async function POST(request: Request) {
     } else {
       return Response.json({ error: "Onbekende actie." }, { status: 400 });
     }
-    return Response.json({ ok: true, item });
+    // Hand the counters back with the mutation so the panel updates at once
+    // instead of waiting for the next full load.
+    const meta = await readMeta().catch(() => null);
+    return Response.json({ ok: true, item, meta: meta ?? undefined });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Actie mislukt.";
     return Response.json({ error: message }, { status: 503 });

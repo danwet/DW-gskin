@@ -2,7 +2,13 @@ import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { getGmailRefreshToken, resolveGmailConnection } from "@/lib/gmail/connection";
 import { runGmailAction, type MailAction } from "@/lib/gmail/actions";
 import { listStoredMessages, purgeMessages } from "@/lib/gmail/store";
-import { applyArchiveCleanup, readAssessments, removeAssessments } from "@/lib/agent/store";
+import {
+  applyArchiveCleanup,
+  clearMailAction,
+  readAssessments,
+  recordMailAction,
+  removeAssessments,
+} from "@/lib/agent/store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -47,9 +53,20 @@ export async function POST(request: Request) {
     return Response.json({ error: "Mail niet gevonden." }, { status: 404 });
   }
 
+  // Record the undo before anything moves. If Gmail then refuses, the record is
+  // dropped again; if the cleanup fails, a restore is still possible.
+  await recordMailAction({
+    conversationId,
+    action,
+    messageIds: ids,
+    assessment,
+    at: new Date().toISOString(),
+  }).catch(() => null);
+
   for (const id of ids) {
     const result = await runGmailAction(refreshToken, id, action);
     if (!result.ok) {
+      await clearMailAction().catch(() => null);
       return Response.json(
         { error: result.message ?? "Actie mislukt." },
         { status: result.reason === "scope" ? 403 : 502 },
@@ -62,11 +79,8 @@ export async function POST(request: Request) {
   let cleanupError: string | null = null;
   try {
     // One write: store the undo snapshot and drop the card(s).
-    if (assessment) {
-      await applyArchiveCleanup({ conversationId, action, messageIds: ids, assessment });
-    } else {
-      await removeAssessments([conversationId]);
-    }
+    await applyArchiveCleanup({ conversationId, action, messageIds: ids, assessment, keepSnapshot: true });
+    if (!assessment) await removeAssessments([conversationId]);
     // Drop the message rows so a later reconcile does not resurrect the card.
     await purgeMessages(user.id, ids);
   } catch (error) {

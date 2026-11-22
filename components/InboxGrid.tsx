@@ -33,6 +33,7 @@ export function InboxGrid({
   onSave,
   onReload,
   onRemove,
+  onUpdate,
   onError,
 }: {
   items: MailAssessment[];
@@ -46,6 +47,7 @@ export function InboxGrid({
   onSave: (item: MailAssessment, saved: boolean) => void;
   onReload?: () => void;
   onRemove?: (conversationId: string) => void;
+  onUpdate?: (item: MailAssessment) => void;
   onError?: (message: string) => void;
 }) {
   const [selected, setSelected] = useState<MailAssessment | null>(null);
@@ -210,6 +212,7 @@ export function InboxGrid({
           onSnooze={onSnooze}
           onSave={onSave}
           onRemove={onRemove}
+          onUpdate={onUpdate}
           onReload={onReload}
           onError={onError}
         />
@@ -561,6 +564,7 @@ export function InboxModal({
   onSnooze,
   onSave,
   onRemove,
+  onUpdate,
   onReload,
   onError,
 }: {
@@ -573,6 +577,7 @@ export function InboxModal({
   onSnooze?: (item: MailAssessment, until: string, tier?: "later" | "info") => void;
   onSave?: (item: MailAssessment, saved: boolean) => void;
   onRemove?: (conversationId: string) => void;
+  onUpdate?: (item: MailAssessment) => void;
   onReload?: () => void;
   onError?: (message: string) => void;
 }) {
@@ -689,6 +694,8 @@ export function InboxModal({
         onError?.(data?.error ?? "Versturen mislukt.");
         return;
       }
+      // Show the reply as sent straight away: the counter moves with it.
+      if (data.item) onUpdate?.(data.item);
       onReload?.();
       onClose();
     } catch {
@@ -719,9 +726,17 @@ export function InboxModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ conversationId: item.conversationId, action }),
         });
+        const data = (await response.json().catch(() => null)) as
+          | { error?: string; cleanupError?: string | null }
+          | null;
         if (!response.ok) {
-          const data = (await response.json().catch(() => null)) as { error?: string } | null;
           onError?.(data?.error ?? "Actie mislukt.");
+          onReload?.();
+          return;
+        }
+        // The mail moved but the bookkeeping did not; say so instead of silence.
+        if (data?.cleanupError) {
+          onError?.("Mail verplaatst, maar de administratie bijwerken mislukte.");
           onReload?.();
         }
       } catch {

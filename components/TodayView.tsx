@@ -202,6 +202,7 @@ export function TodayView() {
               onSave={inbox.saveItem}
               onReload={inbox.reload}
               onRemove={inbox.removeItem}
+              onUpdate={inbox.updateItem}
               onError={inbox.setNotice}
             />
 
