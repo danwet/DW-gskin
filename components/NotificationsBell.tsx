@@ -69,7 +69,6 @@ export function NotificationsBell({
         <>
           <button type="button" aria-label="Sluiten" className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute top-10 right-0 z-50 w-[320px] rounded-2xl border border-[var(--line)] bg-[var(--card)] p-2 shadow-[var(--shadow)]">
-            <div className="rounded-xl border border-[var(--line)] bg-[var(--bg)] p-1">
             {items.length === 0 && !showNew ? (
               <p className="px-3 py-4 text-center text-[13px] text-[var(--muted)]">Geen notificaties.</p>
             ) : null}
@@ -125,45 +124,44 @@ export function NotificationsBell({
               </>
             ) : null}
 
-            </div>
+            {(notificationsSupported() && !desktopActive) || showNew ? (
+              <div className="mt-2 rounded-xl border border-[var(--line)] bg-[var(--bg)] p-1">
+                {notificationsSupported() && !desktopActive ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const result = await enableNotifications();
+                      setDesktop(result);
+                      setDesktopWanted(result === "granted");
+                      // The desktop takes over from the list here, so nothing
+                      // piles up unseen in the popup.
+                      if (result === "granted") onMarkAllNewRead?.();
+                    }}
+                    className="focus-ring flex w-full items-center justify-center rounded-lg px-3 py-1.5 text-center font-medium whitespace-nowrap text-[var(--muted)]"
+                    style={{ fontSize: "10px", lineHeight: "14px" }}
+                  >
+                    {desktop === "denied"
+                      ? "Meldingen geblokkeerd in de browser"
+                      : "Meldingen op dit apparaat aanzetten"}
+                  </button>
+                ) : null}
 
-            {notificationsSupported() && !desktopActive ? (
-              <div className="mt-2 px-1">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const result = await enableNotifications();
-                    setDesktop(result);
-                    setDesktopWanted(result === "granted");
-                    // The desktop takes over from the list here, so nothing piles
-                    // up unseen in the popup.
-                    if (result === "granted") onMarkAllNewRead?.();
-                  }}
-                  className="focus-ring w-full rounded-lg px-3 py-1 text-center font-medium whitespace-nowrap text-[var(--muted)] hover:bg-[var(--bg)] hover:text-[var(--ink)]"
-                  style={{ fontSize: "10px", lineHeight: "14px" }}
-                >
-                  {desktop === "denied"
-                    ? "Meldingen geblokkeerd in de browser"
-                    : "Meldingen op dit apparaat aanzetten"}
-                </button>
+                {showNew ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onMarkAllNewRead?.();
+                      setOpen(false);
+                    }}
+                    className="focus-ring flex w-full items-center justify-center rounded-lg px-3 py-1.5 text-center font-medium whitespace-nowrap text-[var(--muted)]"
+                    style={{ fontSize: "10px", lineHeight: "14px" }}
+                  >
+                    Alles markeren als gelezen
+                  </button>
+                ) : null}
               </div>
             ) : null}
 
-            {showNew ? (
-              <div className="px-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onMarkAllNewRead?.();
-                    setOpen(false);
-                  }}
-                  className="focus-ring w-full rounded-lg px-3 py-1 text-center font-medium whitespace-nowrap text-[var(--muted)] hover:bg-[var(--bg)] hover:text-[var(--ink)]"
-                  style={{ fontSize: "10px", lineHeight: "14px" }}
-                >
-                  Alles markeren als gelezen
-                </button>
-              </div>
-            ) : null}
           </div>
         </>
       ) : null}

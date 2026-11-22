@@ -407,7 +407,7 @@ export function InboxCard({
           alt=""
           loading="lazy"
           referrerPolicy="no-referrer"
-          className="absolute top-3 left-3 z-10 h-6 w-auto max-w-[88px] object-contain"
+          className="absolute top-[15px] left-[15px] z-10 h-6 w-auto max-w-[88px] object-contain"
         />
       ) : null}
 
