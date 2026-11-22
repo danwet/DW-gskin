@@ -76,11 +76,19 @@ export function ibanFromInvoiceText(text: string): string | null {
  * instead of a bare command.
  */
 export function withInvoiceAmount(nextAction: string, amount?: number | null, currency?: string): string {
-  if (amount == null || !/^betaal/i.test(nextAction.trim())) return nextAction;
+  if (amount == null) return nextAction;
   const code = (currency ?? "").toUpperCase();
   const symbol = code === "USD" ? "$" : code === "GBP" ? "£" : "€";
   const formatted = amount.toFixed(2).replace(".", ",");
-  return symbol === "€" ? `Betaal € ${formatted}` : `Betaal ${symbol}${formatted}`;
+  // A non-breaking space keeps the symbol glued to the amount; the card splits
+  // actions over two lines and must never separate them.
+  const label = symbol === "€" ? `€\u00A0${formatted}` : `${symbol}\u00A0${formatted}`;
+  const text = (nextAction ?? "").trim();
+
+  // A payable invoice always reads the same way, whatever wording the model
+  // picked: the amount is what the card is for.
+  if (/€|\$|£/.test(text) && /\d[.,]\d{2}/.test(text)) return text;
+  return `Betaal ${label}`;
 }
 
 /** Subjects always start with a capital letter. */

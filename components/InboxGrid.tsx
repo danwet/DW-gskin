@@ -310,7 +310,13 @@ function isPrimaryCta(item: MailAssessment): boolean {
 }
 
 function balanceTwoLines(text: string): [string, string | null] {
-  const words = text.trim().split(/\s+/).filter(Boolean);
+  // Keep "€ 12,34" together: a currency symbol alone on a line reads wrong.
+  const glued = text
+    .trim()
+    .replace(/([€$£])\s+(\d)/g, "$1\u00A0$2")
+    .replace(/(\d)\s+([€$£])/g, "$1\u00A0$2");
+  // Split on whitespace but never on the non-breaking space we just inserted.
+  const words = glued.split(/[^\S\u00A0]+/).filter(Boolean);
   // Two lines are balanced for any multi-word action, so short actions line up
   // with long ones instead of sitting on a single line. "Geen actie" is simply
   // too short for that and stays on one line.
@@ -326,7 +332,8 @@ function balanceTwoLines(text: string): [string, string | null] {
       bestIndex = i;
     }
   }
-  return [words.slice(0, bestIndex).join(" "), words.slice(bestIndex).join(" ")];
+  const tidy = (value: string) => value.replace(/\u00A0/g, " ");
+  return [tidy(words.slice(0, bestIndex).join(" ")), tidy(words.slice(bestIndex).join(" "))];
 }
 
 function BalancedText({ text, className }: { text: string; className: string }) {
