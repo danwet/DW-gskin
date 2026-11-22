@@ -60,7 +60,7 @@ export function AgentView() {
             <div>
               <dt className={dtClass}>KLOK NU</dt>
               <dd className={ddClass}>{ready ? formatClock(now) : "—"}</dd>
-              <dd className="text-[12px] text-[var(--muted)]">Begroeting volgt deze klok</dd>
+              <dd className="text-[12px] text-[var(--muted)]">Systeemtijd</dd>
             </div>
             <div>
               <dt className={dtClass}>MAIL BRON</dt>
