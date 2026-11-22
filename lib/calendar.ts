@@ -48,11 +48,12 @@ async function grantedScopes(accessToken: string): Promise<string[] | null> {
   }
 }
 
-type CalendarListEntry = {
+export type CalendarListEntry = {
   id?: string;
   summary?: string;
   accessRole?: string;
   backgroundColor?: string;
+  primary?: boolean;
   deleted?: boolean;
 };
 
@@ -143,7 +144,11 @@ async function listAllEvents(accessToken: string, start: Date, end: Date): Promi
 
   const list = calendars.slice(0, MAX_CALENDARS);
   const results = await Promise.all(
-    list.map((calendar) => listCalendarEvents(accessToken, calendar.id ?? "", start, end)),
+    list.map(async (calendar) => {
+      const events = await listCalendarEvents(accessToken, calendar.id ?? "", start, end);
+      // Tag each event with its calendar so the dialog can write it back.
+      return Array.isArray(events) ? events.map((event) => ({ ...event, calendarId: calendar.id })) : events;
+    }),
   );
 
   const merged: GoogleCalendarEvent[] = [];
@@ -152,7 +157,9 @@ async function listAllEvents(accessToken: string, start: Date, end: Date): Promi
   results.forEach((result, index) => {
     if (Array.isArray(result)) {
       const color = list[index]?.backgroundColor;
-      for (const item of result) merged.push({ ...item, calendarColor: color });
+      const name = list[index]?.summary ?? undefined;
+      const editable = list[index]?.accessRole === "owner" || list[index]?.accessRole === "writer";
+      for (const item of result) merged.push({ ...item, calendarColor: color, calendarName: name, editable });
     } else if (result.kind === "auth") {
       authFailures += 1;
     } else {
@@ -258,4 +265,29 @@ async function calendarEventsFor(
   }
   if (!Array.isArray(listed)) return { events: [], error: UNAVAILABLE_ERROR };
   return { events: mapGoogleEvents(listed, timeZone, window.day), error: null };
+}
+
+/** Schrijfbare agenda's: owner en writer, nooit alleen-lezen. */
+export async function listWritableCalendars(
+  accessToken: string,
+): Promise<{ calendars: CalendarListEntry[] } | { error: string }> {
+  const listed = await listCalendars(accessToken);
+  if (!Array.isArray(listed)) {
+    return { error: "Agenda's konden niet worden opgehaald." };
+  }
+  const writable = listed.filter(
+    (entry) => entry.accessRole === "owner" || entry.accessRole === "writer",
+  );
+  return { calendars: writable };
+}
+
+/** Access token plus a friendly error, for the calendar routes. */
+export async function calendarAccess(
+  request: Request,
+): Promise<{ token: string } | { error: string; status: number }> {
+  const access = await accessTokenFor(request);
+  if ("missing" in access) {
+    return { error: "Log opnieuw in om de agenda te gebruiken.", status: 401 };
+  }
+  return { token: access.token };
 }

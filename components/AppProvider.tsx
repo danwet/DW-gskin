@@ -54,6 +54,8 @@ type AppContextValue = {
   topBar: TopBarState | null;
   setTopBar: (value: TopBarState | null) => void;
   refresh: () => Promise<void>;
+  /** Re-reads only the agenda, after an appointment was changed. */
+  refreshCalendar: () => Promise<void>;
   weather: WeatherNow | null;
   weatherError: string | null;
   connections: ConnectionStatus | null;
@@ -452,46 +454,46 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, [ready]);
 
+  // One agenda read, shared by the minute poll and by the appointment dialog
+  // after it saved something.
+  const refreshCalendar = useCallback(async () => {
+    try {
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const response = await fetch(`/api/calendar/status?timeZone=${encodeURIComponent(timeZone)}`, {
+        cache: "no-store",
+      });
+      if (!response.ok) return;
+      const data = (await response.json()) as {
+        events?: Brief["events"];
+        tomorrowEvents?: Brief["events"];
+        error?: string | null;
+      };
+      if (!Array.isArray(data.events)) return;
+      setSourceBrief((current) => ({
+        ...current,
+        events: data.events ?? current.events,
+        tomorrowEvents: data.tomorrowEvents ?? current.tomorrowEvents,
+      }));
+    } catch {
+      // Best effort: the agenda keeps what it had.
+    }
+  }, []);
+
   // Appointments moved, added or deleted elsewhere (phone, web) should show up
   // without a refresh, so the agenda is polled every minute.
   useEffect(() => {
     if (!ready) return;
-    let alive = true;
-    const tick = async () => {
-      if (document.visibilityState !== "visible") return;
-      try {
-        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const response = await fetch(`/api/calendar/status?timeZone=${encodeURIComponent(timeZone)}`, {
-          cache: "no-store",
-        });
-        if (!response.ok) return;
-        const data = (await response.json()) as {
-          events?: Brief["events"];
-          tomorrowEvents?: Brief["events"];
-          error?: string | null;
-        };
-        if (!alive || !Array.isArray(data.events)) return;
-        setSourceBrief((current) => ({
-          ...current,
-          events: data.events ?? current.events,
-          tomorrowEvents: data.tomorrowEvents ?? current.tomorrowEvents,
-        }));
-      } catch {
-        // Best effort: the agenda keeps what it had.
-      }
-    };
-    void tick();
-    const timer = setInterval(tick, 60 * 1000);
+    void refreshCalendar();
+    const timer = setInterval(refreshCalendar, 60 * 1000);
     const onVisible = () => {
-      if (document.visibilityState === "visible") void tick();
+      if (document.visibilityState === "visible") void refreshCalendar();
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
-      alive = false;
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [ready]);
+  }, [ready, refreshCalendar]);
 
   const stampChecked = useCallback((id: string) => {
     setCheckedAt((current) => {
@@ -712,6 +714,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     topBar,
     setTopBar,
     refresh,
+    refreshCalendar,
     weather,
     weatherError,
     connections,

@@ -3,6 +3,8 @@ import Google from "next-auth/providers/google";
 import { refreshGoogleAccessToken } from "@/lib/google-token";
 
 const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+/** Needed to create, change and delete appointments. */
+const CALENDAR_EVENTS_SCOPE = "https://www.googleapis.com/auth/calendar.events";
 
 /** Auth.js callback for the Google provider. Route: app/api/auth/[...nextauth]. */
 export const GOOGLE_CALLBACK_PATH = "/api/auth/callback/google";
@@ -25,7 +27,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           prompt: "consent",
           access_type: "offline",
           response_type: "code",
-          scope: `openid email profile ${CALENDAR_SCOPE}`,
+          scope: `openid email profile ${CALENDAR_SCOPE} ${CALENDAR_EVENTS_SCOPE}`,
         },
       },
     }),

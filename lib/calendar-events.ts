@@ -14,6 +14,12 @@ export type GoogleCalendarEvent = {
   location?: string;
   start?: { dateTime?: string; date?: string };
   end?: { date?: string; dateTime?: string };
+  /** Recurring events carry their rule, and instances name their master. */
+  recurrence?: string[];
+  recurringEventId?: string;
+  /** Read access is enough for the list; the calendar says who may write. */
+  editable?: boolean;
+  calendarName?: string;
 };
 
 export function validTimeZone(value: string | null): string {
@@ -117,6 +123,24 @@ function detailFor(event: GoogleCalendarEvent, allDay: boolean): string {
   return bits.join(" · ");
 }
 
+/** The bits the edit dialog needs; kept in one place for both branches. */
+function editableFields(item: GoogleCalendarEvent) {
+  const start = item.start?.dateTime ?? item.start?.date;
+  const end = item.end?.dateTime ?? item.end?.date;
+  const allDay = Boolean(item.start?.date && !item.start.dateTime);
+  return {
+    calendarId: item.calendarId,
+    calendarName: item.calendarName,
+    start,
+    end,
+    allDay,
+    location: item.location?.trim() || undefined,
+    description: item.description?.trim() || undefined,
+    editable: item.editable !== false,
+    recurring: Boolean(item.recurrence?.length || item.recurringEventId),
+  };
+}
+
 export function mapGoogleEvents(
   items: GoogleCalendarEvent[],
   timeZone: string,
@@ -138,6 +162,7 @@ export function mapGoogleEvents(
         detail: detailFor(item, true),
         tone: tones[events.length % tones.length],
         color: item.calendarColor,
+        ...editableFields(item),
       });
       continue;
     }
@@ -153,6 +178,7 @@ export function mapGoogleEvents(
       detail: detailFor(item, false),
       tone: tones[events.length % tones.length],
       color: item.calendarColor,
+      ...editableFields(item),
     });
   }
   return events;

@@ -152,7 +152,7 @@ export function MorningBrief() {
   }, [orderKey, ready, slideFocusId]);
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 py-6 sm:px-8 sm:py-8">
+    <div className="mx-auto max-w-[1180px] px-4 pt-1 pb-6 sm:px-8 sm:pt-2 sm:pb-8">
       <PageHeader />
 
       <Card className="mt-6 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">

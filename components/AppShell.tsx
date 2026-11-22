@@ -175,7 +175,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <main className="min-w-0 flex-1 md:min-h-0 md:overflow-y-auto">
         {/* Same spot on every page, aligned to the content column. */}
-        <div className="mx-auto flex w-full max-w-[1180px] justify-end px-6 pt-6 sm:px-8">
+        <div className="mx-auto flex w-full max-w-[1180px] justify-end px-6 pt-1 sm:px-8">
           <TopBar />
         </div>
         {children}

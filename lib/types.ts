@@ -21,6 +21,18 @@ export type CalendarEvent = {
   tone: "blue" | "green" | "orange" | "purple";
   color?: string;
   localHold?: boolean;
+  /** Everything the appointment dialog needs to edit this event. */
+  calendarId?: string;
+  calendarName?: string;
+  start?: string;
+  end?: string;
+  allDay?: boolean;
+  location?: string;
+  description?: string;
+  /** False for calendars you may only read. */
+  editable?: boolean;
+  /** Set on a recurring event, so the dialog can offer "this or the series". */
+  recurring?: boolean;
 };
 
 export type DraftReply = {

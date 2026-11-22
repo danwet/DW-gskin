@@ -183,7 +183,7 @@ export function ScanView() {
   const field = (key: keyof FormState, value: string) => setForm((current) => (current ? { ...current, [key]: value } : current));
 
   return (
-    <div className="mx-auto max-w-[1180px] px-6 py-7 sm:px-8 sm:py-8 md:pt-14 md:pb-14">
+    <div className="mx-auto max-w-[1180px] px-6 pt-1 pb-7 sm:px-8 sm:pt-2 sm:pb-8 md:pt-4 md:pb-14">
       <header className="mb-8">
         <p className="text-[11px] font-medium tracking-[0.16em] text-[var(--muted)] uppercase">Uploaden</p>
         <h1 className="mt-1 text-[30px] font-bold tracking-[-0.03em] text-[var(--ink)]">Hardcopy facturen</h1>
