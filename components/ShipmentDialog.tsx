@@ -37,11 +37,11 @@ export function ShipmentDialog({
 
   return (
     <Modal open onOpenChange={(open) => !open && onClose()} title={shipment.supplier}>
-      <div className="flex flex-col gap-1 pb-[25px]">
+      <div className="flex flex-col pb-[45px]">
         {shipment.orderNumber ? (
-          <p className="t-meta text-ink-muted">Order {shipment.orderNumber}</p>
+          <p className="relative -top-[10px] text-center t-meta text-ink-muted">Order {shipment.orderNumber}</p>
         ) : null}
-        <table className="mt-3 w-full border-collapse text-left">
+        <table className="mx-[5%] mt-[30px] w-[90%] border-collapse text-left">
           <thead>
             <tr>
               <th className="pb-2 text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase">Datum</th>
