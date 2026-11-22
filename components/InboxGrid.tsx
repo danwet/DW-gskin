@@ -1038,6 +1038,20 @@ export function InboxModal({
         ) : null}
 
         <div className="mx-[5%] mt-5 flex flex-wrap items-center justify-center gap-2">
+          {declaration === "pending" ? (
+            <button
+              type="button"
+              onClick={() => {
+                setDeclaration("declared");
+                onDeclare(item, "declared");
+                // Gedeclareerd is klaar: de mail gaat naar het archief.
+                runAction("archive");
+              }}
+              className="btn-primary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+            >
+              Gedeclareerd
+            </button>
+          ) : null}
           {item.draftReply ? (
             <>
               <button
@@ -1111,37 +1125,44 @@ export function InboxModal({
             </>
           ) : tier === "urgent" ? (
             <>
-              <button
-                type="button"
-                onClick={() => {
-                  const next = !handled;
-                  setHandled(next);
-                  onToggleHandled(item);
-                  if (next && hasPayableInvoice(item) && !declaration) setShowDeclarePrompt(true);
-                  if (!next) setShowDeclarePrompt(false);
-                }}
-                className={`focus-ring relative rounded-full px-3 py-1.5 text-[13px] font-medium ${
-                  handled ? "btn-secondary text-[var(--muted)]" : "btn-primary"
-                }`}
-              >
-                {handled ? "Ongedaan maken" : doneLabel}
-              </button>
-              <button
-                type="button"
-                onClick={() => void runAction("archive")}
-                disabled={Boolean(busyAction)}
-                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
-              >
-                Archiveren
-              </button>
-              <button
-                type="button"
-                onClick={() => void runAction("trash")}
-                disabled={Boolean(busyAction)}
-                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
-              >
-                Verwijderen
-              </button>
+              {/* Een betaalde factuur blijft betaald: geen "ongedaan maken". */}
+              {handled && hasPayableInvoice(item) ? null : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !handled;
+                    setHandled(next);
+                    onToggleHandled(item);
+                    if (next && hasPayableInvoice(item) && !declaration) setShowDeclarePrompt(true);
+                    if (!next) setShowDeclarePrompt(false);
+                  }}
+                  className={`focus-ring relative rounded-full px-3 py-1.5 text-[13px] font-medium ${
+                    handled ? "btn-secondary text-[var(--muted)]" : "btn-primary"
+                  }`}
+                >
+                  {handled ? "Ongedaan maken" : doneLabel}
+                </button>
+              )}
+              {handled && hasPayableInvoice(item) ? null : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void runAction("archive")}
+                    disabled={Boolean(busyAction)}
+                    className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+                  >
+                    Archiveren
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void runAction("trash")}
+                    disabled={Boolean(busyAction)}
+                    className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+                  >
+                    Verwijderen
+                  </button>
+                </>
+              )}
             </>
           ) : null}
           {tier === "info" && !item.draftReply ? (
@@ -1176,18 +1197,6 @@ export function InboxModal({
           ) : null}
           {unsubState === "error" && unsubMessage ? (
             <p className="w-full text-[12px] leading-5 text-[var(--danger)]">{unsubMessage}</p>
-          ) : null}
-          {declaration === "pending" ? (
-            <button
-              type="button"
-              onClick={() => {
-                setDeclaration("declared");
-                onDeclare(item, "declared");
-              }}
-              className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
-            >
-              Gedeclareerd
-            </button>
           ) : null}
           {!item.draftReply && onSave && tier !== "info" ? (
             <button
