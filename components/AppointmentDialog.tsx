@@ -240,7 +240,7 @@ export function AppointmentDialog({
                 type="button"
                 onClick={() => void save()}
                 disabled={busy}
-                className="btn-primary focus-ring min-w-0 flex-1 rounded-full px-5 py-3 text-[14px] leading-none font-medium disabled:opacity-60"
+                className="btn-primary focus-ring shrink-0 rounded-full px-8 py-3 text-[14px] leading-none font-medium disabled:opacity-60"
               >
                 {busy ? "Bezig…" : "Opslaan"}
               </button>
