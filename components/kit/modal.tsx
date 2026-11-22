@@ -123,20 +123,20 @@ export function Modal({
             <div
               aria-hidden
               onPointerDown={(event) => dragControls.start(event)}
-              className="pointer-events-auto absolute inset-x-0 top-0 flex cursor-grab touch-none justify-center pt-3 select-none"
+              className="pointer-events-auto absolute inset-x-0 top-[9px] flex cursor-grab touch-none justify-center pt-[5px] pb-[7px] select-none"
             >
               <div className="h-1 w-9 rounded-full bg-black/20 dark:bg-white/25" />
             </div>
 
-            <div className="pointer-events-auto absolute inset-x-0 top-2.5 flex items-start justify-between px-4">
-              <div className="flex items-center gap-2">{linksboven}</div>
+            <div className="pointer-events-none absolute inset-x-0 top-2.5 flex items-start justify-between px-4">
+              <div className="pointer-events-auto flex items-center gap-2">{linksboven}</div>
               <button
                 type="button"
                 onClick={() => onOpenChange(false)}
                 aria-label="Sluiten"
                 className="glas-sluiten"
                 // De glasstijl zet zichzelf absoluut; in de balk bepaalt de flexbox.
-                style={{ position: "relative", top: "auto", right: "auto" }}
+                style={{ position: "relative", top: "auto", right: "auto", pointerEvents: "auto" }}
               >
                 <X aria-hidden className="size-5" strokeWidth={2.5} />
               </button>
