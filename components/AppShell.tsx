@@ -256,7 +256,7 @@ function SidebarContent({
               href={link.href}
               onClick={onNavigate}
               aria-current={active ? "page" : undefined}
-              className={`focus-ring relative flex items-center gap-3 px-3 py-2.5 text-[14px] whitespace-nowrap transition-colors ${
+              className={`focus-ring relative flex items-center gap-3 py-2.5 pr-3 pl-5 text-[14px] whitespace-nowrap transition-colors ${
                 active
                   ? "glas-selectie rounded-full font-semibold"
                   : "rounded-[14px] text-[var(--ink)]/85 hover:bg-[var(--glass-bg-soft)]"
