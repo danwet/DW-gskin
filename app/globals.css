@@ -271,8 +271,82 @@ button {
   }
 }
 
+/* Ook de blauwe primaire knop krijgt de glans, met dezelfde blauwtint. */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  transition: background-color 120ms ease, box-shadow 120ms ease, filter 120ms ease,
+    transform 80ms ease;
+}
+
+.btn-primary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.22) 0%,
+    transparent 50%,
+    rgb(255 255 255 / 0.08) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.btn-primary:hover::before,
+.btn-primary:focus-visible::before {
+  opacity: 1;
+}
+
+.btn-primary:active {
+  transform: scale(0.96);
+}
+
+/* Zelfde glans als de sluitknop van een sheet: bij hover komt er licht
+   over de knop te liggen en bij indrukken zakt hij iets in. */
+.glass-chip,
+.btn-secondary {
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease,
+    transform 0.08s ease;
+}
+
+.glass-chip::before,
+.btn-secondary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.18) 0%,
+    transparent 50%,
+    rgb(255 255 255 / 0.06) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.glass-chip:hover::before,
+.btn-secondary:hover::before,
+.glass-chip:focus-visible::before,
+.btn-secondary:focus-visible::before {
+  opacity: 1;
+}
+
+.glass-chip:active,
+.btn-secondary:active {
+  transform: scale(0.96);
+}
+
 /* Actieve navigatie / filter: neutraal wit glas met fijne contour */
 .glass-active {
+  position: relative;
+  overflow: hidden;
   background: var(--active-bg);
   color: var(--active-ink);
   box-shadow:
@@ -288,6 +362,22 @@ button {
     -webkit-backdrop-filter: blur(12px) saturate(140%);
     backdrop-filter: blur(12px) saturate(140%);
   }
+}
+
+/* De geselecteerde knop in de menubalk draagt dezelfde glans, permanent. */
+.glass-active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.22) 0%,
+    transparent 50%,
+    rgb(255 255 255 / 0.08) 100%
+  );
+  opacity: 1;
+  pointer-events: none;
 }
 
 .glass-active::before {
