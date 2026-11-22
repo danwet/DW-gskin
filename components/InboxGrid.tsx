@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { subscribeFocusTab } from "@/lib/focus-tab";
 import { orderNewestFirst, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
 import type { MailAssessment } from "@/lib/agent/types";
@@ -53,29 +52,6 @@ export function InboxGrid({
 
   // A notification in the header asks for a tab; nothing else needs to know.
   useEffect(() => subscribeFocusTab((tab) => setActiveTab(tab)), []);
-  const searchParams = useSearchParams();
-
-  // A notification links to ?focus=<tab>&card=<id>: open the right tab, open
-  // that card and clean the address bar again.
-  useEffect(() => {
-    const focus = searchParams.get("focus");
-    const card = searchParams.get("card");
-    if (!focus && !card) return;
-    // The cards arrive after the first paint; wait for them before consuming
-    // the link, otherwise the card we were asked to open is not there yet.
-    if (card && items.length === 0) return;
-    if (focus === "urgent" || focus === "later" || focus === "info" || focus === "declare") {
-      setActiveTab(focus);
-    }
-    if (card) {
-      const match = items.find((item) => item.conversationId === card);
-      if (match) setSelected(match);
-    }
-    // Clean the address bar without a router navigation: that would remount the
-    // grid and close the card we just opened.
-    window.history.replaceState(null, "", "/");
-  }, [searchParams, items]);
-
   // Trash straight from the card, without opening it.
   const trashFromCard = (item: MailAssessment) => {
     onRemove?.(item.conversationId);
