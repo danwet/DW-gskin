@@ -42,7 +42,7 @@ export function AgendaPanel() {
       {!ready ? (
         <p className="mt-3 text-[14px] text-[var(--muted)]">Agenda wordt geladen…</p>
       ) : tomorrow.length === 0 ? (
-        <p className="mt-3 text-[14px] text-[var(--muted)]">Nog niets gepland</p>
+        <p className="mt-3 text-[14px] text-[var(--muted)]">Lekker niks</p>
       ) : (
         <ol className="mt-4 space-y-5 border-l border-[var(--line)] pl-5">
           {tomorrow.map((event) => (
