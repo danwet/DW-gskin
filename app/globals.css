@@ -52,7 +52,8 @@
   --active-bg: #dceaff;
   --active-bg-deep: #cfe0fb;
   --active-ink: #1c4f9c;
-  --active-hl: rgba(255, 255, 255, 0.85);
+  /* Glanslijn op de lichtblauwe menuknop: blauw, want wit valt weg. */
+  --active-hl: rgba(178, 212, 253, 1);
   --active-line: #b9d2f2;
 
   /* Canvas: geen kleurzweem */
