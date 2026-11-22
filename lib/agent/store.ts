@@ -345,8 +345,19 @@ export function markHandled(conversationId: string, handled: boolean): Promise<M
     const existing = state.assessments[conversationId];
     if (!existing) return null;
     const user = (state.userState[conversationId] ??= {});
+    const wasHandled = Boolean(user.handledByUser);
     user.handledByUser = handled;
     user.handledAt = handled ? new Date().toISOString() : undefined;
+
+    // A paid invoice stays counted for the day even when the card is archived
+    // away or the mail is purged, so local and server agree.
+    if (existing.invoice) {
+      const today = new Date().toLocaleDateString("sv-SE");
+      const daily = state.meta.dailyPaid?.date === today ? state.meta.dailyPaid : { date: today, count: 0 };
+      if (handled && !wasHandled) daily.count += 1;
+      if (!handled && wasHandled) daily.count = Math.max(0, daily.count - 1);
+      state.meta.dailyPaid = daily;
+    }
     if (handled) {
       existing.needsAttention = false;
       existing.attentionReason = undefined;

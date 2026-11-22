@@ -211,7 +211,7 @@ export function TodayView() {
         <div className="mt-8 border-t border-[var(--line)] pt-6 lg:mt-0 lg:flex lg:flex-col lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
           <AgendaPanel />
           <ShipmentsPanel items={inbox.items} />
-          <DaySummary items={inbox.items} dailyChanges={inbox.meta?.dailyChanges} />
+          <DaySummary items={inbox.items} dailyChanges={inbox.meta?.dailyChanges} dailyPaid={inbox.meta?.dailyPaid} />
         </div>
       </div>
     </div>
@@ -345,9 +345,11 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
 function DaySummary({
   items,
   dailyChanges,
+  dailyPaid,
 }: {
   items: MailAssessment[];
   dailyChanges?: { date: string; orderStatus: number; paymentStatus: number };
+  dailyPaid?: { date: string; count: number };
 }) {
   // Counters only apply to today; yesterday's numbers must not linger.
   const today = startOfLogicalDay().toLocaleDateString("sv-SE");
@@ -373,6 +375,9 @@ function DaySummary({
       }
     }
   }
+
+  // A card can leave the list after being paid; the day counter keeps it counted.
+  if (dailyPaid?.date === today) betaald = Math.max(betaald, dailyPaid.count);
 
   return (
     <section className="mt-6">
