@@ -204,6 +204,24 @@ export function restoreAssessment(item: MailAssessment): Promise<void> {
   });
 }
 
+/** Puts the declaration and handled state back to what they were. */
+export function revertDeclaration(
+  conversationId: string,
+  previous: { declaration?: "none" | "pending" | "declared"; handledByUser?: boolean; handledAt?: string },
+): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    const user = (state.userState[conversationId] ??= {});
+    if (previous.declaration) user.declaration = previous.declaration;
+    else delete user.declaration;
+    if (previous.handledByUser) user.handledByUser = true;
+    else delete user.handledByUser;
+    if (previous.handledAt) user.handledAt = previous.handledAt;
+    else delete user.handledAt;
+    await writeState(state);
+  });
+}
+
 /** Drops the archived flag so a restored card is visible again. */
 export function unarchiveConversation(conversationId: string): Promise<void> {
   return withLock(async () => {
@@ -466,6 +484,20 @@ export function setDeclaration(
     const existing = state.assessments[conversationId];
     if (!existing) return null;
     const user = (state.userState[conversationId] ??= {});
+
+    // Declaring leaves the mail where it is, so it needs its own undo record.
+    state.meta.lastAction = {
+      conversationId,
+      action: "declare",
+      previous: {
+        declaration: user.declaration,
+        handledByUser: user.handledByUser,
+        handledAt: user.handledAt,
+      },
+      assessment: withUserState(existing, user),
+      at: new Date().toISOString(),
+    };
+
     if (declaration) user.declaration = declaration;
     else delete user.declaration;
     await writeState(state);

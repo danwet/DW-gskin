@@ -202,8 +202,15 @@ export type ThreadMessage = {
 /** One archive/trash action, kept so the user can undo it. */
 export type LastMailAction = {
   conversationId: string;
-  action: "archive" | "trash";
-  messageIds: string[];
+  /** "declare" does not move mail; it changes the card's state. */
+  action: "archive" | "trash" | "declare";
+  messageIds?: string[];
+  /** The state before a declaration change, so it can be undone. */
+  previous?: {
+    declaration?: "none" | "pending" | "declared";
+    handledByUser?: boolean;
+    handledAt?: string;
+  };
   /** Missing when the card was already gone; the mail is still restored. */
   assessment?: MailAssessment;
   at: string;

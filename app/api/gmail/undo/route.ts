@@ -4,7 +4,7 @@ import { getGmailRefreshToken, resolveGmailConnection } from "@/lib/gmail/connec
 import { restoreGmailMessage } from "@/lib/gmail/actions";
 import { fetchGmailMessage } from "@/lib/gmail/fetch";
 import { saveMessages } from "@/lib/gmail/store";
-import { readMeta, restoreAssessment, unarchiveConversation, updateMeta } from "@/lib/agent/store";
+import { readMeta, restoreAssessment, revertDeclaration, unarchiveConversation, updateMeta } from "@/lib/agent/store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -17,6 +17,13 @@ export async function POST() {
   const meta = await readMeta();
   const last = meta.lastAction ?? null;
   if (!last) return Response.json({ error: "Er is geen actie om terug te zetten." }, { status: 400 });
+
+  // A declaration never touched Gmail: put the card's state back instead.
+  if (last.action === "declare") {
+    await revertDeclaration(last.conversationId, last.previous ?? {});
+    await updateMeta({ lastAction: null });
+    return Response.json({ ok: true, action: "declare", conversationId: last.conversationId });
+  }
 
   const connection = await resolveGmailConnection(user.id, user.email).catch(() => null);
   const refreshToken = await getGmailRefreshToken(user.id);
@@ -31,8 +38,13 @@ export async function POST() {
     );
   }
 
-  for (const id of last.messageIds) {
-    const result = await restoreGmailMessage(refreshToken, id, last.action);
+  const messageIds = last.messageIds ?? [];
+  if (messageIds.length === 0) {
+    return Response.json({ error: "Er is geen actie om terug te zetten." }, { status: 400 });
+  }
+
+  for (const id of messageIds) {
+    const result = await restoreGmailMessage(refreshToken, id, last.action as "archive" | "trash");
     if (!result.ok) {
       return Response.json(
         { error: result.message ?? "Terugzetten mislukt." },
@@ -44,7 +56,7 @@ export async function POST() {
   // Pull the messages back in and restore the card exactly as it was.
   const token = await refreshGoogleAccessToken(refreshToken);
   if (token) {
-    const messages = await Promise.all(last.messageIds.map((id) => fetchGmailMessage(token.access_token, id)));
+    const messages = await Promise.all(messageIds.map((id) => fetchGmailMessage(token.access_token, id)));
     const found = messages.filter((message): message is NonNullable<typeof message> => Boolean(message));
     if (found.length > 0) await saveMessages(user.id, found);
   }
