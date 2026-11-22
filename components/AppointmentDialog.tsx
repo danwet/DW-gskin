@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Modal } from "@/components/kit/modal";
+import { PlaceField } from "@/components/PlaceField";
 import type { CalendarEvent } from "@/lib/types";
 
 type CalendarChoice = { id: string; name: string; primary: boolean };
@@ -25,6 +26,43 @@ function dateOf(iso?: string): string {
   return date.toLocaleDateString("sv-SE");
 }
 
+/** ISO (YYYY-MM-DD) naar wat de gebruiker ziet: dd / mm / yyyy. */
+function isoToDisplay(iso: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!match) return "";
+  return `${match[3]} / ${match[2]} / ${match[1]}`;
+}
+
+/** Wat de gebruiker typt (dd/mm/yyyy) terug naar ISO, of null als het geen datum is. */
+function displayToIso(text: string): string | null {
+  const digits = text.replace(/\D/g, "");
+  if (digits.length !== 8) return null;
+  const day = Number(digits.slice(0, 2));
+  const month = Number(digits.slice(2, 4));
+  const year = Number(digits.slice(4));
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const probe = new Date(year, month - 1, day, 12);
+  if (probe.getFullYear() !== year || probe.getMonth() !== month - 1 || probe.getDate() !== day) return null;
+  return `${digits.slice(4)}-${digits.slice(2, 4)}-${digits.slice(0, 2)}`;
+}
+
+/** "14", "14:00", "1400" en "14.00" worden allemaal 14:00; anders null. */
+function normalizeTime(text: string): string | null {
+  const match = /^(\d{1,2})[:.\s]?(\d{2})$/.exec(text.trim());
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return null;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+/** Telt minuten bij een HH:MM-tijd op, met wraparound over middernacht. */
+function addMinutes(time: string, minutes: number): string {
+  const [hours, mins] = time.split(":").map(Number);
+  const total = (hours * 60 + mins + minutes + 24 * 60) % (24 * 60);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
 /**
  * Create or change one appointment. The same dialog serves "new" and "edit", so
  * the fields never drift apart.
@@ -43,6 +81,8 @@ export function AppointmentDialog({
   const [calendarId, setCalendarId] = useState(event?.calendarId ?? "");
   const [title, setTitle] = useState(event?.title ?? "");
   const [date, setDate] = useState(dateOf(event?.start));
+  // Het datumveld toont dd / mm / yyyy, los van de landinstelling van de browser.
+  const [dateText, setDateText] = useState(() => isoToDisplay(dateOf(event?.start)));
   const [allDay, setAllDay] = useState(Boolean(event?.allDay));
   const [startTime, setStartTime] = useState(timeOf(event?.start) || "09:00");
   const [endTime, setEndTime] = useState(timeOf(event?.end) || "09:30");
@@ -79,7 +119,7 @@ export function AppointmentDialog({
   const payload = () => ({
     calendarId,
     title,
-    date,
+    date: displayToIso(dateText) ?? date,
     startTime,
     endTime,
     allDay,
@@ -91,6 +131,9 @@ export function AppointmentDialog({
     if (busy) return;
     if (!title.trim()) return setError("Geef de afspraak een titel.");
     if (!calendarId) return setError("Kies een agenda.");
+    if (!displayToIso(dateText)) return setError("Vul de datum in als dd / mm / jjjj.");
+    if (!allDay && !normalizeTime(startTime)) return setError("Vul een begintijd in als 14:00.");
+    if (!allDay && !normalizeTime(endTime)) return setError("Vul een eindtijd in als 14:30.");
     if (!allDay && endTime <= startTime) return setError("De eindtijd moet na de begintijd liggen.");
     setBusy(true);
     setError(null);
@@ -216,9 +259,22 @@ export function AppointmentDialog({
             <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-date">Datum</label>
             <input
               id="appointment-date"
-              type="date"
-              value={date}
-              onChange={(entry) => setDate(entry.target.value)}
+              type="text"
+              inputMode="numeric"
+              placeholder="dd / mm / jjjj"
+              value={dateText}
+              onChange={(entry) => {
+                setDateText(entry.target.value);
+                const iso = displayToIso(entry.target.value);
+                if (iso) setDate(iso);
+              }}
+              onBlur={() => {
+                const iso = displayToIso(dateText);
+                if (!iso) return;
+                // Het veld zet zichzelf netjes op dd / mm / jjjj.
+                setDate(iso);
+                setDateText(isoToDisplay(iso));
+              }}
               disabled={readOnly}
               className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink"
             />
@@ -234,18 +290,54 @@ export function AppointmentDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-start">Begintijd</label>
-              <input id="appointment-start" type="time" value={startTime} onChange={(entry) => setStartTime(entry.target.value)} disabled={readOnly} className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink" />
+              <input
+                id="appointment-start"
+                type="text"
+                inputMode="numeric"
+                placeholder="14:00"
+                value={startTime}
+                onChange={(entry) => setStartTime(entry.target.value)}
+                onBlur={() => {
+                  const normalized = normalizeTime(startTime);
+                  if (!normalized) return;
+                  setStartTime(normalized);
+                  // De eindtijd stelt de eerstvolgende dertig minuten voor.
+                  const current = normalizeTime(endTime);
+                  if (!current || current <= normalized) setEndTime(addMinutes(normalized, 30));
+                }}
+                disabled={readOnly}
+                className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink"
+              />
             </div>
             <div>
               <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-end">Eindtijd</label>
-              <input id="appointment-end" type="time" value={endTime} onChange={(entry) => setEndTime(entry.target.value)} disabled={readOnly} className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink" />
+              <input
+                id="appointment-end"
+                type="text"
+                inputMode="numeric"
+                placeholder="14:30"
+                value={endTime}
+                onChange={(entry) => setEndTime(entry.target.value)}
+                onBlur={() => {
+                  const normalized = normalizeTime(endTime);
+                  if (normalized) setEndTime(normalized);
+                }}
+                disabled={readOnly}
+                className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink"
+              />
             </div>
           </div>
         ) : null}
 
         <div>
           <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-location">Locatie</label>
-          <input id="appointment-location" value={location} onChange={(entry) => setLocation(entry.target.value)} disabled={readOnly} className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink" />
+          <PlaceField
+            id="appointment-location"
+            value={location}
+            onChange={(next) => setLocation(next)}
+            disabled={readOnly}
+            className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink"
+          />
         </div>
 
         <div>
