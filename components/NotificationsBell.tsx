@@ -1,6 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  enableNotifications,
+  notificationPermission,
+  notificationsSupported,
+  setWantedOnThisDevice,
+  wantedOnThisDevice,
+} from "@/lib/desktop-notify";
 import { timeZoneOf } from "./AgentInbox";
 import { focusTabFor, InboxModal } from "./InboxGrid";
 import { setFocusTab } from "@/lib/focus-tab";
@@ -29,6 +36,14 @@ export function NotificationsBell({
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<MailAssessment | null>(null);
+  const [desktop, setDesktop] = useState<NotificationPermission | "unsupported">("default");
+  const [desktopWanted, setDesktopWanted] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setDesktop(notificationPermission());
+    setDesktopWanted(wantedOnThisDevice());
+  }, []);
   const count = items.length + newItems.length;
 
   return (
@@ -52,6 +67,7 @@ export function NotificationsBell({
         <>
           <button type="button" aria-label="Sluiten" className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute top-10 right-0 z-50 w-[320px] rounded-2xl border border-[var(--line)] bg-[var(--card)] p-2 shadow-[var(--shadow)]">
+            <div className="rounded-xl border border-[var(--line)] bg-[var(--bg)] p-1">
             {items.length === 0 && newItems.length === 0 ? (
               <p className="px-3 py-4 text-center text-[13px] text-[var(--muted)]">Geen notificaties.</p>
             ) : null}
@@ -61,9 +77,9 @@ export function NotificationsBell({
                 <p className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-[0.08em] text-[var(--muted)]">
                   {newItems.length === 1 ? "Nieuw bericht" : "Nieuwe berichten"}
                 </p>
-                <ul className="max-h-[240px] space-y-1 overflow-y-auto">
+                <ul className="max-h-[240px] overflow-y-auto">
                   {newItems.map((item) => (
-                    <li key={item.conversationId}>
+                    <li key={item.conversationId} className="border-t border-[var(--line)]">
                       <button
                         type="button"
                         onClick={() => {
@@ -73,7 +89,7 @@ export function NotificationsBell({
                           setSelected(item);
                           onOpenNewItem?.(item);
                         }}
-                        className="focus-ring w-full rounded-xl px-3 py-2 text-left hover:bg-[var(--bg)]"
+                        className="focus-ring w-full rounded-lg px-3 py-2 text-left hover:bg-[var(--card)]"
                       >
                         <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{item.from}</p>
                         <p className="truncate text-[12px] text-[var(--muted)]">{item.subject}</p>
@@ -87,16 +103,16 @@ export function NotificationsBell({
             {items.length > 0 ? (
               <>
                 <p className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-[0.08em] text-[var(--muted)]">Gemiste berichten</p>
-                <ul className="max-h-[240px] space-y-1 overflow-y-auto">
+                <ul className="max-h-[240px] overflow-y-auto">
                   {items.map((item) => (
-                    <li key={item.conversationId}>
+                    <li key={item.conversationId} className="border-t border-[var(--line)]">
                       <button
                         type="button"
                         onClick={() => {
                           setSelected(item);
                           setOpen(false);
                         }}
-                        className="focus-ring w-full rounded-xl px-3 py-2 text-left hover:bg-[var(--bg)]"
+                        className="focus-ring w-full rounded-lg px-3 py-2 text-left hover:bg-[var(--card)]"
                       >
                         <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{item.from}</p>
                         <p className="truncate text-[12px] text-[var(--muted)]">{item.subject}</p>
@@ -107,15 +123,46 @@ export function NotificationsBell({
               </>
             ) : null}
 
+            </div>
+
+            {notificationsSupported() ? (
+              <div className="mt-2 px-1">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (desktopWanted) {
+                      setWantedOnThisDevice(false);
+                      setDesktopWanted(false);
+                      return;
+                    }
+                    const result = await enableNotifications();
+                    setDesktop(result);
+                    setDesktopWanted(result === "granted");
+                  }}
+                  className="focus-ring w-full rounded-lg px-3 py-1 text-center font-medium whitespace-nowrap text-[var(--muted)] hover:bg-[var(--bg)] hover:text-[var(--ink)]"
+                  style={{ fontSize: "10px", lineHeight: "14px" }}
+                >
+                  {desktop === "denied"
+                    ? "Meldingen geblokkeerd in de browser"
+                    : desktop === "granted"
+                      ? desktopWanted
+                        ? "Meldingen op dit apparaat: aan"
+                        : "Meldingen op dit apparaat: uit"
+                      : "Meldingen op dit apparaat aanzetten"}
+                </button>
+              </div>
+            ) : null}
+
             {newItems.length > 0 ? (
-              <div className="mt-1 border-t border-[var(--line)] px-1 pt-1">
+              <div className="px-1">
                 <button
                   type="button"
                   onClick={() => {
                     onMarkAllNewRead?.();
                     setOpen(false);
                   }}
-                  className="focus-ring w-full rounded-xl px-3 py-2 text-left text-[12px] font-medium text-[var(--muted)] hover:bg-[var(--bg)] hover:text-[var(--ink)]"
+                  className="focus-ring w-full rounded-lg px-3 py-1 text-center font-medium whitespace-nowrap text-[var(--muted)] hover:bg-[var(--bg)] hover:text-[var(--ink)]"
+                  style={{ fontSize: "10px", lineHeight: "14px" }}
                 >
                   Alles markeren als gelezen
                 </button>

@@ -482,6 +482,10 @@ export async function noteCronRejected(detail?: {
   hadKey: boolean;
   keyLength: number;
   method?: string;
+  presentedLength?: number;
+  presentedHash?: string;
+  expectedHash?: string;
+  expectedLength?: number;
 }): Promise<void> {
   await withLock(async () => {
     const state = await readState();

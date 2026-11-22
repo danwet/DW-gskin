@@ -5,6 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { generateEPCQRString, isValidIban } from "@/lib/epc";
 import { orderNewestFirst, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
 import type { AgentMeta, MailAssessment } from "@/lib/agent/types";
+import { notificationPermission, showMailNotification, wantedOnThisDevice } from "@/lib/desktop-notify";
 import { Avatar, Card, CardHeading } from "./ui";
 import { useApp } from "./AppProvider";
 
@@ -298,6 +299,35 @@ export function useInbox() {
       .filter((item) => !notif.read.includes(item.conversationId))
       .sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
   }, [items, notif]);
+
+  // With desktop notifications on, keep the inbox fresh even while the window is
+  // minimised: otherwise nothing new ever arrives to announce.
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (notificationPermission() !== "granted" || !wantedOnThisDevice()) return;
+      void reload();
+    }, 60_000);
+    return () => window.clearInterval(timer);
+  }, [reload]);
+
+  // Announce genuinely new conversations on the desktop, once each.
+  const announced = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (newItems.length === 0) return;
+    if (announced.current === null) {
+      // First pass: what is already there when the app opens is not news.
+      announced.current = new Set(newItems.map((item) => item.conversationId));
+      return;
+    }
+    const fresh = newItems.filter((item) => !announced.current?.has(item.conversationId));
+    if (fresh.length === 0) return;
+    for (const item of fresh) announced.current.add(item.conversationId);
+    showMailNotification({
+      from: fresh[0].from,
+      subject: fresh[0].subject,
+      count: fresh.length,
+    });
+  }, [newItems]);
 
   const markNewRead = useCallback((conversationId: string) => {
     setNotif((current) => {

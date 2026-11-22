@@ -153,6 +153,10 @@ export type AgentMeta = {
     hadKey: boolean;
     keyLength: number;
     method?: string;
+    presentedLength?: number;
+    presentedHash?: string;
+    expectedHash?: string;
+    expectedLength?: number;
   } | null;
   /** Gmail history cursor for reconciling deletions and archive actions. */
   gmailHistoryId?: string;
