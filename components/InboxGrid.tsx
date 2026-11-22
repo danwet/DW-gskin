@@ -756,7 +756,7 @@ export function InboxModal({
       beschrijving={
         <span className="flex flex-col items-center gap-1">
           {item.fromEmail ? <span className="text-[12px] text-ink-muted">{item.fromEmail}</span> : null}
-          <span className="mt-2.5 text-[17px] leading-snug font-semibold tracking-[-0.01em] text-ink">
+          <span className="mt-2.5 text-center text-balance text-[17px] leading-snug font-semibold tracking-[-0.01em] text-ink">
             {item.subject}
           </span>
         </span>

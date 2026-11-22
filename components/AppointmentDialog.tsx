@@ -193,7 +193,7 @@ export function AppointmentDialog({
             onChange={(entry) => setTitle(entry.target.value)}
             disabled={readOnly}
             placeholder="Tandarts"
-            className="veld-underline mt-1 px-0 py-2 text-[15px] text-ink"
+            className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink"
           />
         </div>
 
@@ -205,7 +205,7 @@ export function AppointmentDialog({
               value={calendarId}
               onChange={(entry) => setCalendarId(entry.target.value)}
               disabled={readOnly || calendars.length === 0}
-              className="veld-underline mt-1 px-0 py-2 text-[15px] text-ink"
+              className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink"
             >
               {calendars.map((entry) => (
                 <option key={entry.id} value={entry.id}>{entry.name}</option>
@@ -220,7 +220,7 @@ export function AppointmentDialog({
               value={date}
               onChange={(entry) => setDate(entry.target.value)}
               disabled={readOnly}
-              className="veld-underline mt-1 px-0 py-2 text-[15px] text-ink"
+              className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink"
             />
           </div>
         </div>
@@ -234,18 +234,18 @@ export function AppointmentDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-start">Begintijd</label>
-              <input id="appointment-start" type="time" value={startTime} onChange={(entry) => setStartTime(entry.target.value)} disabled={readOnly} className="veld-underline mt-1 px-0 py-2 text-[15px] text-ink" />
+              <input id="appointment-start" type="time" value={startTime} onChange={(entry) => setStartTime(entry.target.value)} disabled={readOnly} className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink" />
             </div>
             <div>
               <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-end">Eindtijd</label>
-              <input id="appointment-end" type="time" value={endTime} onChange={(entry) => setEndTime(entry.target.value)} disabled={readOnly} className="veld-underline mt-1 px-0 py-2 text-[15px] text-ink" />
+              <input id="appointment-end" type="time" value={endTime} onChange={(entry) => setEndTime(entry.target.value)} disabled={readOnly} className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink" />
             </div>
           </div>
         ) : null}
 
         <div>
           <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-location">Locatie</label>
-          <input id="appointment-location" value={location} onChange={(entry) => setLocation(entry.target.value)} disabled={readOnly} className="veld-underline mt-1 px-0 py-2 text-[15px] text-ink" />
+          <input id="appointment-location" value={location} onChange={(entry) => setLocation(entry.target.value)} disabled={readOnly} className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink" />
         </div>
 
         <div>
