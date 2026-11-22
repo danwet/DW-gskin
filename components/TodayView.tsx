@@ -212,7 +212,12 @@ export function TodayView() {
         <div className="mt-8 border-t border-[var(--line)] pt-6 lg:mt-0 lg:flex lg:flex-col lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
           <AgendaPanel />
           <ShipmentsPanel items={inbox.items} />
-          <DaySummary items={inbox.items} dailyChanges={inbox.meta?.dailyChanges} dailyPaid={inbox.meta?.dailyPaid} />
+          <DaySummary
+            items={inbox.items}
+            dailyChanges={inbox.meta?.dailyChanges}
+            dailyPaid={inbox.meta?.dailyPaid}
+            dailyAnswered={inbox.meta?.dailyAnswered}
+          />
         </div>
       </div>
     </div>
@@ -347,10 +352,12 @@ function DaySummary({
   items,
   dailyChanges,
   dailyPaid,
+  dailyAnswered,
 }: {
   items: MailAssessment[];
   dailyChanges?: { date: string; orderStatus: number; paymentStatus: number };
   dailyPaid?: { date: string; count: number };
+  dailyAnswered?: { date: string; count: number };
 }) {
   // Counters only apply to today; yesterday's numbers must not linger.
   const today = startOfLogicalDay().toLocaleDateString("sv-SE");
@@ -377,8 +384,10 @@ function DaySummary({
     }
   }
 
-  // A card can leave the list after being paid; the day counter keeps it counted.
+  // A card can leave the list after being paid or answered; the day counters
+  // keep those actions counted.
   if (dailyPaid?.date === today) betaald = Math.max(betaald, dailyPaid.count);
+  if (dailyAnswered?.date === today) beantwoord = Math.max(beantwoord, dailyAnswered.count);
 
   return (
     <section className="mt-6">
@@ -395,7 +404,7 @@ function DaySummary({
           {beantwoord > 0 ? (
             <li className="flex items-center gap-2.5">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--blue)" }} />
-              <span>{beantwoord} {beantwoord === 1 ? "email beantwoord" : "emails beantwoord"}</span>
+              <span>{beantwoord} {beantwoord === 1 ? "bericht beantwoord" : "berichten beantwoord"}</span>
             </li>
           ) : null}
           {betaald > 0 ? (
@@ -407,7 +416,7 @@ function DaySummary({
           {afgehandeld > 0 ? (
             <li className="flex items-center gap-2.5">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--muted)" }} />
-              <span>{afgehandeld} {afgehandeld === 1 ? "email afgehandeld" : "emails afgehandeld"}</span>
+              <span>{afgehandeld} {afgehandeld === 1 ? "bericht afgehandeld" : "berichten afgehandeld"}</span>
             </li>
           ) : null}
           {orderChanges > 0 ? (

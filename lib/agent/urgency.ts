@@ -69,7 +69,9 @@ export function urgencyFor(
   const today = startOfDayInZone(timeZone, now);
 
   if (handled && !needsAttention) {
-    return { tone: "green", label: "Afgehandeld", deadlineValue: deadline?.getTime() ?? null, deadlineText: deadlineText(deadline) };
+    // A paid invoice says so; "afgehandeld" belongs to mail without a bill.
+    const label = invoice || assessment.declaration ? "Betaald" : "Afgehandeld";
+    return { tone: "green", label, deadlineValue: deadline?.getTime() ?? null, deadlineText: deadlineText(deadline) };
   }
   if (invoice?.paymentStatus === "paid_confirmed" && !needsAttention) {
     return { tone: "green", label: "Betaald bevestigd", deadlineValue: deadline?.getTime() ?? null, deadlineText: deadlineText(deadline) };
@@ -98,6 +100,12 @@ export function urgencyFor(
     return { tone: "blue", label: "Geen directe tijdsdruk", deadlineValue: deadline.getTime(), deadlineText: deadlineText(deadline) };
   }
 
+  // Any mail that expects something from you is red, even when its invoice
+  // status is merely unknown: a blue pill on a "Moet" card reads as if nothing
+  // is asked of you.
+  if (assessment.classification === "action_needed" || assessment.classification === "reply_needed") {
+    return { tone: "red", label: "Actie nodig", deadlineValue: null, deadlineText: deadlineText(null) };
+  }
   if (invoice?.paymentStatus === "unknown") {
     return { tone: "blue", label: "Betaalstatus controleren", deadlineValue: null, deadlineText: deadlineText(null) };
   }

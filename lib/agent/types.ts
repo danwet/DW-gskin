@@ -143,6 +143,8 @@ export type AgentMeta = {
   dailyChanges?: { date: string; orderStatus: number; paymentStatus: number };
   /** How many invoices you marked paid today, kept even after the card leaves. */
   dailyPaid?: { date: string; count: number };
+  /** Same idea for answered mail: counted even when the card is gone. */
+  dailyAnswered?: { date: string; count: number };
   /** A run was attempted without the right secret; only the time is kept. */
   cronRejectedAt?: string | null;
   cronRejectedCount?: number;

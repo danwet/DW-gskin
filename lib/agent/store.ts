@@ -511,6 +511,11 @@ export function markSent(conversationId: string): Promise<MailAssessment | null>
     const existing = state.assessments[conversationId];
     if (!existing) return null;
     const now = new Date().toISOString();
+    const today = new Date().toLocaleDateString("sv-SE");
+    const daily = state.meta.dailyAnswered?.date === today ? state.meta.dailyAnswered : { date: today, count: 0 };
+    if (!existing.sentAt) daily.count += 1;
+    state.meta.dailyAnswered = daily;
+
     // Sent is a user decision, so it belongs in their layer.
     const user = (state.userState[conversationId] ??= {});
     user.sentAt = now;
