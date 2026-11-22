@@ -5,7 +5,6 @@ import {
   enableNotifications,
   notificationPermission,
   notificationsSupported,
-  setWantedOnThisDevice,
   wantedOnThisDevice,
 } from "@/lib/desktop-notify";
 import { timeZoneOf } from "./AgentInbox";
@@ -128,16 +127,11 @@ export function NotificationsBell({
 
             </div>
 
-            {notificationsSupported() ? (
+            {notificationsSupported() && !desktopActive ? (
               <div className="mt-2 px-1">
                 <button
                   type="button"
                   onClick={async () => {
-                    if (desktopWanted) {
-                      setWantedOnThisDevice(false);
-                      setDesktopWanted(false);
-                      return;
-                    }
                     const result = await enableNotifications();
                     setDesktop(result);
                     setDesktopWanted(result === "granted");
@@ -150,11 +144,7 @@ export function NotificationsBell({
                 >
                   {desktop === "denied"
                     ? "Meldingen geblokkeerd in de browser"
-                    : desktop === "granted"
-                      ? desktopWanted
-                        ? "Meldingen op dit apparaat: aan"
-                        : "Meldingen op dit apparaat: uit"
-                      : "Meldingen op dit apparaat aanzetten"}
+                    : "Meldingen op dit apparaat aanzetten"}
                 </button>
               </div>
             ) : null}
