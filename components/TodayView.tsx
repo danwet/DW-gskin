@@ -246,6 +246,9 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
   const payments = new Map<string, { supplier: string; count: number; receivedAt: string; amount?: number }>();
   for (const item of items) {
     if (!item.payment) continue;
+    // A payment confirmation is news on the day it arrives; after the 05:00
+    // rollover it drops out, exactly like a delivered order.
+    if (Date.parse(item.receivedAt) < startOfToday.getTime()) continue;
     const key = item.payment.supplier.toLowerCase();
     const existing = payments.get(key);
     if (existing) {
