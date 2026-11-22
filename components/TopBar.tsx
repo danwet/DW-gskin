@@ -35,8 +35,11 @@ export function TopBar() {
       {topBar ? (
         <NotificationsBell
           items={topBar.missedItems}
+          newItems={topBar.newItems}
           onToggleHandled={topBar.onToggleHandled}
           onDeclare={topBar.onDeclare}
+          onOpenNewItem={topBar.onOpenNewItem}
+          onMarkAllNewRead={topBar.onMarkAllNewRead}
         />
       ) : (
         <span className="glass-chip grid h-8 w-8 place-items-center rounded-full text-[var(--muted)]" aria-hidden="true">

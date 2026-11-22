@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { subscribeFocusTab } from "@/lib/focus-tab";
 import { orderNewestFirst, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
 import type { MailAssessment } from "@/lib/agent/types";
 import { InvoiceBlock, timeZoneOf, UrgencyPill } from "./AgentInbox";
@@ -48,6 +50,31 @@ export function InboxGrid({
   onError?: (message: string) => void;
 }) {
   const [selected, setSelected] = useState<MailAssessment | null>(null);
+
+  // A notification in the header asks for a tab; nothing else needs to know.
+  useEffect(() => subscribeFocusTab((tab) => setActiveTab(tab)), []);
+  const searchParams = useSearchParams();
+
+  // A notification links to ?focus=<tab>&card=<id>: open the right tab, open
+  // that card and clean the address bar again.
+  useEffect(() => {
+    const focus = searchParams.get("focus");
+    const card = searchParams.get("card");
+    if (!focus && !card) return;
+    // The cards arrive after the first paint; wait for them before consuming
+    // the link, otherwise the card we were asked to open is not there yet.
+    if (card && items.length === 0) return;
+    if (focus === "urgent" || focus === "later" || focus === "info" || focus === "declare") {
+      setActiveTab(focus);
+    }
+    if (card) {
+      const match = items.find((item) => item.conversationId === card);
+      if (match) setSelected(match);
+    }
+    // Clean the address bar without a router navigation: that would remount the
+    // grid and close the card we just opened.
+    window.history.replaceState(null, "", "/");
+  }, [searchParams, items]);
 
   // Trash straight from the card, without opening it.
   const trashFromCard = (item: MailAssessment) => {
@@ -263,6 +290,12 @@ function hasPayableInvoice(item: MailAssessment): boolean {
  * Which column a card belongs to right now. A snoozed card drops one tier for
  * a day and returns to its own tier automatically when the snooze expires.
  */
+/** Which Focus tab a card belongs to, so a notification can jump straight there. */
+export function focusTabFor(item: MailAssessment, nowMs = Date.now()): "urgent" | "later" | "info" | "declare" {
+  if (item.invoice && item.declaration === "pending") return "declare";
+  return cardTier(item, nowMs);
+}
+
 function cardTier(item: MailAssessment, nowMs: number): "urgent" | "later" | "info" {
   if (item.snoozedUntil && Date.parse(item.snoozedUntil) > nowMs) {
     return item.snoozedTier ?? "later";

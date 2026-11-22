@@ -7,6 +7,10 @@ import type { MailAssessment } from "./agent/types";
  */
 export type TopBarState = {
   missedItems: MailAssessment[];
+  /** Mail that arrived since you last looked, minus what you already opened. */
+  newItems: MailAssessment[];
+  onOpenNewItem: (item: MailAssessment) => void;
+  onMarkAllNewRead: () => void;
   undoable: boolean;
   undo: () => Promise<void>;
   lastSyncAt?: string | null;

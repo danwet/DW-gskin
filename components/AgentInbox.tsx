@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { generateEPCQRString, isValidIban } from "@/lib/epc";
 import { orderNewestFirst, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
@@ -259,21 +259,96 @@ export function useInbox() {
     setItems((current) => current.filter((entry) => entry.conversationId !== conversationId));
   }, []);
 
+  // New mail since you last looked. Kept in the browser: it is your reading
+  // state, not something the server needs to know.
+  const [notif, setNotif] = useState<{ since: string | null; read: string[] }>(() => ({
+    since: null,
+    read: [],
+  }));
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("dw-notifications-v1");
+      if (raw) {
+        const parsed = JSON.parse(raw) as { since?: string | null; read?: string[] };
+        setNotif({ since: parsed.since ?? null, read: Array.isArray(parsed.read) ? parsed.read : [] });
+      }
+    } catch {
+      // First run: the baseline is stamped below.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (notif.since !== null || items.length === 0) return;
+    const newest = items.reduce((latest, item) => (item.receivedAt > latest ? item.receivedAt : latest), "");
+    const next = { since: newest || new Date().toISOString(), read: notif.read };
+    setNotif(next);
+    try {
+      window.localStorage.setItem("dw-notifications-v1", JSON.stringify(next));
+    } catch {
+      // Without storage the list simply starts empty.
+    }
+  }, [items, notif]);
+
+  const newItems = useMemo(() => {
+    if (!notif.since) return [];
+    return items
+      .filter((item) => !item.archivedAt && !item.savedAt)
+      .filter((item) => item.receivedAt > notif.since!)
+      .filter((item) => !notif.read.includes(item.conversationId))
+      .sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
+  }, [items, notif]);
+
+  const markNewRead = useCallback((conversationId: string) => {
+    setNotif((current) => {
+      if (current.read.includes(conversationId)) return current;
+      const next = { ...current, read: [...current.read, conversationId] };
+      try {
+        window.localStorage.setItem("dw-notifications-v1", JSON.stringify(next));
+      } catch {
+        // Nothing to do.
+      }
+      return next;
+    });
+  }, []);
+
+  const markAllNewRead = useCallback(() => {
+    setNotif((current) => {
+      const next = { since: new Date().toISOString(), read: [] };
+      try {
+        window.localStorage.setItem("dw-notifications-v1", JSON.stringify(next));
+      } catch {
+        // Nothing to do.
+      }
+      return next;
+    });
+  }, []);
+
+  const openNewItem = useCallback(
+    (item: MailAssessment) => {
+      markNewRead(item.conversationId);
+    },
+    [markNewRead],
+  );
+
   // Publish the header data once, with stable callbacks: the shell renders it
   // so the cluster sits in the same place on every page.
-  const handlersRef = useRef({ undo, toggleHandled, declareInvoice });
-  handlersRef.current = { undo, toggleHandled, declareInvoice };
+  const handlersRef = useRef({ undo, toggleHandled, declareInvoice, openNewItem, markAllNewRead, markNewRead });
+  handlersRef.current = { undo, toggleHandled, declareInvoice, openNewItem, markAllNewRead, markNewRead };
 
   useEffect(() => {
     setTopBar({
       missedItems: items.filter((item) => item.classification === "unclassified"),
+      newItems,
       undoable,
       lastSyncAt: meta?.lastRunAt ?? null,
       undo: () => handlersRef.current.undo(),
       onToggleHandled: (item) => handlersRef.current.toggleHandled(item),
       onDeclare: (item, declaration) => handlersRef.current.declareInvoice(item, declaration),
+      onOpenNewItem: (item) => handlersRef.current.openNewItem(item),
+      onMarkAllNewRead: () => handlersRef.current.markAllNewRead(),
     });
-  }, [items, undoable, meta?.lastRunAt, setTopBar]);
+  }, [items, newItems, undoable, meta?.lastRunAt, setTopBar]);
 
   useEffect(() => () => setTopBar(null), [setTopBar]);
 
