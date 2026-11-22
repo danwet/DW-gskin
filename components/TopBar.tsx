@@ -11,7 +11,12 @@ import { WeatherChip } from "./WeatherChip";
  */
 export function TopBar() {
   const { topBar, ready, lastRun, refreshing, refresh } = useApp();
-  const shownSync = topBar?.lastSyncAt ?? lastRun;
+  // Whichever is newer: the page's own data or the polled server time.
+  const shownSync = (() => {
+    const candidates = [topBar?.lastSyncAt, lastRun].filter((value): value is string => Boolean(value));
+    if (candidates.length === 0) return null;
+    return candidates.sort((a, b) => Date.parse(a) - Date.parse(b)).at(-1) ?? null;
+  })();
   const undoable = Boolean(topBar?.undoable);
 
   return (

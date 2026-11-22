@@ -416,6 +416,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (Date.now() - last > 15 * 60 * 1000) void refresh();
   }, [ready, lastRun, refresh]);
 
+  // The sync time should follow the server, also when the sync ran elsewhere
+  // (background run, cron or another tab).
+  useEffect(() => {
+    if (!ready) return;
+    let alive = true;
+    const tick = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const response = await fetch("/api/gmail/import", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = (await response.json()) as { lastRunAt?: string | null };
+        if (!alive || !data.lastRunAt) return;
+        setLastRun((current) => {
+          const next = Date.parse(data.lastRunAt ?? "");
+          const now = current ? Date.parse(current) : 0;
+          return Number.isFinite(next) && next > now ? (data.lastRunAt as string) : current;
+        });
+      } catch {
+        // Best effort.
+      }
+    };
+    void tick();
+    const timer = setInterval(tick, 30_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void tick();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [ready]);
+
   const stampChecked = useCallback((id: string) => {
     setCheckedAt((current) => {
       const next = { ...current, [id]: Date.now() };

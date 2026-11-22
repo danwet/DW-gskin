@@ -2,7 +2,7 @@ import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { getGmailRefreshToken, resolveGmailConnection } from "@/lib/gmail/connection";
 import { getSyncProgress, syncStep, triageStep } from "@/lib/gmail/sync";
 import { startImport } from "@/lib/gmail/store";
-import { updateMeta } from "@/lib/agent/store";
+import { readMeta, updateMeta } from "@/lib/agent/store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -10,7 +10,8 @@ export const maxDuration = 300;
 export async function GET() {
   const user = await sessionUser();
   if (!user) return unauthorized();
-  return Response.json({ progress: await getSyncProgress(user.id) });
+  const meta = await readMeta().catch(() => null);
+  return Response.json({ progress: await getSyncProgress(user.id), lastRunAt: meta?.lastRunAt ?? null });
 }
 
 /**
