@@ -1,5 +1,5 @@
 import { sessionUser, unauthorized } from "@/lib/api-auth";
-import { todayCalendarEvents } from "@/lib/calendar";
+import { todayCalendarEvents, tomorrowCalendarEvents } from "@/lib/calendar";
 import { validTimeZone } from "@/lib/calendar-events";
 
 export const dynamic = "force-dynamic";
@@ -14,11 +14,15 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const timeZone = validTimeZone(url.searchParams.get("timeZone"));
-  const result = await todayCalendarEvents(request, timeZone);
+  const [result, tomorrow] = await Promise.all([
+    todayCalendarEvents(request, timeZone),
+    tomorrowCalendarEvents(request, timeZone),
+  ]);
   return Response.json({
     timeZone,
     now: new Date().toISOString(),
     events: result.events,
+    tomorrowEvents: tomorrow.events,
     error: result.error,
   });
 }

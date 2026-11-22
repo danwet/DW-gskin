@@ -450,6 +450,46 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, [ready]);
 
+  // Appointments made elsewhere (phone, web) should show up without a refresh.
+  useEffect(() => {
+    if (!ready) return;
+    let alive = true;
+    const tick = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const response = await fetch(`/api/calendar/status?timeZone=${encodeURIComponent(timeZone)}`, {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as {
+          events?: Brief["events"];
+          tomorrowEvents?: Brief["events"];
+          error?: string | null;
+        };
+        if (!alive || !Array.isArray(data.events)) return;
+        setSourceBrief((current) => ({
+          ...current,
+          events: data.events ?? current.events,
+          tomorrowEvents: data.tomorrowEvents ?? current.tomorrowEvents,
+        }));
+      } catch {
+        // Best effort: the agenda keeps what it had.
+      }
+    };
+    void tick();
+    const timer = setInterval(tick, 5 * 60 * 1000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void tick();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [ready]);
+
   const stampChecked = useCallback((id: string) => {
     setCheckedAt((current) => {
       const next = { ...current, [id]: Date.now() };
