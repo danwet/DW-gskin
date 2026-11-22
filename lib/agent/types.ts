@@ -141,6 +141,9 @@ export type AgentMeta = {
   runs?: RunRecord[];
   /** Status changes counted per day, for the Weggewerkt panel. */
   dailyChanges?: { date: string; orderStatus: number; paymentStatus: number };
+  /** A run was attempted without the right secret; only the time is kept. */
+  cronRejectedAt?: string | null;
+  cronRejectedCount?: number;
   /** Gmail history cursor for reconciling deletions and archive actions. */
   gmailHistoryId?: string;
   /** Snapshot of the last archive/trash, so it can be undone. */

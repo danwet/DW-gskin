@@ -470,3 +470,19 @@ export function resetAgentStore(): Promise<void> {
     await writeState({ assessments: {}, userState: {}, meta: { ...EMPTY_META } });
   });
 }
+
+/**
+ * Records that something tried to start a run without the right secret. Without
+ * this a wrong Supabase header looks exactly like "the cron does not run".
+ */
+export async function noteCronRejected(): Promise<void> {
+  await withLock(async () => {
+    const state = await readState();
+    const last = state.meta.cronRejectedAt ? Date.parse(state.meta.cronRejectedAt) : 0;
+    // Throttle: no more than one write every ten minutes.
+    if (Date.now() - last < 10 * 60 * 1000) return;
+    state.meta.cronRejectedAt = new Date().toISOString();
+    state.meta.cronRejectedCount = (state.meta.cronRejectedCount ?? 0) + 1;
+    await writeState(state);
+  });
+}

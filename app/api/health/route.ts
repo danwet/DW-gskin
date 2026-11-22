@@ -1,5 +1,6 @@
 import { supabaseProbe, supabaseScanBucketReady } from "@/lib/supabase/kv";
 import { gmailCallbackUri } from "@/lib/gmail/oauth";
+import { readMeta } from "@/lib/agent/store";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(request: Request) {
   const supabase = await supabaseProbe();
+  const meta = await readMeta().catch(() => null);
   return Response.json({
     gmailRedirectUri: gmailCallbackUri(new URL(request.url).origin),
     // Marker so a deploy can be verified from the outside.
@@ -25,6 +27,12 @@ export async function GET(request: Request) {
       gmailTokenSecret: Boolean(process.env.GMAIL_TOKEN_SECRET?.trim()),
     },
     supabase,
+    // Is the schedule actually landing? A rejected attempt shows up here.
+    cron: {
+      lastRunAt: meta?.lastRunAt ?? null,
+      rejectedAt: meta?.cronRejectedAt ?? null,
+      rejectedCount: meta?.cronRejectedCount ?? 0,
+    },
     scanBucketReady: await supabaseScanBucketReady(),
   });
 }
