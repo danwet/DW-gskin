@@ -190,7 +190,7 @@ export function TodayView() {
       <TodayHeader />
       <div className="mt-8 grid gap-0 lg:grid-cols-3 lg:gap-8">
         <div className="lg:col-span-2">
-          <div className="mx-auto w-full max-w-[680px] space-y-6">
+          <div className="w-full space-y-6">
             <InboxGrid
               items={activeItems}
               infoItems={infoItems}
