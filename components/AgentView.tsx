@@ -4,6 +4,7 @@ import { useState } from "react";
 import { formatClock } from "@/lib/greeting";
 import { useApp } from "./AppProvider";
 import { useInbox } from "./AgentInbox";
+import { useLiveMeta } from "./use-live-meta";
 
 function formatRunTime(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -20,8 +21,12 @@ const ddClass = "mt-1 text-[16px] font-semibold text-[var(--ink)]";
 
 export function AgentView() {
   const { ready, now, refresh, refreshing } = useApp();
-  const { meta, model, gmail } = useInbox();
+  const { meta: rawMeta, model, gmail } = useInbox();
   const [showRuns, setShowRuns] = useState(false);
+
+  // Follow the server while the page is open: a new run must show up without
+  // reloading anything.
+  const meta = useLiveMeta(rawMeta);
 
   // The agent keeps its own run log in Supabase (meta.runs), not the brief.
   const runs = meta?.runs ?? [];

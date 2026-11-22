@@ -406,14 +406,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [applyWorkspace, flushSave, setSyncProgress]);
 
-  // Opening the dashboard after a while syncs Gmail in the background, so
-  // archived and deleted mail disappears without pressing anything.
+  // Opening the dashboard syncs Gmail when the schedule skipped a tick: the
+  // cron runs every five minutes, so six minutes without a run means one was
+  // missed and the app catches up.
+  const MISSED_RUN_AFTER_MS = 6 * 60 * 1000;
   const bootSynced = useRef(false);
   useEffect(() => {
     if (!ready || bootSynced.current) return;
     bootSynced.current = true;
     const last = lastRun ? Date.parse(lastRun) : 0;
-    if (Date.now() - last > 15 * 60 * 1000) void refresh();
+    if (Date.now() - last > MISSED_RUN_AFTER_MS) void refresh();
   }, [ready, lastRun, refresh]);
 
   // The sync time should follow the server, also when the sync ran elsewhere
