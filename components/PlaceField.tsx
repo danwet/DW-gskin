@@ -7,20 +7,25 @@ import { useEffect, useRef, useState } from "react";
  * uit een lijst en wat er in het veld komt te staan is een adres dat andere apps
  * als locatie herkennen. Zonder keuze blijft het een gewoon tekstveld.
  */
+type Place = { label: string; lat: number | null; lon: number | null };
+
 export function PlaceField({
   id,
   value,
   onChange,
+  onPick,
   disabled,
   className,
 }: {
   id: string;
   value: string;
   onChange: (value: string) => void;
+  /** Meldt het gekozen adres inclusief coördinaten, voor het kaartje. */
+  onPick?: (place: Place) => void;
   disabled?: boolean;
   className?: string;
 }) {
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<Place[]>([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const boxRef = useRef<HTMLDivElement | null>(null);
@@ -38,7 +43,7 @@ export function PlaceField({
         const response = await fetch(`/api/calendar/place?q=${encodeURIComponent(query)}`, {
           cache: "no-store",
         });
-        const data = (await response.json()) as { places?: string[] };
+        const data = (await response.json()) as { places?: Place[] };
         if (!alive) return;
         setSuggestions(data.places ?? []);
       } catch {
@@ -61,8 +66,9 @@ export function PlaceField({
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open]);
 
-  const choose = (place: string) => {
-    onChange(place);
+  const choose = (place: Place) => {
+    onChange(place.label);
+    onPick?.(place);
     setOpen(false);
     setActive(-1);
   };
@@ -112,7 +118,7 @@ export function PlaceField({
           className="absolute inset-x-0 top-full z-40 mt-1 max-h-56 overflow-y-auto rounded-2xl border border-hairline bg-[var(--card)] py-1 shadow-[var(--shadow)]"
         >
           {suggestions.map((place, index) => (
-            <li key={place} role="option" aria-selected={index === active}>
+            <li key={place.label} role="option" aria-selected={index === active}>
               <button
                 type="button"
                 onClick={() => choose(place)}
@@ -121,7 +127,7 @@ export function PlaceField({
                   index === active ? "bg-[var(--bg)]" : ""
                 }`}
               >
-                {place}
+                {place.label}
               </button>
             </li>
           ))}

@@ -93,10 +93,33 @@ export function AppointmentDialog({
   const [startTime, setStartTime] = useState(timeOf(event?.start) || "09:00");
   const [endTime, setEndTime] = useState(timeOf(event?.end) || "09:30");
   const [location, setLocation] = useState(event?.location ?? "");
+  const [coords, setCoords] = useState<{ lat: number; lon: number; label: string } | null>(null);
   const [description, setDescription] = useState(event?.description ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [askScope, setAskScope] = useState(false);
+
+  // Een bestaande locatie is losse tekst; zoek er coördinaten bij voor de kaart.
+  useEffect(() => {
+    const address = (event?.location ?? "").trim();
+    if (address.length < 3) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const response = await fetch(`/api/calendar/place?q=${encodeURIComponent(address)}`, { cache: "no-store" });
+        const data = (await response.json()) as { places?: { label: string; lat: number | null; lon: number | null }[] };
+        const first = data.places?.[0];
+        if (alive && first && typeof first.lat === "number" && typeof first.lon === "number") {
+          setCoords({ lat: first.lat, lon: first.lon, label: first.label });
+        }
+      } catch {
+        // Zonder coördinaten blijft het gewoon een tekstveld.
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [event?.location]);
 
   useEffect(() => {
     let alive = true;
@@ -386,10 +409,19 @@ export function AppointmentDialog({
           <PlaceField
             id="appointment-location"
             value={location}
-            onChange={(next) => setLocation(next)}
+            onChange={(next) => {
+              setLocation(next);
+              if (!next.trim()) setCoords(null);
+            }}
+            onPick={(place) => {
+              if (typeof place.lat === "number" && typeof place.lon === "number") {
+                setCoords({ lat: place.lat, lon: place.lon, label: place.label });
+              }
+            }}
             disabled={readOnly}
             className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink"
           />
+          {coords ? <MapPreview lat={coords.lat} lon={coords.lon} label={coords.label} /> : null}
         </div>
 
         <div>
@@ -425,5 +457,34 @@ function Chevron({ className }: { className?: string }) {
     >
       <path d="M0.5 3.5L4.5 0.5L8.5 3.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+/**
+ * Kaartje bij het gekozen adres. Een klik opent de kaarten-app van het systeem
+ * met de coördinaten erbij, zodat je kunt inzoomen en street view kunt bekijken.
+ */
+function MapPreview({ lat, lon, label }: { lat: number; lon: number; label: string }) {
+  const span = 0.004;
+  const bbox = [lon - span, lat - span / 2, lon + span, lat + span / 2].join(",");
+  const source = `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${lat},${lon}`;
+  // Apple Kaarten opent op een Mac de app; op iOS hetzelfde, op de rest de website.
+  const target = `https://maps.apple.com/?ll=${lat},${lon}&q=${encodeURIComponent(label)}`;
+
+  return (
+    <a
+      href={target}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={`Open ${label} in Kaarten`}
+      className="focus-ring mt-2 block h-[140px] overflow-hidden rounded-2xl border border-hairline"
+    >
+      <iframe
+        title={`Kaart van ${label}`}
+        src={source}
+        loading="lazy"
+        className="pointer-events-none h-[140px] w-full border-0"
+      />
+    </a>
   );
 }

@@ -33,6 +33,7 @@ export async function GET(request: Request) {
 
   const data = (await response.json().catch(() => null)) as {
     features?: {
+      geometry?: { coordinates?: [number, number] };
       properties?: {
         name?: string;
         street?: string;
@@ -49,6 +50,7 @@ export async function GET(request: Request) {
   const places = (data?.features ?? [])
     .map((feature) => {
       const p = feature.properties ?? {};
+      const [lon, lat] = feature.geometry?.coordinates ?? [];
       const street = p.street ?? p.name ?? "";
       const line = [street, p.housenumber].filter(Boolean).join(" ").trim();
       const city = p.city ?? p.town ?? p.village ?? "";
@@ -57,9 +59,11 @@ export async function GET(request: Request) {
       // België komt als "België / Belgique / Belgien" terug; één naam is genoeg.
       const country = p.country?.split("/")[0]?.trim() ?? "";
       const label = [line, tail, country].filter(Boolean).join(", ").trim();
-      return label;
+      if (label.length <= 3) return null;
+      return { label, lat: typeof lat === "number" ? lat : null, lon: typeof lon === "number" ? lon : null };
     })
-    .filter((label, index, all) => label.length > 3 && all.indexOf(label) === index);
+    .filter((place): place is { label: string; lat: number | null; lon: number | null } => place !== null)
+    .filter((place, index, all) => all.findIndex((other) => other.label === place.label) === index);
 
   return Response.json({ places });
 }
