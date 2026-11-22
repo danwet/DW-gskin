@@ -52,7 +52,7 @@ const TONE_DOT: Record<UrgencyTone, string> = {
 };
 
 const PAYMENT_LABEL: Record<string, string> = {
-  unknown: "Betaalstatus onbekend",
+  unknown: "Onbekend",
   open_per_sender: "Openstaand volgens afzender",
   paid_confirmed: "Betaald bevestigd",
 };
@@ -544,7 +544,7 @@ function InboxItem({
           <p className="mt-0.5 text-[13px] leading-5 text-[var(--muted)]">{item.priorityReason}</p>
 
           <dl className="mt-3 space-y-1 text-[13px] leading-5">
-            <div className="flex gap-2">
+            <div className="flex gap-2 pr-3">
               <dt className="shrink-0 text-[var(--faint)]">Deadline</dt>
               <dd className={urgency.tone === "red" ? "font-medium text-[var(--danger)]" : "text-[var(--ink)]"}>
                 {urgency.deadlineText}
@@ -602,6 +602,9 @@ export function InvoiceBlock({ item }: { item: MailAssessment }) {
       })
     : null;
 
+  // Korte regels: het vlak waar anders de QR staat is smal.
+  const qrLines = ["Gegevens", "missen voor", "maken van", "een QR-code"];
+
   const qrNote = !invoice.iban
     ? "IBAN ontbreekt in deze mail."
     : !ibanValid
@@ -611,12 +614,12 @@ export function InvoiceBlock({ item }: { item: MailAssessment }) {
         : "Geen eurofactuur.";
 
   return (
-    <div className="mt-3 flex items-center gap-4 rounded-2xl bg-[var(--bg)] px-4 py-3">
-      {/* Gegevens links, de QR rechts en verticaal gecentreerd over het hele vak. */}
-      <div className="min-w-0 flex-1">
-        <p className="relative -top-[10px] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)]">FACTUURINFORMATIE</p>
+    <div className="relative mt-[2px] rounded-2xl bg-[var(--bg)] px-4 pt-3 pb-[32px]">
+      {/* De QR ligt als losse laag boven het vlak, rechts uitgelijnd op de rand. */}
+      <div className="min-w-0">
+        <p className="relative -top-[2px] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)]">FACTUURINFORMATIE</p>
         <div className="mt-2">
-          <dl className="grid gap-x-4 gap-y-1 text-[13px] leading-5 sm:grid-cols-2">
+          <dl className="grid gap-x-0 gap-y-1 text-[13px] leading-5 sm:grid-cols-2">
             <Row label="Leverancier" value={invoice.supplier || item.from || "Onbekend"} />
             <Row label="Factuurnummer" value={invoice.invoiceNumber || "Onbekend"} />
             <Row label="Bedrag" value={formatMoney(invoice.amount, invoice.currency)} />
@@ -628,18 +631,27 @@ export function InvoiceBlock({ item }: { item: MailAssessment }) {
           {invoice.unreadAttachment ? (
             <p className="mt-2 text-[12px] text-[var(--orange)]">Bijlage niet gelezen: {invoice.unreadAttachment}</p>
           ) : null}
-          {epc ? null : (
-            <p className="mt-2 text-[12px] text-[var(--muted)]">QR-code niet beschikbaar: {qrNote}</p>
-          )}
         </div>
       </div>
 
       {epc ? (
         // Alleen om de QR een wit vlak: de scanner heeft contrast nodig.
-        <div className="shrink-0 rounded-2xl bg-white p-3">
+        <div className="absolute top-[4px] right-[4px] z-10 rounded-2xl bg-white p-3 shadow-[0_6px_18px_-8px_rgba(16,24,40,0.35)]">
           <QRCodeSVG value={epc} size={128} level="M" aria-label="SEPA-betaling QR-code" />
         </div>
-      ) : null}
+      ) : (
+        // Zonder QR staat de uitleg in hetzelfde vlak, in korte regels.
+        <div
+          className="absolute top-[4px] right-[4px] z-10 flex h-[152px] w-[152px] flex-col items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--card)] p-3 text-center shadow-[0_6px_18px_-8px_rgba(16,24,40,0.35)]"
+          title={qrNote}
+        >
+          {qrLines.map((line) => (
+            <span key={line} className="block text-[12px] leading-4 text-[var(--muted)]">
+              {line}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

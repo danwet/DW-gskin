@@ -1215,7 +1215,6 @@ export function InboxModal({
               Snooze
             </button>
           ) : null}
-          {handled ? <span className="text-[12px] text-[var(--muted)]">Afgehandeld</span> : null}
           {sendMessage ? <p className="w-full text-[12px] leading-5 text-[var(--muted)]">{sendMessage}</p> : null}
         </div>
         {showDeclarePrompt ? (

@@ -224,7 +224,7 @@ export function AppointmentDialog({
         <div className="flex w-full flex-col items-center gap-2">
           {readOnly ? <p className="t-meta text-center text-ink-muted">Deze agenda is alleen-lezen.</p> : null}
           {error ? <p className="t-meta text-center text-[var(--danger)]">{error}</p> : null}
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex w-full items-center justify-center gap-2">
             {editing && !readOnly ? (
               <button
                 type="button"
@@ -235,19 +235,12 @@ export function AppointmentDialog({
                 Verwijderen
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-secondary focus-ring rounded-full px-4 py-2 text-[13px] font-medium"
-            >
-              Annuleren
-            </button>
             {!readOnly ? (
               <button
                 type="button"
                 onClick={() => void save()}
                 disabled={busy}
-                className="btn-primary focus-ring rounded-full px-4 py-2 text-[13px] font-medium disabled:opacity-60"
+                className="btn-primary focus-ring h-12 w-full rounded-full px-5 text-[15px] font-medium disabled:opacity-60"
               >
                 {busy ? "Bezig…" : "Opslaan"}
               </button>

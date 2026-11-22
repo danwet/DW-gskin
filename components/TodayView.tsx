@@ -266,12 +266,20 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
   // Payment confirmations sit in the same panel, grouped per supplier so a
   // second receipt shows as "Leverancier (2)".
   const payments = new Map<string, { supplier: string; count: number; receivedAt: string; amount?: number }>();
+  // All payments per supplier, so the row shows what was paid in total and not
+  // just the last receipt.
+  const paidTotals = new Map<string, { count: number; amount: number }>();
   for (const item of items) {
     if (!item.payment) continue;
+    const key = item.payment.supplier.toLowerCase();
+    const total = paidTotals.get(key) ?? { count: 0, amount: 0 };
+    total.count += 1;
+    total.amount += Number(item.payment.amount ?? 0);
+    paidTotals.set(key, total);
+
     // A payment confirmation is news on the day it arrives; after the 05:00
     // rollover it drops out, exactly like a delivered order.
     if (Date.parse(item.receivedAt) < startOfToday.getTime()) continue;
-    const key = item.payment.supplier.toLowerCase();
     const existing = payments.get(key);
     if (existing) {
       existing.count += 1;
@@ -284,6 +292,14 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
         amount: item.payment.amount,
       });
     }
+  }
+
+  // Het bedrag in de rij is het totaal van alle betalingen aan die leverancier.
+  for (const [key, entry] of payments) {
+    const total = paidTotals.get(key);
+    if (!total) continue;
+    entry.count = total.count;
+    if (total.amount > 0) entry.amount = total.amount;
   }
   const paymentEntries = [...payments.values()].sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
 
@@ -357,7 +373,6 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
               <div className="mt-1 flex items-baseline justify-between gap-3">
                 <p className="truncate text-[13px] text-[var(--ink)]">
                   {entry.supplier}
-                  {entry.count > 1 ? <span className="text-[var(--muted)]"> ({entry.count})</span> : null}
                 </p>
                 {entry.amount != null ? (
                   <p className="shrink-0 text-[12px] text-[var(--muted)]">€ {entry.amount.toFixed(2).replace(".", ",")}</p>

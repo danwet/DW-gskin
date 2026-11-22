@@ -1,7 +1,7 @@
 import "server-only";
 
 import { refreshGoogleAccessToken } from "../google-token";
-import { readAssessments, readMeta, removeAssessments, updateMeta } from "../agent/store";
+import { readAssessments, readMeta, removeAssessments, unarchiveConversation, updateMeta } from "../agent/store";
 import { listStoredMessages, purgeMessages, saveMessages } from "./store";
 import { fetchGmailMessage, listGmailInbox } from "./fetch";
 
@@ -149,7 +149,9 @@ export async function reconcileGmailHistory(
       }
 
       if (backInInbox.size > 0) {
-        const existing = new Set((await listStoredMessages(userId)).map((row) => row.message_id));
+        const storedRows = await listStoredMessages(userId);
+        const threadOf = new Map(storedRows.map((row) => [row.message_id, row.thread_id]));
+        const existing = new Set(storedRows.map((row) => row.message_id));
         const fresh: Awaited<ReturnType<typeof fetchGmailMessage>>[] = [];
         for (const id of backInInbox) {
           if (existing.has(id)) continue;
@@ -157,6 +159,13 @@ export async function reconcileGmailHistory(
         }
         const messages = fresh.filter((message): message is NonNullable<typeof message> => Boolean(message));
         if (messages.length > 0) await saveMessages(userId, messages);
+        // Post comes back into the inbox: an earlier archive in that thread no
+        // longer applies, otherwise the card stays hidden while Gmail shows it.
+        for (const id of backInInbox) {
+          const threadId =
+            messages.find((message) => message.id === id)?.threadId ?? threadOf.get(id) ?? id;
+          await unarchiveConversation(threadId);
+        }
       }
 
       await updateMeta({ gmailHistoryId: history.historyId ?? current ?? start });
