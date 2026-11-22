@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { Modal } from "@/components/kit/modal";
 import { useApp } from "./AppProvider";
 
 export function LoopPreview() {
@@ -20,24 +21,31 @@ export function LoopPreview() {
   const done = checked.has(preview.id);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center p-4">
-      <button
-        type="button"
-        aria-label="Close preview"
-        className="absolute inset-0 bg-[#12141c]/40"
-        onClick={() => setPreview(null)}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="loop-title"
-        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-[520px] overflow-y-auto rounded-[24px] border border-[var(--line)] bg-[var(--card)] p-6 shadow-[var(--shadow)]"
-      >
-        <p className="text-[11px] font-medium tracking-[0.16em] text-[var(--muted)]">STILL NEEDS YOU</p>
-        <h2 id="loop-title" className="mt-1 text-[20px] font-semibold tracking-[-0.03em]">
-          {preview.title}
-        </h2>
-        <p className="mt-1 text-[14px] leading-6 text-[var(--muted)]">{preview.detail}</p>
+    <Modal
+      open
+      onOpenChange={(open) => !open && setPreview(null)}
+      title={preview.title}
+      beschrijving={preview.detail}
+      voet={
+        <div className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <p className="min-w-48 flex-1 text-[13px] leading-5 text-ink-muted">
+            {done ? "Deze taak is klaar." : "Aanvinken zet hem af in het dashboard."}
+          </p>
+          <button
+            type="button"
+            disabled={done}
+            onClick={() => {
+              completeLoop(preview.id);
+              setPreview(null);
+            }}
+            className="shrink-0 rounded-full bg-[var(--accent-fill)] px-4 py-2 text-[14px] font-medium text-[#f6f4ef] disabled:opacity-50"
+          >
+            {done ? "Klaar" : "Aanvinken"}
+          </button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-4">
 
         {preview.mail ? (
           <div className="mt-4 rounded-2xl bg-[var(--bg)] p-4">
@@ -58,23 +66,7 @@ export function LoopPreview() {
           </div>
         ) : null}
 
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t border-[var(--line)] pt-4">
-          <p className="min-w-48 flex-1 text-[13px] leading-5 text-[var(--muted)]">
-            {done ? "This task is done." : "Marking this done checks it off in Dashboard."}
-          </p>
-          <button
-            type="button"
-            disabled={done}
-            onClick={() => {
-              completeLoop(preview.id);
-              setPreview(null);
-            }}
-            className="shrink-0 rounded-full bg-[var(--accent)] px-4 py-2 text-[14px] font-medium text-white disabled:opacity-50"
-          >
-            {done ? "Done" : "Mark done"}
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }

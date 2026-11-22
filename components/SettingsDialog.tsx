@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Modal } from "@/components/kit/modal";
 import { useApp } from "./AppProvider";
 
 type ProviderId = "openai" | "anthropic" | "gemini" | "openrouter";
@@ -179,36 +180,15 @@ export function SettingsDialog() {
   if (!settingsOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center p-4">
-      <button
-        type="button"
-        aria-label="Instellingen sluiten"
-        className="absolute inset-0 bg-[#12141c]/40"
-        onClick={() => setSettingsOpen(false)}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="settings-title"
-        className="relative flex max-h-[min(760px,calc(100vh-32px))] w-full max-w-[860px] flex-col overflow-hidden rounded-[24px] border border-[var(--line)] bg-[var(--card)] shadow-[var(--shadow)] md:flex-row"
-      >
-        <div className="flex flex-col border-b border-[var(--line)] p-5 md:w-[220px] md:shrink-0 md:border-r md:border-b-0 md:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-medium tracking-[0.16em] text-[var(--muted)]">WORKSPACE</p>
-              <h2 id="settings-title" className="mt-1 text-[22px] font-semibold tracking-[-0.03em]">
-                Instellingen
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSettingsOpen(false)}
-              className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-[var(--line)] text-[var(--muted)]"
-              aria-label="Sluiten"
-            >
-              ×
-            </button>
-          </div>
+    <Modal
+      open
+      onOpenChange={(open) => !open && setSettingsOpen(false)}
+      title="Instellingen"
+      className="max-w-4xl"
+      vastHoogte
+    >
+      <div className="flex flex-col md:flex-row">
+        <div className="flex flex-col border-b border-hairline p-5 md:w-[220px] md:shrink-0 md:border-r md:border-b-0 md:p-6">
           <nav className="mt-5 flex gap-1 overflow-x-auto md:flex-col" aria-label="Instellingencategorieën">
             {CATEGORIES.map((item) => (
               <button
@@ -291,7 +271,7 @@ export function SettingsDialog() {
           ) : null}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

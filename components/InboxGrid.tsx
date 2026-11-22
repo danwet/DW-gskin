@@ -5,6 +5,7 @@ import { subscribeFocusTab } from "@/lib/focus-tab";
 import { orderNewestFirst, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
 import type { MailAssessment } from "@/lib/agent/types";
 import { InvoiceBlock, timeZoneOf, UrgencyPill } from "./AgentInbox";
+import { Modal } from "@/components/kit/modal";
 
 /** No deadline is neutral: grey, not the urgency colour. */
 function deadlineClass(urgency: { tone: UrgencyTone; deadlineText: string }): string {
@@ -538,7 +539,7 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
   return (
     <div>
       <dt className="text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">{label}</dt>
-      <dd className="mt-0.5 text-[13px] leading-5 text-[var(--ink)]">{children}</dd>
+      <dd className="mt-0.5 text-[15px] leading-5 font-semibold text-[var(--ink)]">{children}</dd>
     </div>
   );
 }
@@ -747,51 +748,39 @@ export function InboxModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center p-4">
-      <button type="button" aria-label="Sluiten" onClick={onClose} className="absolute inset-0 bg-[#12141c]/40" />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="inbox-detail-title"
-        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-[760px] overflow-y-auto rounded-[24px] border border-[var(--line)] bg-[var(--card)] p-6 shadow-[var(--shadow)]"
-      >
-        <div className="flex items-start justify-between gap-3">
+    <Modal
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title={item.from}
+      beschrijvingKlasse=""
+      beschrijving={
+        <span className="flex flex-col items-center gap-1">
+          {item.fromEmail ? <span className="text-[12px] text-ink-muted">{item.fromEmail}</span> : null}
+          <span className="mt-2.5 text-[17px] leading-snug font-semibold tracking-[-0.01em] text-ink">
+            {item.subject}
+          </span>
+        </span>
+      }
+      className="max-w-4xl"
+      vastHoogte
+      linksboven={
+        <>
           <UrgencyPill tone={urgency.tone} label={urgency.label} />
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Sluiten"
-            className="focus-ring grid h-8 w-8 place-items-center rounded-full text-[18px] text-[var(--muted)] hover:bg-[var(--bg)]"
-          >
-            ×
-          </button>
-        </div>
-
-        {item.needsAttention ? (
-          <p className="mt-3 inline-block rounded-full bg-[var(--orange-soft)] px-2.5 py-1 text-[12px] font-medium text-[var(--orange)]">
-            Opnieuw aandacht · {item.attentionReason ?? "Nieuw bericht"}
-          </p>
-        ) : null}
-
-        <div className="mt-4 flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">{item.source === "scan" ? "Leverancier" : "Afzender"}</p>
-            <p className="mt-0.5 truncate text-[16px] font-semibold text-[var(--ink)]">{item.from}</p>
-            {item.fromEmail ? (
-              <p className="truncate text-[12px] text-[var(--muted)]">{item.fromEmail}</p>
-            ) : null}
-          </div>
-          <div className="min-w-0 text-right">
-            <p className="text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">Onderwerp</p>
-            <p id="inbox-detail-title" className="mt-0.5 line-clamp-2 text-[14px] font-medium text-[var(--ink)]">
-              {item.subject}
+          {item.needsAttention ? (
+            <p className="rounded-full bg-[var(--orange-soft)] px-2.5 py-1 text-[12px] font-medium text-[var(--orange)]">
+              Opnieuw aandacht
             </p>
-            <p className="mt-3 text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">
-              {hasPayableInvoice(item) ? "Uiterste betaaldatum" : "Uiterste datum"}
+          ) : null}
+        </>
+      }
+    >
+
+        <div className="flex flex-col gap-3">
+          {urgency.deadlineText !== "Geen deadline" ? (
+            <p className={`tnum text-[13px] font-medium ${deadlineClass(urgency)}`}>
+              {hasPayableInvoice(item) ? "Uiterste betaaldatum" : "Uiterste datum"} · {urgency.deadlineText}
             </p>
-            <p className={`tnum mt-0.5 text-[13px] font-medium ${deadlineClass(urgency)}`}>{urgency.deadlineText}</p>
-          </div>
-        </div>
+          ) : null}
 
         {!isNewsletter ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -801,7 +790,7 @@ export function InboxModal({
             </div>
             <div className="rounded-2xl bg-[var(--bg)] px-4 py-3">
               <p className="text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">Waarom</p>
-              <p className="mt-1 text-[13px] leading-5 text-[var(--ink)]">{item.priorityReason}</p>
+              <p className="mt-1 text-[15px] leading-5 font-semibold text-[var(--ink)]">{item.priorityReason}</p>
             </div>
           </div>
         ) : null}
@@ -873,7 +862,7 @@ export function InboxModal({
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <dt className="text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">Wat als je niks doet</dt>
-                <dd className="mt-0.5 text-[13px] leading-5 text-[var(--ink)]">{item.impact ?? "—"}</dd>
+                <dd className="mt-0.5 text-[15px] leading-5 font-semibold text-[var(--ink)]">{item.impact ?? "—"}</dd>
               </div>
               <div className="min-w-0 text-right">
                 <dt className="text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">Voorbereid</dt>
@@ -1243,6 +1232,6 @@ export function InboxModal({
           </div>
         ) : null}
       </div>
-    </div>
+    </Modal>
   );
 }

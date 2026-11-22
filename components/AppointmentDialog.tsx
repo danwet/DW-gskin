@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Modal } from "@/components/kit/modal";
 import type { CalendarEvent } from "@/lib/types";
 
 type CalendarChoice = { id: string; name: string; primary: boolean };
 
+// Alleen een lijn onder het veld; de cursor maakt zichtbaar waar je typt.
 const fieldClass =
-  "w-full rounded-xl border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-[13px] text-[var(--ink)] outline-none focus:border-[var(--blue)]";
+  "mt-1 w-full rounded-none border-0 border-b border-hairline bg-transparent px-0 py-2 text-[15px] text-ink caret-[var(--blue)] outline-none transition-colors focus:border-[var(--blue)]!";
 const labelClass = "text-[11px] font-medium tracking-[0.12em] text-[var(--muted)] uppercase";
 
 function timeOf(iso?: string): string {
@@ -142,203 +144,117 @@ export function AppointmentDialog({
   const readOnly = editing && event?.editable === false;
 
   return (
-    <div className="fixed inset-0 z-[60] grid place-items-center p-4">
-      <button type="button" aria-label="Sluiten" className="absolute inset-0 bg-[#12141c]/45" onClick={onClose} />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="appointment-title"
-        className="relative w-full max-w-[480px] rounded-[24px] border border-[var(--line)] bg-[var(--card)] p-5 shadow-[var(--shadow)]"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h2 id="appointment-title" className="text-[20px] font-semibold tracking-[-0.02em] text-[var(--ink)]">
-            {editing ? "Afspraak" : "Nieuwe afspraak"}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Sluiten"
-            className="focus-ring rounded-full px-2 py-1 text-[16px] leading-none text-[var(--muted)] hover:text-[var(--ink)]"
-          >
-            ×
-          </button>
+    <Modal
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title={editing ? "Afspraak" : "Nieuwe afspraak"}
+      voet={
+        <div className="flex w-full flex-col gap-2">
+          {readOnly ? <p className="t-meta text-center text-ink-muted">Deze agenda is alleen-lezen.</p> : null}
+          {error ? <p className="t-meta text-center text-[var(--danger)]">{error}</p> : null}
+          {!readOnly ? (
+            <button
+              type="button"
+              onClick={() => void save()}
+              disabled={busy}
+              className="h-12 w-full rounded-full bg-[var(--accent-fill)] font-medium text-[#f6f4ef] transition active:scale-[0.98] disabled:opacity-50"
+            >
+              {busy ? "Bezig…" : "Opslaan"}
+            </button>
+          ) : null}
+          {editing && !readOnly ? (
+            <button
+              type="button"
+              onClick={() => (event?.recurring ? setAskScope(true) : void remove("one"))}
+              disabled={busy}
+              className="focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium text-[var(--danger)] disabled:opacity-60"
+            >
+              Verwijderen
+            </button>
+          ) : null}
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <div>
+          <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-name">Titel</label>
+          <input
+            id="appointment-name"
+            value={title}
+            onChange={(entry) => setTitle(entry.target.value)}
+            disabled={readOnly}
+            placeholder="Tandarts"
+            className="veld-underline mt-1 px-0 py-2 text-[15px] text-ink"
+          />
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelClass} htmlFor="appointment-name">Titel</label>
+            <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-calendar">Agenda</label>
+            <select
+              id="appointment-calendar"
+              value={calendarId}
+              onChange={(entry) => setCalendarId(entry.target.value)}
+              disabled={readOnly || calendars.length === 0}
+              className="veld-underline mt-1 px-0 py-2 text-[15px] text-ink"
+            >
+              {calendars.map((entry) => (
+                <option key={entry.id} value={entry.id}>{entry.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-date">Datum</label>
             <input
-              id="appointment-name"
-              value={title}
-              onChange={(entry) => setTitle(entry.target.value)}
+              id="appointment-date"
+              type="date"
+              value={date}
+              onChange={(entry) => setDate(entry.target.value)}
               disabled={readOnly}
-              placeholder="Tandarts"
-              className={`mt-1 ${fieldClass}`}
+              className="veld-underline mt-1 px-0 py-2 text-[15px] text-ink"
             />
           </div>
+        </div>
 
+        <label className="flex items-center gap-2 text-[13px] text-ink">
+          <input type="checkbox" checked={allDay} onChange={(entry) => setAllDay(entry.target.checked)} disabled={readOnly} className="h-4 w-4 rounded border-hairline" />
+          Hele dag
+        </label>
+
+        {!allDay ? (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelClass} htmlFor="appointment-calendar">Agenda</label>
-              <select
-                id="appointment-calendar"
-                value={calendarId}
-                onChange={(entry) => setCalendarId(entry.target.value)}
-                disabled={readOnly || calendars.length === 0}
-                className={`mt-1 ${fieldClass}`}
-              >
-                {calendars.map((entry) => (
-                  <option key={entry.id} value={entry.id}>
-                    {entry.name}
-                  </option>
-                ))}
-              </select>
+              <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-start">Begintijd</label>
+              <input id="appointment-start" type="time" value={startTime} onChange={(entry) => setStartTime(entry.target.value)} disabled={readOnly} className="veld-underline mt-1 px-0 py-2 text-[15px] text-ink" />
             </div>
             <div>
-              <label className={labelClass} htmlFor="appointment-date">Datum</label>
-              <input
-                id="appointment-date"
-                type="date"
-                value={date}
-                onChange={(entry) => setDate(entry.target.value)}
-                disabled={readOnly}
-                className={`mt-1 ${fieldClass}`}
-              />
+              <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-end">Eindtijd</label>
+              <input id="appointment-end" type="time" value={endTime} onChange={(entry) => setEndTime(entry.target.value)} disabled={readOnly} className="veld-underline mt-1 px-0 py-2 text-[15px] text-ink" />
             </div>
           </div>
+        ) : null}
 
-          <label className="flex items-center gap-2 text-[13px] text-[var(--ink)]">
-            <input
-              type="checkbox"
-              checked={allDay}
-              onChange={(entry) => setAllDay(entry.target.checked)}
-              disabled={readOnly}
-              className="h-4 w-4 rounded border-[var(--line)]"
-            />
-            Hele dag
-          </label>
+        <div>
+          <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-location">Locatie</label>
+          <input id="appointment-location" value={location} onChange={(entry) => setLocation(entry.target.value)} disabled={readOnly} className="veld-underline mt-1 px-0 py-2 text-[15px] text-ink" />
+        </div>
 
-          {!allDay ? (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass} htmlFor="appointment-start">Begintijd</label>
-                <input
-                  id="appointment-start"
-                  type="time"
-                  value={startTime}
-                  onChange={(entry) => setStartTime(entry.target.value)}
-                  disabled={readOnly}
-                  className={`mt-1 ${fieldClass}`}
-                />
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="appointment-end">Eindtijd</label>
-                <input
-                  id="appointment-end"
-                  type="time"
-                  value={endTime}
-                  onChange={(entry) => setEndTime(entry.target.value)}
-                  disabled={readOnly}
-                  className={`mt-1 ${fieldClass}`}
-                />
-              </div>
-            </div>
-          ) : null}
-
-          <div>
-            <label className={labelClass} htmlFor="appointment-location">Locatie</label>
-            <input
-              id="appointment-location"
-              value={location}
-              onChange={(entry) => setLocation(entry.target.value)}
-              disabled={readOnly}
-              className={`mt-1 ${fieldClass}`}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass} htmlFor="appointment-note">Notitie</label>
-            <textarea
-              id="appointment-note"
-              value={description}
-              onChange={(entry) => setDescription(entry.target.value)}
-              disabled={readOnly}
-              rows={2}
-              className={`mt-1 ${fieldClass}`}
-            />
-          </div>
-
-          {readOnly ? (
-            <p className="text-[12px] text-[var(--muted)]">Deze agenda is alleen-lezen.</p>
-          ) : null}
-          {error ? <p className="text-[12px] text-[var(--danger)]">{error}</p> : null}
+        <div>
+          <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-note">Notitie</label>
+          <textarea id="appointment-note" value={description} onChange={(entry) => setDescription(entry.target.value)} disabled={readOnly} rows={2} className="veld-underline mt-1 px-0 py-2 text-[15px] text-ink" />
         </div>
 
         {askScope ? (
-          <div className="mt-4 rounded-2xl bg-[var(--bg)] p-3">
-            <p className="text-[13px] font-medium text-[var(--ink)]">Deze afspraak herhaalt zich. Wat wil je verwijderen?</p>
+          <div className="rounded-2xl bg-bg p-3">
+            <p className="text-[13px] font-medium text-ink">Deze afspraak herhaalt zich. Wat wil je verwijderen?</p>
             <div className="mt-2 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => void remove("one")}
-                disabled={busy}
-                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
-              >
-                Alleen deze
-              </button>
-              <button
-                type="button"
-                onClick={() => void remove("following")}
-                disabled={busy}
-                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
-              >
-                Deze en volgende
-              </button>
-              <button
-                type="button"
-                onClick={() => setAskScope(false)}
-                className="focus-ring rounded-full px-3 py-1.5 text-[13px] text-[var(--muted)]"
-              >
-                Annuleren
-              </button>
+              <button type="button" onClick={() => void remove("one")} disabled={busy} className="rounded-full bg-[var(--line)] px-3 py-1.5 text-[13px] font-medium text-ink">Alleen deze</button>
+              <button type="button" onClick={() => void remove("following")} disabled={busy} className="rounded-full bg-[var(--line)] px-3 py-1.5 text-[13px] font-medium text-ink">Deze en volgende</button>
+              <button type="button" onClick={() => setAskScope(false)} className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted">Annuleren</button>
             </div>
           </div>
-        ) : (
-          <div className="mt-5 flex items-center justify-between gap-2">
-            <div>
-              {editing && !readOnly ? (
-                <button
-                  type="button"
-                  onClick={() => (event?.recurring ? setAskScope(true) : void remove("one"))}
-                  disabled={busy}
-                  className="focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium text-[var(--danger)] disabled:opacity-60"
-                >
-                  Verwijderen
-                </button>
-              ) : null}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="btn-secondary focus-ring rounded-full px-4 py-2 text-[13px] font-medium"
-              >
-                Annuleren
-              </button>
-              {!readOnly ? (
-                <button
-                  type="button"
-                  onClick={() => void save()}
-                  disabled={busy}
-                  className="btn-primary focus-ring rounded-full px-4 py-2 text-[13px] font-medium disabled:opacity-60"
-                >
-                  {busy ? "Bezig…" : "Opslaan"}
-                </button>
-              ) : null}
-            </div>
-          </div>
-        )}
+        ) : null}
       </div>
-    </div>
+    </Modal>
   );
 }

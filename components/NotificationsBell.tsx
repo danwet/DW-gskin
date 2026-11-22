@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   enableNotifications,
   notificationPermission,
@@ -43,13 +43,26 @@ export function NotificationsBell({
     setDesktop(notificationPermission());
     setDesktopWanted(wantedOnThisDevice());
   }, []);
+
+  // Klik buiten de popup (en buiten de bel zelf) sluit hem.
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && rootRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
   // When the desktop already announces new mail, listing it here again is noise.
   const desktopActive = desktop === "granted" && desktopWanted;
   const showNew = newItems.length > 0 && !desktopActive;
   const count = items.length + (desktopActive ? 0 : newItems.length);
 
   return (
-    <div className="relative">
+    <div ref={rootRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}

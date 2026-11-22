@@ -7,3 +7,6 @@ data
 *.log
 .DS_Store
 tsconfig.tsbuildinfo
+
+# npm cache (install via werkmap vanwege sandbox-schrijfrechten)
+.npm-cache/
