@@ -40,6 +40,9 @@ export function TopBar() {
           onDeclare={topBar.onDeclare}
           onOpenNewItem={topBar.onOpenNewItem}
           onMarkAllNewRead={topBar.onMarkAllNewRead}
+          onRemoveItem={topBar.onRemoveItem}
+          onReloadInbox={topBar.onReloadInbox}
+          onInboxError={topBar.onError}
         />
       ) : (
         <span className="glass-chip grid h-8 w-8 place-items-center rounded-full text-[var(--muted)]" aria-hidden="true">

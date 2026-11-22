@@ -13,6 +13,9 @@ export function NotificationsBell({
   onDeclare,
   onOpenNewItem,
   onMarkAllNewRead,
+  onRemoveItem,
+  onReloadInbox,
+  onInboxError,
 }: {
   items: MailAssessment[];
   newItems?: MailAssessment[];
@@ -20,6 +23,9 @@ export function NotificationsBell({
   onDeclare: (item: MailAssessment, declaration: "none" | "pending" | "declared") => void;
   onOpenNewItem?: (item: MailAssessment) => void;
   onMarkAllNewRead?: () => void;
+  onRemoveItem?: (conversationId: string) => void;
+  onReloadInbox?: () => void;
+  onInboxError?: (message: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<MailAssessment | null>(null);
@@ -127,6 +133,9 @@ export function NotificationsBell({
           onClose={() => setSelected(null)}
           onToggleHandled={onToggleHandled}
           onDeclare={onDeclare}
+          onRemove={onRemoveItem}
+          onReload={onReloadInbox}
+          onError={onInboxError}
         />
       ) : null}
     </div>

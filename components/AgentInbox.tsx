@@ -333,8 +333,8 @@ export function useInbox() {
 
   // Publish the header data once, with stable callbacks: the shell renders it
   // so the cluster sits in the same place on every page.
-  const handlersRef = useRef({ undo, toggleHandled, declareInvoice, openNewItem, markAllNewRead, markNewRead });
-  handlersRef.current = { undo, toggleHandled, declareInvoice, openNewItem, markAllNewRead, markNewRead };
+  const handlersRef = useRef({ undo, toggleHandled, declareInvoice, openNewItem, markAllNewRead, markNewRead, removeItem, reload, setNotice });
+  handlersRef.current = { undo, toggleHandled, declareInvoice, openNewItem, markAllNewRead, markNewRead, removeItem, reload, setNotice };
 
   useEffect(() => {
     setTopBar({
@@ -347,6 +347,9 @@ export function useInbox() {
       onDeclare: (item, declaration) => handlersRef.current.declareInvoice(item, declaration),
       onOpenNewItem: (item) => handlersRef.current.openNewItem(item),
       onMarkAllNewRead: () => handlersRef.current.markAllNewRead(),
+      onRemoveItem: (conversationId) => handlersRef.current.removeItem(conversationId),
+      onReloadInbox: () => void handlersRef.current.reload(),
+      onError: (message) => handlersRef.current.setNotice(message),
     });
   }, [items, newItems, undoable, meta?.lastRunAt, setTopBar]);
 

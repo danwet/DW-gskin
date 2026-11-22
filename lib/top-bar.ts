@@ -11,6 +11,10 @@ export type TopBarState = {
   newItems: MailAssessment[];
   onOpenNewItem: (item: MailAssessment) => void;
   onMarkAllNewRead: () => void;
+  /** So a card opened from a notification can be archived or trashed too. */
+  onRemoveItem: (conversationId: string) => void;
+  onReloadInbox: () => void;
+  onError: (message: string) => void;
   undoable: boolean;
   undo: () => Promise<void>;
   lastSyncAt?: string | null;
