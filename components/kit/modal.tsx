@@ -91,6 +91,12 @@ export function Modal({
         className={cn("bg-transparent p-0", className)}
       >
         <motion.div
+          // iOS presenteert een sheet met een veer: stiffness 180, damping 22 is
+          // de standaard die iOS 26 voor sheet-presentatie gebruikt (~0,82 damping,
+          // gelijk aan Apple's spring(response: 0.5, dampingFraction: 0.825)).
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          transition={{ type: "spring", stiffness: 180, damping: 22, mass: 1 }}
           drag="y"
           dragListener={false}
           dragControls={dragControls}
