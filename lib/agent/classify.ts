@@ -17,6 +17,20 @@ export type InvoiceDraft = {
   unreadAttachment: string;
 };
 
+/**
+ * Shipment details read from the mail by the model. A carrier writes its own
+ * name as the sender and mentions the shop inside the text; these fields make
+ * that explicit so one order can keep a single trail.
+ */
+export type ShipmentDraft = {
+  isShipment: boolean;
+  shop: string;
+  carrier: string;
+  orderNumber: string;
+  tracking: string;
+  status: string;
+};
+
 export type AssessmentDraft = {
   classification: AgentClassification;
   nextAction: string;
@@ -28,6 +42,8 @@ export type AssessmentDraft = {
   preparedAction: string;
   draftReply: string | null;
   invoice: InvoiceDraft | null;
+  /** Optional: the rule-based path has none, the model fills it. */
+  shipment?: ShipmentDraft | null;
 };
 
 const CLASSIFICATIONS: AgentClassification[] = ["reply_needed", "action_needed", "waiting", "info", "unclassified"];
@@ -71,8 +87,25 @@ const ASSESSMENT_SCHEMA = {
       },
       required: ["supplier", "invoiceNumber", "amount", "currency", "iban", "dueDate", "paymentStatus", "paymentAdvice", "unreadAttachment"],
     },
+    shipment: {
+      type: ["object", "null"],
+      description:
+        "Fill this when the mail is about shipping or a purchase. Null otherwise.",
+      additionalProperties: false,
+      properties: {
+        shop: { type: "string", description: "The webshop the parcel belongs to, even when a carrier sent the mail." },
+        carrier: { type: "string", description: "The transporter, e.g. PostNL, DHL. Empty when the shop ships itself." },
+        orderNumber: { type: "string", description: "Order number exactly as printed. Empty when absent." },
+        tracking: { type: "string", description: "Tracking or barcode, exactly as printed. Empty when absent." },
+        status: {
+          type: "string",
+          description: "One of: Order bevestigd, Verzonden, Onderweg, Geleverd, Update.",
+        },
+      },
+      required: ["shop", "carrier", "orderNumber", "tracking", "status"],
+    },
   },
-  required: ["classification", "nextAction", "priorityReason", "deadline", "senderSays", "possibleConsequence", "impact", "preparedAction", "draftReply", "invoice"],
+  required: ["classification", "nextAction", "priorityReason", "deadline", "senderSays", "possibleConsequence", "impact", "preparedAction", "draftReply", "invoice", "shipment"],
 };
 
 const INSTRUCTIONS = [
@@ -166,7 +199,20 @@ export function normalizeDraft(value: unknown): AssessmentDraft {
     preparedAction: str(row.preparedAction),
     draftReply: nullableStr(row.draftReply),
     invoice: normalizeInvoice(row.invoice),
+    shipment: normalizeShipment(row.shipment),
   };
+}
+
+function normalizeShipment(value: unknown): ShipmentDraft | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const row = value as Record<string, unknown>;
+  const shop = str(row.shop).trim();
+  const carrier = str(row.carrier).trim();
+  const orderNumber = str(row.orderNumber).trim();
+  const tracking = str(row.tracking).trim();
+  const status = str(row.status).trim();
+  if (!shop && !carrier && !orderNumber && !tracking && !status) return null;
+  return { isShipment: true, shop, carrier, orderNumber, tracking, status };
 }
 
 function conversationText(messages: InboundMessage[]): string {
@@ -753,4 +799,89 @@ export async function classifyConversation(
 
 export function ruleAssessForTests(messages: InboundMessage[]): AssessmentDraft {
   return ruleAssess(messages);
+}
+
+/**
+ * One plain question to the configured model. Used where the answer is a small
+ * piece of reasoning rather than a full assessment, such as tying a carrier
+ * mail to an earlier order.
+ */
+export async function askModel(opts: {
+  provider: ProviderId;
+  apiKey: string;
+  model?: string;
+  system: string;
+  user: string;
+}): Promise<string> {
+  const model = providerModel(opts.provider, opts.model);
+
+  if (opts.provider === "openai") {
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${opts.apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: agentModel(opts.model), instructions: opts.system, input: opts.user }),
+    });
+    if (!response.ok) throw new Error(`OpenAI responded ${response.status}`);
+    return extractOutputText(await response.json().catch(() => null));
+  }
+
+  if (opts.provider === "anthropic") {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": opts.apiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 400,
+        system: opts.system,
+        messages: [{ role: "user", content: opts.user }],
+      }),
+    });
+    if (!response.ok) throw new Error(`Anthropic responded ${response.status}`);
+    const data = (await response.json().catch(() => null)) as { content?: { type?: string; text?: string }[] } | null;
+    return (data?.content ?? [])
+      .filter((part) => part.type === "text" && typeof part.text === "string")
+      .map((part) => part.text as string)
+      .join("\n");
+  }
+
+  if (opts.provider === "gemini") {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "x-goog-api-key": opts.apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: opts.system }] },
+        contents: [{ role: "user", parts: [{ text: opts.user }] }],
+        generationConfig: { responseMimeType: "application/json" },
+      }),
+    });
+    if (!response.ok) throw new Error(`Gemini responded ${response.status}`);
+    const data = (await response.json().catch(() => null)) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    } | null;
+    return (data?.candidates?.[0]?.content?.parts ?? [])
+      .filter((part) => typeof part.text === "string")
+      .map((part) => part.text as string)
+      .join("\n");
+  }
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${opts.apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: opts.system },
+        { role: "user", content: opts.user },
+      ],
+      response_format: { type: "json_object" },
+    }),
+  });
+  if (!response.ok) throw new Error(`OpenRouter responded ${response.status}`);
+  const data = (await response.json().catch(() => null)) as { choices?: { message?: { content?: string } }[] } | null;
+  return data?.choices?.[0]?.message?.content ?? "";
 }

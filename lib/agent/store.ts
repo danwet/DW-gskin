@@ -505,6 +505,22 @@ export function setDeclaration(
   });
 }
 
+/** Stores which order each shipment mail belongs to, in one write. */
+export function setOrderKeys(keys: Record<string, string>): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    let changed = false;
+    for (const [conversationId, orderKey] of Object.entries(keys)) {
+      const item = state.assessments[conversationId];
+      if (!item?.shipment) continue;
+      if (item.shipment.orderKey === orderKey) continue;
+      item.shipment.orderKey = orderKey;
+      changed = true;
+    }
+    if (changed) await writeState(state);
+  });
+}
+
 export function markSent(conversationId: string): Promise<MailAssessment | null> {
   return withLock(async () => {
     const state = await readState();

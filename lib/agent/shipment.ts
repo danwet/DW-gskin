@@ -12,11 +12,25 @@ export function isShipmentRelated(message: InboundMessage): boolean {
 
 const CARRIERS = /(?:postnl|dhl|dpd|ups|fedex|gls|bpost|postnord|royal mail|usps|evri|hermes|chronopost|colis)/i;
 
+/**
+ * Order numbers always contain a digit; a word like "outlook" that follows the
+ * label is a mail-client footer, not an order.
+ */
+function plausibleOrder(value: string): boolean {
+  return /\d/.test(value) && !/^(outlook|gmail|hotmail|yahoo|apple|mail|verzonden|bekijk|hier|status|details)$/i.test(value);
+}
+
 function orderNumber(text: string): string {
-  const hash = text.match(/#\s*([A-Za-z0-9-]{3,24})/i);
-  if (hash) return hash[1].trim();
-  const labeled = /\b(?:order(?:nummer)?|bestel(?:ling|nummer)?)\b\s*[:#]?\s*([A-Za-z0-9][A-Za-z0-9-]{3,24})/i.exec(text);
-  if (labeled) return labeled[1].trim();
+  for (const match of text.matchAll(/#\s*([A-Za-z0-9-]{3,24})/g)) {
+    const value = match[1].trim();
+    if (plausibleOrder(value)) return value;
+  }
+  const labeled =
+    /\b(?:order(?:nummer)?|bestel(?:ling|nummer)?)\b[^\n]{0,20}?\b([A-Za-z0-9][A-Za-z0-9-]{3,24})\b/gi;
+  for (const match of text.matchAll(labeled)) {
+    const value = match[1].trim();
+    if (plausibleOrder(value)) return value;
+  }
   return "";
 }
 
@@ -48,6 +62,33 @@ function deliveredAt(text: string): string {
   return "";
 }
 
+/**
+ * A carrier mail usually names the shop it delivers for ("in opdracht van
+ * Coolblue"), which is what lets us tie it to that shop's order.
+ */
+function shopOf(text: string): string {
+  const patterns = [
+    /in\s+opdracht\s+van\s+([A-Z0-9][\w&. '\-]{1,40})/i,
+    /namens\s+([A-Z0-9][\w&. '\-]{1,40})/i,
+    /(?:opdrachtgever|afzender)\s*[:\-]\s*([A-Z0-9][\w&. '\-]{1,40})/i,
+  ];
+  for (const pattern of patterns) {
+    const match = pattern.exec(text);
+    if (!match) continue;
+    // Cut at a line break or a word that starts a new sentence.
+    const value = match[1].split(/\n|\r|\||,|;|\.\s/)[0].trim();
+    if (value.length >= 2) return value;
+  }
+  return "";
+}
+
+function trackingOf(text: string): string {
+  const labeled = /\b(?:track(?:ing)?(?:nummer|code)?|barcode|zending(?:nummer)?)\b[^\n]{0,20}?\b([A-Z0-9]{8,24})\b/i.exec(text);
+  if (labeled && /\d/.test(labeled[1])) return labeled[1].trim();
+  const known = /\b(3S[A-Z0-9]{10,}|JJD[0-9]{10,}|1Z[A-Z0-9]{10,}|[A-Z]{2}\d{9}[A-Z]{2})\b/.exec(text);
+  return known ? known[1] : "";
+}
+
 function internationalOf(text: string): boolean {
   return /airport|luchthaven|customs|douane|international|import|export|destination country|land van bestemming|departed from/i.test(text);
 }
@@ -76,6 +117,10 @@ export function detectShipment(message: InboundMessage): ShipmentInfo | null {
   };
   const c = carrier(text);
   if (c) shipment.carrier = c;
+  const shop = shopOf(text);
+  if (shop) shipment.shop = shop;
+  const tracking = trackingOf(text);
+  if (tracking) shipment.tracking = tracking;
   const d = deliveredAt(text);
   if (d) shipment.deliveredAt = d;
   if (international) {

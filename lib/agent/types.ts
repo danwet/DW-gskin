@@ -24,6 +24,12 @@ export type ShipmentInfo = {
   orderNumber: string;
   status: string;
   carrier?: string;
+  /** The shop the parcel belongs to, when a carrier mail names it. */
+  shop?: string;
+  /** Tracking code, used to tie a carrier mail to an earlier order. */
+  tracking?: string;
+  /** Identity of the order this mail belongs to, so one trail spans all mails. */
+  orderKey?: string;
   deliveredAt?: string; // YYYY-MM-DD
   /** Current checkpoint for international shipments (airport, customs, ...). */
   location?: string;

@@ -9,6 +9,7 @@ import { useInbox, type InboxProgress } from "./AgentInbox";
 import { useApp } from "./AppProvider";
 import { InboxGrid } from "./InboxGrid";
 import { LegacyLoopsCard } from "./LegacyLoopsCard";
+import { ShipmentDialog, type TrailStep } from "./ShipmentDialog";
 import { TodayHeader } from "./TodayHeader";
 
 const GMAIL_NOTICES: Record<string, { tone: "ok" | "warn"; text: string }> = {
@@ -234,14 +235,29 @@ function item_archivedToday(supplier: string, items: MailAssessment[], startOfTo
 }
 
 function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
-  const byKey = new Map<string, { shipment: ShipmentInfo; receivedAt: string }>();
+  const byKey = new Map<string, { shipment: ShipmentInfo; receivedAt: string; key: string }>();
+  // Every order update carries one status; together they form the trail.
+  const trails = new Map<string, TrailStep[]>();
   for (const item of items) {
     if (!item.shipment) continue;
-    const key = `${item.shipment.supplier.toLowerCase()}::${item.shipment.orderNumber.toLowerCase()}`;
+    // One trail per order: the agent's order key already spans carrier mails.
+    const key =
+      item.shipment.orderKey ||
+      `${item.shipment.supplier.toLowerCase()}::${item.shipment.orderNumber.toLowerCase()}`;
     const existing = byKey.get(key);
     if (!existing || Date.parse(item.receivedAt) > Date.parse(existing.receivedAt)) {
-      byKey.set(key, { shipment: item.shipment, receivedAt: item.receivedAt });
+      byKey.set(key, { shipment: item.shipment, receivedAt: item.receivedAt, key });
     }
+    const steps = trails.get(key) ?? [];
+    steps.push({
+      at: item.receivedAt,
+      status: item.shipment.status,
+      detail: item.shipment.location ?? item.shipment.carrier ?? undefined,
+    });
+    trails.set(key, steps);
+  }
+  for (const steps of trails.values()) {
+    steps.sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
   }
   // A delivered order is relevant until 05:00 the next morning; then the
   // dashboard day rolls over and it drops out of the panel.
@@ -280,6 +296,8 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
     })
     .sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
 
+  const [openTrail, setOpenTrail] = useState<{ shipment: ShipmentInfo; trail: TrailStep[] } | null>(null);
+
   const statusColor = (status: string) =>
     status === "Geleverd"
       ? "var(--green)"
@@ -308,7 +326,12 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
         {shipments.map((entry, index) => {
           const s = entry.shipment;
           return (
-            <li key={`${s.supplier}-${s.orderNumber}-${index}`} className="flex items-start gap-3">
+            <li key={`${s.supplier}-${s.orderNumber}-${index}`}>
+              <button
+                type="button"
+                onClick={() => setOpenTrail({ shipment: s, trail: trails.get(entry.key) ?? [] })}
+                className="focus-ring flex w-full items-start gap-3 rounded-xl text-left"
+              >
               <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: statusColor(s.status) }} />
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-semibold text-[var(--ink)]">
@@ -322,6 +345,7 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
                 </div>
                 {s.orderNumber ? <p className="truncate text-[12px] text-[var(--muted)]">Order {s.orderNumber}</p> : null}
               </div>
+              </button>
             </li>
           );
         })}
@@ -344,6 +368,13 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
         ))}
       </ul>
       )}
+      {openTrail ? (
+        <ShipmentDialog
+          shipment={openTrail.shipment}
+          trail={openTrail.trail}
+          onClose={() => setOpenTrail(null)}
+        />
+      ) : null}
     </section>
   );
 }

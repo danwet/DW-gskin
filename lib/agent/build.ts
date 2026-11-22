@@ -1,5 +1,5 @@
-import type { AssessmentDraft } from "./classify";
-import type { InboundMessage, MailAssessment } from "./types";
+import type { AssessmentDraft, ShipmentDraft } from "./classify";
+import type { InboundMessage, MailAssessment, ShipmentInfo } from "./types";
 import { detectUnsubscribe } from "./unsubscribe";
 import { extractLogoUrl } from "../gmail/logo";
 import { detectShipment } from "./shipment";
@@ -216,6 +216,30 @@ export function groupByConversation(messages: InboundMessage[]): Map<string, Inb
   return grouped;
 }
 
+/**
+ * The model understands the wording, the rules guarantee a status. Merge them so
+ * a mail always has a usable shipment, with the model's reading in front.
+ */
+function mergeShipment(
+  draft: ShipmentDraft | null | undefined,
+  detected: ShipmentInfo | null,
+): ShipmentInfo | undefined {
+  if (!draft && !detected) return undefined;
+  const status = draft?.status || detected?.status || "Update";
+  return {
+    supplier: detected?.supplier ?? "",
+    shop: draft?.shop || detected?.shop || undefined,
+    carrier: draft?.carrier || detected?.carrier || undefined,
+    orderNumber: draft?.orderNumber || detected?.orderNumber || "",
+    tracking: draft?.tracking || detected?.tracking || undefined,
+    status,
+    international: detected?.international,
+    deliveredAt: detected?.deliveredAt,
+    location: detected?.location,
+    orderKey: detected?.orderKey,
+  };
+}
+
 export function buildAssessment(
   conversation: InboundMessage[],
   draft: AssessmentDraft,
@@ -305,7 +329,9 @@ export function buildAssessment(
       : undefined,
     body: latest.body || undefined,
     hasHtml: Boolean(latest.bodyHtml),
-    shipment: detectShipment(latest) ?? undefined,
+    // The model read the mail and named shop, carrier and numbers; fall back to
+    // the rules when it did not.
+    shipment: mergeShipment(draft.shipment, detectShipment(latest)),
     payment: detectPayment(latest) ?? undefined,
     thread: conversation.map((message) => ({
       from: message.from,

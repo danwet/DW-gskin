@@ -6,7 +6,8 @@ import { loadAgentConfig, type AgentConfig, type ProviderId } from "./config";
 import { fetchInboxMessages, gmailConfigured, resolveMailSource, storedGmailConnection } from "./mail-source";
 import { hasGmailConnection, readActiveGmailConnection } from "../gmail/connection";
 import { isShipmentRelated } from "./shipment";
-import { appendRun, readAssessments, readMeta, updateMeta, upsertAssessments } from "./store";
+import { appendRun, readAssessments, readMeta, setOrderKeys, updateMeta, upsertAssessments } from "./store";
+import { linkOrders } from "./order-link";
 import type { InboundMessage, MailAssessment } from "./types";
 import { syncStep } from "../gmail/sync";
 
@@ -113,6 +114,16 @@ export async function runMailAgent(now = new Date(), options?: { force?: boolean
     }
 
     const step = await syncStep(connection.userId, connection.refreshToken, connection.email);
+
+  // Tie carrier mails to the order they belong to, so one trail spans them all.
+  // The rules settle the certain cases; the model reads the unclear ones.
+  try {
+    const items = await readAssessments();
+    const keys = await linkOrders(items);
+    await setOrderKeys(keys);
+  } catch {
+    // Linking is a convenience; a failure must not fail the run.
+  }
     await updateMeta({
       lastRunAt: now.toISOString(),
       lastSuccessfulRunAt: step.ok ? now.toISOString() : undefined,
