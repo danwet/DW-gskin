@@ -46,6 +46,12 @@ function displayToIso(text: string): string | null {
   return `${digits.slice(4)}-${digits.slice(2, 4)}-${digits.slice(0, 2)}`;
 }
 
+/** Schuift een ISO-datum een aantal dagen op of terug. */
+function shiftIso(iso: string, days: number): string {
+  const [year, month, day] = iso.split("-").map(Number);
+  return new Date(year, month - 1, day + days, 12).toLocaleDateString("sv-SE");
+}
+
 /** "14", "14:00", "1400" en "14.00" worden allemaal 14:00; anders null. */
 function normalizeTime(text: string): string | null {
   const match = /^(\d{1,2})[:.\s]?(\d{2})$/.exec(text.trim());
@@ -257,11 +263,23 @@ export function AppointmentDialog({
           </div>
           <div>
             <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-date">Datum</label>
+            <span aria-hidden className="relative block">
+              <Chevron className="absolute -top-[7px] left-1/2 -translate-x-1/2 text-ink-faint" />
+            </span>
             <input
               id="appointment-date"
               type="text"
               inputMode="numeric"
               placeholder="dd / mm / jjjj"
+              onKeyDown={(event) => {
+                if (readOnly) return;
+                if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+                event.preventDefault();
+                const iso = displayToIso(dateText) ?? date;
+                const next = shiftIso(iso, event.key === "ArrowUp" ? -1 : 1);
+                setDate(next);
+                setDateText(isoToDisplay(next));
+              }}
               value={dateText}
               onChange={(entry) => {
                 setDateText(entry.target.value);
@@ -278,6 +296,9 @@ export function AppointmentDialog({
               disabled={readOnly}
               className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink"
             />
+            <span aria-hidden className="relative block">
+              <Chevron className="absolute -bottom-[7px] left-1/2 -translate-x-1/2 rotate-180 text-ink-faint" />
+            </span>
           </div>
         </div>
 
@@ -290,11 +311,25 @@ export function AppointmentDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-start">Begintijd</label>
+              <span aria-hidden className="relative block">
+                <Chevron className="absolute -top-[7px] left-1/2 -translate-x-1/2 text-ink-faint" />
+              </span>
               <input
                 id="appointment-start"
                 type="text"
                 inputMode="numeric"
                 placeholder="14:00"
+                onKeyDown={(event) => {
+                  if (readOnly) return;
+                  if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+                  event.preventDefault();
+                  const current = normalizeTime(startTime);
+                  if (!current) return;
+                  const next = addMinutes(current, event.key === "ArrowUp" ? -15 : 15);
+                  setStartTime(next);
+                  const end = normalizeTime(endTime);
+                  if (!end || end <= next) setEndTime(addMinutes(next, 30));
+                }}
                 value={startTime}
                 onChange={(entry) => setStartTime(entry.target.value)}
                 onBlur={() => {
@@ -308,14 +343,28 @@ export function AppointmentDialog({
                 disabled={readOnly}
                 className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink"
               />
+              <span aria-hidden className="relative block">
+                <Chevron className="absolute -bottom-[7px] left-1/2 -translate-x-1/2 rotate-180 text-ink-faint" />
+              </span>
             </div>
             <div>
               <label className="text-[11px] font-medium tracking-[0.12em] text-ink-faint uppercase" htmlFor="appointment-end">Eindtijd</label>
+              <span aria-hidden className="relative block">
+                <Chevron className="absolute -top-[7px] left-1/2 -translate-x-1/2 text-ink-faint" />
+              </span>
               <input
                 id="appointment-end"
                 type="text"
                 inputMode="numeric"
                 placeholder="14:30"
+                onKeyDown={(event) => {
+                  if (readOnly) return;
+                  if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+                  event.preventDefault();
+                  const current = normalizeTime(endTime);
+                  if (!current) return;
+                  setEndTime(addMinutes(current, event.key === "ArrowUp" ? -15 : 15));
+                }}
                 value={endTime}
                 onChange={(entry) => setEndTime(entry.target.value)}
                 onBlur={() => {
@@ -325,6 +374,9 @@ export function AppointmentDialog({
                 disabled={readOnly}
                 className="veld-underline mt-1 h-9 px-0 py-0 text-[15px] text-ink"
               />
+              <span aria-hidden className="relative block">
+                <Chevron className="absolute -bottom-[7px] left-1/2 -translate-x-1/2 rotate-180 text-ink-faint" />
+              </span>
             </div>
           </div>
         ) : null}
@@ -357,5 +409,21 @@ export function AppointmentDialog({
         ) : null}
       </div>
     </Modal>
+  );
+}
+
+/** Piepklein pijltje boven en onder het datumveld. */
+function Chevron({ className }: { className?: string }) {
+  return (
+    <svg
+      width="9"
+      height="4"
+      viewBox="0 0 9 4"
+      fill="none"
+      aria-hidden
+      className={`pointer-events-none ${className ?? ""}`}
+    >
+      <path d="M0.5 3.5L4.5 0.5L8.5 3.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
