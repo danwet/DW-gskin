@@ -452,7 +452,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, [ready]);
 
-  // Appointments made elsewhere (phone, web) should show up without a refresh.
+  // Appointments moved, added or deleted elsewhere (phone, web) should show up
+  // without a refresh, so the agenda is polled every minute.
   useEffect(() => {
     if (!ready) return;
     let alive = true;
@@ -480,7 +481,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     };
     void tick();
-    const timer = setInterval(tick, 5 * 60 * 1000);
+    const timer = setInterval(tick, 60 * 1000);
     const onVisible = () => {
       if (document.visibilityState === "visible") void tick();
     };
