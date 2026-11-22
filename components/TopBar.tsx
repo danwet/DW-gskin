@@ -1,6 +1,5 @@
 "use client";
 
-import { formatClock } from "@/lib/greeting";
 import { useApp } from "./AppProvider";
 import { NotificationsBell } from "./NotificationsBell";
 import { WeatherChip } from "./WeatherChip";
@@ -10,13 +9,7 @@ import { WeatherChip } from "./WeatherChip";
  * same spot on every page; the page that owns the inbox publishes the data.
  */
 export function TopBar() {
-  const { topBar, ready, lastRun, refreshing, refresh } = useApp();
-  // Whichever is newer: the page's own data or the polled server time.
-  const shownSync = (() => {
-    const candidates = [topBar?.lastSyncAt, lastRun].filter((value): value is string => Boolean(value));
-    if (candidates.length === 0) return null;
-    return candidates.sort((a, b) => Date.parse(a) - Date.parse(b)).at(-1) ?? null;
-  })();
+  const { topBar, ready, refreshing, refresh } = useApp();
   const undoable = Boolean(topBar?.undoable);
 
   return (
@@ -50,20 +43,15 @@ export function TopBar() {
         </span>
       )}
 
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => void refresh()}
-          disabled={refreshing || !ready}
-          aria-label="Bijwerken"
-          className="glass-chip focus-ring grid h-8 w-8 place-items-center rounded-full text-[var(--ink)] disabled:opacity-60"
-        >
-          <RefreshIcon spinning={refreshing} />
-        </button>
-        <span className="text-[11px] leading-none text-[var(--muted)]">
-          {refreshing ? "…" : shownSync ? formatClock(new Date(shownSync)) : "—"}
-        </span>
-      </div>
+      <button
+        type="button"
+        onClick={() => void refresh()}
+        disabled={refreshing || !ready}
+        aria-label="Bijwerken"
+        className="glass-chip focus-ring grid h-8 w-8 place-items-center rounded-full text-[var(--ink)] disabled:opacity-60"
+      >
+        <RefreshIcon spinning={refreshing} />
+      </button>
 
       <WeatherChip />
     </div>
