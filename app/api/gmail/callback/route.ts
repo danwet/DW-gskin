@@ -9,6 +9,7 @@ import {
   exchangeGmailCode,
   fetchGmailProfileEmail,
 } from "@/lib/gmail/oauth";
+import { updateMeta } from "@/lib/agent/store";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,10 @@ export async function GET(request: Request) {
       refreshToken: tokens.refreshToken,
       scopes: tokens.scopes,
     });
+
+    // A fresh connection clears the old failure, so the dashboard stops showing
+    // "koppel opnieuw" while everything is fine.
+    await updateMeta({ lastError: null }).catch(() => null);
 
     // Queue the first full inbox import; the dashboard runner picks it up.
     await startImport(user.id);

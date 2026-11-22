@@ -102,20 +102,53 @@ export async function getActiveGmailRefreshToken(): Promise<{
   email: string;
   refreshToken: string;
 } | null> {
+  const result = await readActiveGmailConnection();
+  return result.ok ? { userId: result.userId, email: result.email, refreshToken: result.refreshToken } : null;
+}
+
+/**
+ * Why a run has no usable connection. Guessing "koppel opnieuw" while the mail
+ * was merely unreadable sends people through a pointless reconnect.
+ */
+export type ActiveConnectionResult =
+  | { ok: true; userId: string; email: string; refreshToken: string }
+  | { ok: false; reason: "no-row" | "read-error" | "decrypt-error"; detail?: string };
+
+export async function readActiveGmailConnection(): Promise<ActiveConnectionResult> {
   const supabase = await dbClient();
-  const { data, error } = await supabase
+
+  let attempt = await supabase
     .from("dw_gmail_connections")
     .select("*")
     .eq("status", "connected")
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (error || !data) return null;
-  const row = data as Row;
+
+  // A single retry absorbs a hiccup on the database side.
+  if (attempt.error) {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    attempt = await supabase
+      .from("dw_gmail_connections")
+      .select("*")
+      .eq("status", "connected")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+  }
+
+  if (attempt.error) return { ok: false, reason: "read-error", detail: attempt.error.message };
+  if (!attempt.data) return { ok: false, reason: "no-row" };
+
+  const row = attempt.data as Row;
   try {
-    return { userId: row.user_id, email: row.email, refreshToken: decryptSecret(row.refresh_token_encrypted) };
-  } catch {
-    return null;
+    return { ok: true, userId: row.user_id, email: row.email, refreshToken: decryptSecret(row.refresh_token_encrypted) };
+  } catch (error) {
+    return {
+      ok: false,
+      reason: "decrypt-error",
+      detail: error instanceof Error ? error.message : undefined,
+    };
   }
 }
 

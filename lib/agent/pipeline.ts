@@ -4,7 +4,7 @@ import { buildAssessment, groupByConversation } from "./build";
 import { classifyConversation } from "./classify";
 import { loadAgentConfig, type AgentConfig, type ProviderId } from "./config";
 import { fetchInboxMessages, gmailConfigured, resolveMailSource, storedGmailConnection } from "./mail-source";
-import { hasGmailConnection } from "../gmail/connection";
+import { hasGmailConnection, readActiveGmailConnection } from "../gmail/connection";
 import { isShipmentRelated } from "./shipment";
 import { appendRun, readAssessments, readMeta, updateMeta, upsertAssessments } from "./store";
 import type { InboundMessage, MailAssessment } from "./types";
@@ -48,10 +48,24 @@ export async function runMailAgent(now = new Date(), options?: { force?: boolean
     const label = useModel ? modelLabelFor(provider, model) : "rule";
 
     if (!connection) {
-      const linked = await hasGmailConnection().catch(() => false);
-      const reason = linked
-        ? "De Gmail-koppeling kon niet worden gelezen. Koppel opnieuw bij Instellingen → Verbindingen."
-        : "Gmail is niet gekoppeld.";
+      const reason = await connectionProblem();
+
+      async function connectionProblem(): Promise<string> {
+        const state = await readActiveGmailConnection().catch(() => null);
+        if (!state || state.ok) {
+          return "De Gmail-koppeling kon tijdelijk niet worden gelezen. Probeer het zo nog eens.";
+        }
+        if (state.reason === "no-row") {
+          const linked = await hasGmailConnection().catch(() => false);
+          return linked
+            ? "De koppeling staat op 'opnieuw koppelen'. Koppel Gmail opnieuw bij Instellingen → Verbindingen."
+            : "Gmail is niet gekoppeld.";
+        }
+        if (state.reason === "decrypt-error") {
+          return "De opgeslagen Gmail-toegang kon niet worden ontsleuteld. Koppel Gmail opnieuw bij Instellingen → Verbindingen.";
+        }
+        return `De Gmail-koppeling kon niet worden gelezen (${state.detail ?? "onbekende fout"}). Probeer het zo nog eens.`;
+      }
       await updateMeta({
         lastRunAt: now.toISOString(),
         lastError: reason,
