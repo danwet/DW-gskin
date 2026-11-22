@@ -44,7 +44,10 @@ export function NotificationsBell({
     setDesktop(notificationPermission());
     setDesktopWanted(wantedOnThisDevice());
   }, []);
-  const count = items.length + newItems.length;
+  // When the desktop already announces new mail, listing it here again is noise.
+  const desktopActive = desktop === "granted" && desktopWanted;
+  const showNew = newItems.length > 0 && !desktopActive;
+  const count = items.length + (desktopActive ? 0 : newItems.length);
 
   return (
     <div className="relative">
@@ -68,11 +71,11 @@ export function NotificationsBell({
           <button type="button" aria-label="Sluiten" className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute top-10 right-0 z-50 w-[320px] rounded-2xl border border-[var(--line)] bg-[var(--card)] p-2 shadow-[var(--shadow)]">
             <div className="rounded-xl border border-[var(--line)] bg-[var(--bg)] p-1">
-            {items.length === 0 && newItems.length === 0 ? (
+            {items.length === 0 && !showNew ? (
               <p className="px-3 py-4 text-center text-[13px] text-[var(--muted)]">Geen notificaties.</p>
             ) : null}
 
-            {newItems.length > 0 ? (
+            {showNew ? (
               <>
                 <p className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-[0.08em] text-[var(--muted)]">
                   {newItems.length === 1 ? "Nieuw bericht" : "Nieuwe berichten"}
@@ -138,6 +141,9 @@ export function NotificationsBell({
                     const result = await enableNotifications();
                     setDesktop(result);
                     setDesktopWanted(result === "granted");
+                    // The desktop takes over from the list here, so nothing piles
+                    // up unseen in the popup.
+                    if (result === "granted") onMarkAllNewRead?.();
                   }}
                   className="focus-ring w-full rounded-lg px-3 py-1 text-center font-medium whitespace-nowrap text-[var(--muted)] hover:bg-[var(--bg)] hover:text-[var(--ink)]"
                   style={{ fontSize: "10px", lineHeight: "14px" }}
@@ -153,7 +159,7 @@ export function NotificationsBell({
               </div>
             ) : null}
 
-            {newItems.length > 0 ? (
+            {showNew ? (
               <div className="px-1">
                 <button
                   type="button"
