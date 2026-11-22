@@ -48,7 +48,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const scheduleClose = useCallback(() => {
     if (closeTimer.current) window.clearTimeout(closeTimer.current);
     closeTimer.current = window.setTimeout(() => {
-      if (asideRef.current?.contains(document.activeElement)) return;
+      // Een klik op een menu-item laat de knop focus houden; zonder dit bleef de
+      // balk daardoor staan terwijl de muis al weg was.
+      const actief = document.activeElement;
+      if (actief instanceof HTMLElement && asideRef.current?.contains(actief)) actief.blur();
       setFloatingOpen(false);
     }, 250);
   }, []);
@@ -86,8 +89,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Close the theme picker on outside click.
   useEffect(() => () => cancelTimers(), [cancelTimers]);
 
+  // Alleen de mobiele drawer sluit bij navigeren; de zwevende balk blijft staan
+  // tot de muis eruit gaat.
   const closeOverlay = useCallback(() => {
-    setFloatingOpen(false);
     setMobileOpen(false);
   }, []);
 
