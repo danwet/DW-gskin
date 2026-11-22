@@ -623,7 +623,7 @@ export function InvoiceBlock({ item }: { item: MailAssessment }) {
             <Row label="Vervaldatum" value={formatDate(invoice.dueDate)} />
             <Row label="IBAN" value={invoice.iban || "Onbekend"} />
             <Row label="Betaalstatus" value={PAYMENT_LABEL[invoice.paymentStatus] ?? "Onbekend"} />
-            <Row label="Advies" value={invoice.paymentAdvice || "Controleer of deze factuur al betaald is"} />
+            <Row label="Advies" value={invoice.paymentAdvice || "Controleer of factuur al betaald is"} />
           </dl>
           {invoice.unreadAttachment ? (
             <p className="mt-2 text-[12px] text-[var(--orange)]">Bijlage niet gelezen: {invoice.unreadAttachment}</p>

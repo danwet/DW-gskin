@@ -537,7 +537,7 @@ function TrashIcon() {
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
+    <div className="mx-[5%]">
       <dt className="text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">{label}</dt>
       <dd className="mt-0.5 text-[15px] leading-5 font-semibold text-[var(--ink)]">{children}</dd>
     </div>
@@ -613,6 +613,7 @@ export function InboxModal({
   }, [onClose]);
 
   const prepared = preparedLabel(item);
+  const impactText = (item.impact ?? "").trim();
   const doneLabel = hasPayableInvoice(item) ? "Betaald" : "Afhandelen";
   const isNewsletter =
     Boolean(item.unsubscribe) || item.classification === "info" || item.classification === "unclassified";
@@ -783,7 +784,7 @@ export function InboxModal({
           ) : null}
 
         {!isNewsletter ? (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="mx-[5%] mt-4 grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl bg-[var(--bg)] px-4 py-3">
               <p className="text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">Actie</p>
               <p className="mt-1 text-[15px] font-semibold text-[var(--ink)]">{item.nextAction}</p>
@@ -797,17 +798,17 @@ export function InboxModal({
 
         {canPreview ? (
           <section className="mt-5">
-            <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">Nieuwsbrief</p>
+            <p className="ml-[5%] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">Nieuwsbrief</p>
             {previewHtml ? (
               // Rendered as sent, so the layout and images survive.
               <iframe
                 title={`Nieuwsbrief: ${item.subject}`}
                 srcDoc={previewHtml}
                 sandbox=""
-                className="mt-2 h-[440px] w-full rounded-2xl border border-[var(--line)] bg-white"
+                className="mt-2 mx-auto h-[440px] w-[90%] rounded-2xl border border-[var(--line)] bg-white"
               />
             ) : (
-              <div className="mt-2 grid h-[440px] w-full place-items-center rounded-2xl border border-[var(--line)] bg-[var(--bg)]">
+              <div className="mt-2 mx-auto grid h-[440px] w-[90%] place-items-center rounded-2xl border border-[var(--line)] bg-[var(--bg)]">
                 {previewFailed ? (
                   <p className="px-6 text-center text-[13px] text-[var(--muted)]">De opmaak kon niet worden geladen.</p>
                 ) : (
@@ -823,6 +824,18 @@ export function InboxModal({
                 )}
               </div>
             )}
+            {item.link ? (
+              <div className="mt-3 text-center">
+                <a
+                  href={item.link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-block text-[13px] font-medium text-[var(--blue)]"
+                >
+                  Open in Gmail →
+                </a>
+              </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -859,12 +872,16 @@ export function InboxModal({
 
         {!isNewsletter ? (
           <dl className="mt-4 space-y-3">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <dt className="text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">Wat als je niks doet</dt>
-                <dd className="mt-0.5 text-[15px] leading-5 font-semibold text-[var(--ink)]">{item.impact ?? "—"}</dd>
-              </div>
-              <div className="min-w-0 text-right">
+            <div className="mx-[5%] flex items-start justify-between gap-4">
+              {/* Zonder impact is de hele regel "Wat als je niks doet" overbodig. */}
+              {impactText ? (
+                <div className="min-w-0">
+                  <dt className="text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">Wat als je niks doet</dt>
+                  <dd className="mt-0.5 text-[15px] leading-5 font-semibold text-[var(--ink)]">{impactText}</dd>
+                </div>
+              ) : null}
+              {/* Zonder de impact-regel staat "Voorbereid" gecentreerd. */}
+              <div className={`min-w-0 ${impactText ? "text-right" : "mt-[10px] flex-1 text-center"}`}>
                 <dt className="text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">Voorbereid</dt>
                 <dd className="mt-0.5 text-[13px] leading-5 text-[var(--ink)]">{prepared}</dd>
               </div>
@@ -881,7 +898,7 @@ export function InboxModal({
         ) : null}
 
         {hasPayableInvoice(item) ? (
-          <div className="mt-4">
+          <div className="mx-[5%] mt-4">
             <InvoiceBlock item={item} />
           </div>
         ) : null}
@@ -1006,15 +1023,18 @@ export function InboxModal({
           </div>
         ) : null}
 
-        {item.link ? (
-          <a
-            href={item.link}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-4 inline-block text-[13px] font-medium text-[var(--blue)]"
-          >
-            Open in Gmail →
-          </a>
+        {/* Zonder preview staat de link hier; met preview staat hij eronder. */}
+        {item.link && !canPreview ? (
+          <div className="mt-4 text-center">
+            <a
+              href={item.link}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block text-[13px] font-medium text-[var(--blue)]"
+            >
+              Open in Gmail →
+            </a>
+          </div>
         ) : null}
 
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">

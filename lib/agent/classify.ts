@@ -124,7 +124,7 @@ const INSTRUCTIONS = [
   "A receipt or confirmation of a payment you already sent (for example a PayPal receipt) is info, never action_needed, and it is never something to pay again.",
   "An invoice, factuur, nota or rekening from a supplier is always action_needed — also when the amount is not stated, when it comes from a noreply address, and when it can only be paid in the supplier's own portal instead of from the mail. It is never info and never a newsletter.",
   "Only fill the invoice object for an actual supplier invoice, payment reminder or payment confirmation. Security alerts, sign-in or verification codes, newsletters, order and shipping confirmations and other notifications must return invoice null — never invent amounts, IBANs or invoice numbers.",
-  "If the conversation concerns an invoice, fill the invoice object. A received invoice does NOT prove it is unpaid: use paymentStatus unknown and paymentAdvice 'Controleer of deze factuur al betaald is'. Use open_per_sender only for an explicit reminder/overdue notice, and paid_confirmed only for an explicit payment confirmation for the same invoice. Mark handled items as the user resolves them, not by inference.",
+  "If the conversation concerns an invoice, fill the invoice object. A received invoice does NOT prove it is unpaid: use paymentStatus unknown and paymentAdvice 'Controleer of factuur al betaald is'. Use open_per_sender only for an explicit reminder/overdue notice, and paid_confirmed only for an explicit payment confirmation for the same invoice. Mark handled items as the user resolves them, not by inference.",
   "Extract supplier, invoice number, amount, currency, IBAN, and due date from the body when present; use empty string or null for unknown values. If a relevant attachment (for example a PDF) is present but its contents are not in the text, set unreadAttachment.",
   "impact: summarize the consequence in a short phrase (max ~8 words), e.g. 'Dan wacht er iemand op antwoord', 'Incassokosten', 'Kickoff vertraagt'. For an unpaid invoice always name the escalating consequence ('Aanmaning volgt' or 'Incassokosten'). Never use a payment status such as 'Onbetaald' here. Null only when there is really no consequence.",
   "preparedAction: a short label of what you prepared, e.g. 'Concept gemaakt', 'QR-code aangemaakt', 'Gefilterd', 'Actie voorbereid'.",
@@ -272,7 +272,7 @@ function invoiceDraft(messages: InboundMessage[], text: string): InvoiceDraft {
   const paid = /betaald bevestigd|payment received|paid confirmation|bevestiging van betaling|we confirm payment/i.test(text);
 
   let paymentStatus: PaymentStatus = "unknown";
-  let paymentAdvice = "Controleer of deze factuur al betaald is.";
+  let paymentAdvice = "Controleer of factuur al betaald is.";
   if (paid) {
     paymentStatus = "paid_confirmed";
     paymentAdvice = "Betaling bevestigd door afzender.";
