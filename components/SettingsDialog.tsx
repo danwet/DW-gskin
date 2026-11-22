@@ -199,10 +199,10 @@ export function SettingsDialog() {
                   setNotice(null);
                 }}
                 aria-current={category === item.id ? "page" : undefined}
-                className={`focus-ring shrink-0 rounded-xl px-3 py-2.5 text-left text-[14px] whitespace-nowrap ${
+                className={`focus-ring shrink-0 px-3 py-2.5 text-left text-[14px] whitespace-nowrap ${
                   category === item.id
-                    ? "glass-active font-semibold"
-                    : "text-[var(--ink)]/85 hover:bg-[var(--bg)]"
+                    ? "glas-selectie rounded-full font-semibold"
+                    : "rounded-full text-[var(--ink)]/85 hover:bg-[var(--bg)]"
                 }`}
               >
                 {item.label}

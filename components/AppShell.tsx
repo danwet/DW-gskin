@@ -256,8 +256,10 @@ function SidebarContent({
               href={link.href}
               onClick={onNavigate}
               aria-current={active ? "page" : undefined}
-              className={`focus-ring relative flex items-center gap-3 rounded-[14px] px-3 py-2.5 text-[14px] whitespace-nowrap transition-colors ${
-                active ? "glass-active font-semibold" : "text-[var(--ink)]/85 hover:bg-[var(--glass-bg-soft)]"
+              className={`focus-ring relative flex items-center gap-3 px-3 py-2.5 text-[14px] whitespace-nowrap transition-colors ${
+                active
+                  ? "glas-selectie rounded-full font-semibold"
+                  : "rounded-[14px] text-[var(--ink)]/85 hover:bg-[var(--glass-bg-soft)]"
               }`}
             >
               <NavIcon name={link.icon} active={active} />
@@ -308,7 +310,8 @@ function SidebarContent({
 }
 
 function NavIcon({ name, active }: { name: "home" | "today" | "inbox" | "agent" | "scan" | "missed" | "save"; active: boolean }) {
-  const color = active ? "var(--active-ink)" : "var(--muted)";
+  // Het actieve item is glas, geen blauw: het icoon volgt de zwarte tekst.
+  const color = active ? "#141915" : "var(--muted)";
   const common = {
     width: 19,
     height: 19,

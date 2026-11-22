@@ -224,13 +224,13 @@ export function AppointmentDialog({
         <div className="flex w-full flex-col items-center gap-2">
           {readOnly ? <p className="t-meta text-center text-ink-muted">Deze agenda is alleen-lezen.</p> : null}
           {error ? <p className="t-meta text-center text-[var(--danger)]">{error}</p> : null}
-          <div className="flex w-full items-center justify-center gap-2">
+          <div className="mx-auto flex w-full max-w-[340px] items-stretch justify-center gap-2">
             {editing && !readOnly ? (
               <button
                 type="button"
                 onClick={() => (event?.recurring ? setAskScope(true) : void remove("one"))}
                 disabled={busy}
-                className="btn-secondary focus-ring rounded-full px-4 py-2 text-[13px] font-medium text-[var(--danger)] disabled:opacity-60"
+                className="btn-secondary focus-ring shrink-0 rounded-full px-4 py-3 text-[13px] leading-none font-medium whitespace-nowrap text-[var(--danger)] disabled:opacity-60"
               >
                 Verwijderen
               </button>
@@ -240,7 +240,7 @@ export function AppointmentDialog({
                 type="button"
                 onClick={() => void save()}
                 disabled={busy}
-                className="btn-primary focus-ring h-12 w-full rounded-full px-5 text-[15px] font-medium disabled:opacity-60"
+                className="btn-primary focus-ring min-w-0 flex-1 rounded-full px-5 py-3 text-[14px] leading-none font-medium disabled:opacity-60"
               >
                 {busy ? "Bezig…" : "Opslaan"}
               </button>

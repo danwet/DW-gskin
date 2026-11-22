@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import { GLAS_BOOT } from "@/lib/glas-boot";
+import { GlasFilters } from "@/components/kit/glas-filters";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -36,8 +38,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={geist.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBoot }} />
+        <script dangerouslySetInnerHTML={{ __html: GLAS_BOOT }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <GlasFilters />
+        {children}
+      </body>
     </html>
   );
 }

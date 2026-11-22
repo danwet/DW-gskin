@@ -6,6 +6,7 @@ import { orderNewestFirst, urgencyFor, type UrgencyTone } from "@/lib/agent/urge
 import type { MailAssessment } from "@/lib/agent/types";
 import { InvoiceBlock, timeZoneOf, UrgencyPill } from "./AgentInbox";
 import { Modal } from "@/components/kit/modal";
+import { SelectorPill } from "@/components/kit/selector-pill";
 
 /**
  * Rood betekent "nu, in Moet". Dezelfde boodschap in Mag of Hoeft niet is
@@ -123,6 +124,14 @@ export function InboxGrid({
     { id: "info", label: "Hoeft niet", count: infoTab.length },
     { id: "declare", label: "Declareren", count: declareLabel },
   ];
+
+  // De selector toont het aantal achter het label, net als de oude pillen.
+  const selectorOpties = tabs.map((tab) => ({
+    waarde: tab.id,
+    label: tab.label,
+    badge: String(tab.count),
+    titel: tab.label,
+  }));
   const activeCards =
     activeTab === "urgent" ? urgent : activeTab === "later" ? later : activeTab === "info" ? infoTab : orderedDeclare;
 
@@ -171,21 +180,14 @@ export function InboxGrid({
 
   return (
     <section>
-      <div className="mb-12 flex flex-wrap gap-[11px]">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            aria-pressed={activeTab === tab.id}
-            className={`focus-ring rounded-full px-4 py-2 text-[13px] font-medium ${
-              activeTab === tab.id ? "glass-active" : "glass-chip text-[var(--ink)]"
-            }`}
-          >
-            {tab.label}
-            <span className="ml-2 text-[12px] opacity-70">{tab.count}</span>
-          </button>
-        ))}
+      <div className="mb-12">
+        <SelectorPill
+          opties={selectorOpties}
+          waarde={activeTab}
+          onChange={(next) => setActiveTab(next)}
+          label="Kies een categorie"
+          vullend
+        />
       </div>
 
       {loading ? (
