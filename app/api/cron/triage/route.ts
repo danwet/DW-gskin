@@ -12,7 +12,15 @@ function authorized(request: Request): boolean {
   return new URL(request.url).searchParams.get("key") === secret;
 }
 
+export async function POST(request: Request) {
+  return run(request);
+}
+
 export async function GET(request: Request) {
+  return run(request);
+}
+
+async function run(request: Request) {
   if (!authorized(request)) {
     // Describe the attempt, never the secret: that is what tells a wrong header
     // apart from a scheduler that never calls at all.
@@ -24,6 +32,7 @@ export async function GET(request: Request) {
       headerLength: header.length,
       hadKey: key.length > 0,
       keyLength: key.length,
+      method: request.method,
     }).catch(() => null);
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }

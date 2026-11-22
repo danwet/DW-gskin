@@ -38,6 +38,10 @@ function modelLabelFor(provider: ProviderId, model?: string): string {
 }
 
 export async function runMailAgent(now = new Date(), options?: { force?: boolean }): Promise<RunResult> {
+  // Stamp the run the moment it starts: a long run otherwise reports the time
+  // it finished, which is not when the schedule fired.
+  const startedAt = now.toISOString();
+  await updateMeta({ lastRunAt: startedAt }).catch(() => null);
   const config = await loadAgentConfig();
   const connection = await storedGmailConnection();
   const source = resolveMailSource(config, Boolean(connection) || gmailConfigured(config));

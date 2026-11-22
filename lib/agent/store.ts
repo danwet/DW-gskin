@@ -481,12 +481,13 @@ export async function noteCronRejected(detail?: {
   headerLength: number;
   hadKey: boolean;
   keyLength: number;
+  method?: string;
 }): Promise<void> {
   await withLock(async () => {
     const state = await readState();
     const last = state.meta.cronRejectedAt ? Date.parse(state.meta.cronRejectedAt) : 0;
-    // Throttle: no more than one write every ten minutes.
-    if (Date.now() - last < 10 * 60 * 1000) return;
+    // Throttle: no more than one write every two minutes.
+    if (Date.now() - last < 2 * 60 * 1000) return;
     const at = new Date().toISOString();
     state.meta.cronRejectedAt = at;
     state.meta.cronRejectedCount = (state.meta.cronRejectedCount ?? 0) + 1;
