@@ -7,6 +7,15 @@ import type { MailAssessment } from "@/lib/agent/types";
 import { InvoiceBlock, timeZoneOf, UrgencyPill } from "./AgentInbox";
 import { Modal } from "@/components/kit/modal";
 
+/**
+ * Rood betekent "nu, in Moet". Dezelfde boodschap in Mag of Hoeft niet is
+ * oranje: het is dan geen acute actie.
+ */
+function pillTone(item: MailAssessment, tone: UrgencyTone): UrgencyTone {
+  if (tone !== "red") return tone;
+  return focusTabFor(item) === "urgent" ? "red" : "orange";
+}
+
 /** No deadline is neutral: grey, not the urgency colour. */
 function deadlineClass(urgency: { tone: UrgencyTone; deadlineText: string }): string {
   if (!urgency.deadlineText || urgency.deadlineText === "Geen deadline") return "text-[var(--muted)]";
@@ -410,7 +419,7 @@ export function InboxCard({
       className={`card-surface focus-ring relative z-[var(--card-z)] flex min-h-[270px] cursor-pointer flex-col items-center rounded-2xl px-4 pt-4 pb-6 text-center transition-transform hover:z-40 hover:-translate-y-0.5 hover:rotate-0 sm:min-h-[410px] ${tilt} ${overlap} ${rowOverlap}`}
     >
       <div className="absolute top-3 right-3 z-10">
-        <UrgencyPill tone={urgency.tone} label={urgency.label} />
+        <UrgencyPill tone={pillTone(item, urgency.tone)} label={urgency.label} />
       </div>
       {item.logoUrl && !isNewsletter ? (
         <img
@@ -766,7 +775,7 @@ export function InboxModal({
       vastHoogte
       linksboven={
         <>
-          <UrgencyPill tone={urgency.tone} label={urgency.label} />
+          <UrgencyPill tone={pillTone(item, urgency.tone)} label={urgency.label} />
           {item.needsAttention ? (
             <p className="rounded-full bg-[var(--orange-soft)] px-2.5 py-1 text-[12px] font-medium text-[var(--orange)]">
               Opnieuw aandacht
