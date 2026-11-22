@@ -191,7 +191,7 @@ export function Modal({
                 )}
                 <div className="flex min-h-full flex-col gap-5 px-5 pb-2">{children}</div>
               </div>
-              {voet !== undefined && <div className="shrink-0 px-5 pt-2 pb-5">{voet}</div>}
+              {voet !== undefined && <div className="flex shrink-0 justify-center px-5 pt-2 pb-5">{voet}</div>}
             </>
           ) : (
             <>

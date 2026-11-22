@@ -493,7 +493,7 @@ export function InboxListCard({
         </ul>
       )}
 
-      {footer ? <div className="mt-4 border-t border-[var(--line)] pt-3">{footer}</div> : null}
+      {footer ? <div className="mt-4 pt-3">{footer}</div> : null}
     </Card>
   );
 }
@@ -513,7 +513,7 @@ function InboxItem({
   const handled = item.handledByUser === true;
 
   return (
-    <li className="border-b border-[var(--line)] pb-5 last:border-0 last:pb-0">
+    <li className="pb-5 last:pb-0">
       <div className="flex items-start gap-3">
         <Avatar name={item.from} />
         <div className="min-w-0 flex-1">
@@ -611,32 +611,35 @@ export function InvoiceBlock({ item }: { item: MailAssessment }) {
         : "Geen eurofactuur.";
 
   return (
-    <div className="mt-3 rounded-2xl bg-[var(--bg)] px-4 py-3">
-      <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)]">FACTUUR</p>
-      <dl className="mt-2 grid gap-x-4 gap-y-1 text-[13px] leading-5 sm:grid-cols-2">
-        <Row label="Leverancier" value={invoice.supplier || item.from || "Onbekend"} />
-        <Row label="Factuurnummer" value={invoice.invoiceNumber || "Onbekend"} />
-        <Row label="Bedrag" value={formatMoney(invoice.amount, invoice.currency)} />
-        <Row label="Vervaldatum" value={formatDate(invoice.dueDate)} />
-        <Row label="IBAN" value={invoice.iban || "Onbekend"} />
-        <Row label="Betaalstatus" value={PAYMENT_LABEL[invoice.paymentStatus] ?? "Onbekend"} />
-        <Row label="Advies" value={invoice.paymentAdvice || "Controleer of deze factuur al betaald is"} />
-      </dl>
-      {invoice.unreadAttachment ? (
-        <p className="mt-2 text-[12px] text-[var(--orange)]">Bijlage niet gelezen: {invoice.unreadAttachment}</p>
-      ) : null}
+    <div className="mt-3 flex items-center gap-4 rounded-2xl bg-[var(--bg)] px-4 py-3">
+      {/* Gegevens links, de QR rechts en verticaal gecentreerd over het hele vak. */}
+      <div className="min-w-0 flex-1">
+        <p className="relative -top-[10px] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)]">FACTUURINFORMATIE</p>
+        <div className="mt-2">
+          <dl className="grid gap-x-4 gap-y-1 text-[13px] leading-5 sm:grid-cols-2">
+            <Row label="Leverancier" value={invoice.supplier || item.from || "Onbekend"} />
+            <Row label="Factuurnummer" value={invoice.invoiceNumber || "Onbekend"} />
+            <Row label="Bedrag" value={formatMoney(invoice.amount, invoice.currency)} />
+            <Row label="Vervaldatum" value={formatDate(invoice.dueDate)} />
+            <Row label="IBAN" value={invoice.iban || "Onbekend"} />
+            <Row label="Betaalstatus" value={PAYMENT_LABEL[invoice.paymentStatus] ?? "Onbekend"} />
+            <Row label="Advies" value={invoice.paymentAdvice || "Controleer of deze factuur al betaald is"} />
+          </dl>
+          {invoice.unreadAttachment ? (
+            <p className="mt-2 text-[12px] text-[var(--orange)]">Bijlage niet gelezen: {invoice.unreadAttachment}</p>
+          ) : null}
+          {epc ? null : (
+            <p className="mt-2 text-[12px] text-[var(--muted)]">QR-code niet beschikbaar: {qrNote}</p>
+          )}
+        </div>
+      </div>
 
       {epc ? (
-        <div className="mt-3 flex items-center gap-4 rounded-2xl bg-white p-3">
+        // Alleen om de QR een wit vlak: de scanner heeft contrast nodig.
+        <div className="shrink-0 rounded-2xl bg-white p-3">
           <QRCodeSVG value={epc} size={128} level="M" aria-label="SEPA-betaling QR-code" />
-          <p className="text-[12px] leading-5 text-[var(--muted)]">
-            Scan met je bank-app: naam, IBAN, bedrag en omschrijving staan dan al ingevuld en je hoeft alleen nog te
-            bevestigen.
-          </p>
         </div>
-      ) : (
-        <p className="mt-2 text-[12px] text-[var(--muted)]">QR-code niet beschikbaar: {qrNote}</p>
-      )}
+      ) : null}
     </div>
   );
 }

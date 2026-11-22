@@ -35,9 +35,9 @@ export function DraftDialog() {
       className="max-w-4xl"
       vastHoogte
       voet={
-        <div className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-3">
-          <p className="min-w-48 flex-1 text-[13px] leading-5 whitespace-normal text-ink-muted">{status}</p>
-          <div className="flex shrink-0 items-center gap-2">
+        <div className="flex w-full flex-col items-center gap-2">
+          <p className="text-center text-[13px] leading-5 whitespace-normal text-ink-muted">{status}</p>
+          <div className="flex items-center justify-center gap-2">
             <button type="button" onClick={() => setDraft(null)} className="rounded-full px-3 py-2 text-[14px] text-ink-muted">
               Sluiten
             </button>

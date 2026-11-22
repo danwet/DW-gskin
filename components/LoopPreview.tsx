@@ -27,8 +27,8 @@ export function LoopPreview() {
       title={preview.title}
       beschrijving={preview.detail}
       voet={
-        <div className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-3">
-          <p className="min-w-48 flex-1 text-[13px] leading-5 text-ink-muted">
+        <div className="flex w-full flex-col items-center gap-2">
+          <p className="text-center text-[13px] leading-5 text-ink-muted">
             {done ? "Deze taak is klaar." : "Aanvinken zet hem af in het dashboard."}
           </p>
           <button

@@ -904,7 +904,7 @@ export function InboxModal({
             </summary>
             <div className="mt-2 space-y-3 rounded-2xl bg-[var(--bg)] p-3">
               {item.thread.map((msg, index) => (
-                <div key={index} className="border-b border-[var(--line)] pb-2 last:border-0 last:pb-0">
+                <div key={index} className="pb-2 last:pb-0">
                   <p className="text-[12px] font-semibold text-[var(--ink)]">
                     {msg.from}
                     <span className="font-normal text-[var(--muted)]">
@@ -1017,7 +1017,7 @@ export function InboxModal({
           </a>
         ) : null}
 
-        <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-[var(--line)] pt-4">
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           {item.draftReply ? (
             <>
               <button

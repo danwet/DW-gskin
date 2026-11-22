@@ -149,29 +149,38 @@ export function AppointmentDialog({
       onOpenChange={(open) => !open && onClose()}
       title={editing ? "Afspraak" : "Nieuwe afspraak"}
       voet={
-        <div className="flex w-full flex-col gap-2">
+        <div className="flex w-full flex-col items-center gap-2">
           {readOnly ? <p className="t-meta text-center text-ink-muted">Deze agenda is alleen-lezen.</p> : null}
           {error ? <p className="t-meta text-center text-[var(--danger)]">{error}</p> : null}
-          {!readOnly ? (
+          <div className="flex items-center justify-center gap-2">
+            {editing && !readOnly ? (
+              <button
+                type="button"
+                onClick={() => (event?.recurring ? setAskScope(true) : void remove("one"))}
+                disabled={busy}
+                className="btn-secondary focus-ring rounded-full px-4 py-2 text-[13px] font-medium text-[var(--danger)] disabled:opacity-60"
+              >
+                Verwijderen
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={() => void save()}
-              disabled={busy}
-              className="h-12 w-full rounded-full bg-[var(--accent-fill)] font-medium text-[#f6f4ef] transition active:scale-[0.98] disabled:opacity-50"
+              onClick={onClose}
+              className="btn-secondary focus-ring rounded-full px-4 py-2 text-[13px] font-medium"
             >
-              {busy ? "Bezig…" : "Opslaan"}
+              Annuleren
             </button>
-          ) : null}
-          {editing && !readOnly ? (
-            <button
-              type="button"
-              onClick={() => (event?.recurring ? setAskScope(true) : void remove("one"))}
-              disabled={busy}
-              className="focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium text-[var(--danger)] disabled:opacity-60"
-            >
-              Verwijderen
-            </button>
-          ) : null}
+            {!readOnly ? (
+              <button
+                type="button"
+                onClick={() => void save()}
+                disabled={busy}
+                className="btn-primary focus-ring rounded-full px-4 py-2 text-[13px] font-medium disabled:opacity-60"
+              >
+                {busy ? "Bezig…" : "Opslaan"}
+              </button>
+            ) : null}
+          </div>
         </div>
       }
     >

@@ -49,7 +49,7 @@ export function PaymentModal() {
       className="max-w-4xl"
       vastHoogte
       voet={
-        <div className="flex w-full flex-wrap items-center gap-3">
+        <div className="flex w-full flex-wrap items-center justify-center gap-3">
           <div className="relative">
             {snoozed ? (
               <button type="button" onClick={() => { unsnoozeLoop(payment.id); setPayment(null); }} className="shrink-0 rounded-full border border-hairline px-4 py-2 text-[14px] font-medium whitespace-nowrap text-ink">
@@ -70,7 +70,7 @@ export function PaymentModal() {
               </div>
             ) : null}
           </div>
-          <button type="button" onClick={() => { markInvoicePaid(payment); setPayment(null); }} className="ml-auto shrink-0 rounded-full bg-[var(--accent-fill)] px-4 py-2 text-[14px] font-medium whitespace-nowrap text-[#f6f4ef]">
+          <button type="button" onClick={() => { markInvoicePaid(payment); setPayment(null); }} className="shrink-0 rounded-full bg-[var(--accent-fill)] px-4 py-2 text-[14px] font-medium whitespace-nowrap text-[#f6f4ef]">
             Markeren als betaald
           </button>
         </div>
@@ -125,8 +125,8 @@ export function PaymentModal() {
             <div className="mt-5 grid place-items-center rounded-2xl bg-white p-4">
               <QRCodeSVG value={epcString} size={220} level="M" aria-label="SEPA payment QR code" />
             </div>
-            <p className="mt-3 text-[14px] leading-6 text-[var(--muted)]">
-              Scan this QR code with your Knab (or bank) app to prepare the payment.
+            <p className="mt-3 text-center text-[15px] leading-6 text-[var(--muted)]">
+              Scan de QR-code met je bank app en betaal direct
             </p>
 
                         <p className="mt-5 text-[13px] leading-5 text-ink-muted md:mt-auto">
