@@ -53,9 +53,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }, 250);
   }, []);
 
+  // A quick swipe across the screen should not drag the sidebar open, so the
+  // edge waits a moment and only opens if the pointer is still there.
+  const pointerOnEdge = useRef(false);
   const edgeEnter = useCallback(() => {
     cancelTimers();
-    openTimer.current = window.setTimeout(() => setFloatingOpen(true), 100);
+    pointerOnEdge.current = true;
+    openTimer.current = window.setTimeout(() => {
+      if (pointerOnEdge.current) setFloatingOpen(true);
+    }, 300);
+  }, [cancelTimers]);
+
+  const edgeLeave = useCallback(() => {
+    pointerOnEdge.current = false;
+    cancelTimers();
   }, [cancelTimers]);
 
   // Escape: close an open menu first, then the floating panel, then the mobile drawer.
@@ -119,6 +130,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="fixed top-0 left-0 z-40 hidden h-full w-[50px] md:block"
             aria-hidden="true"
             onMouseEnter={edgeEnter}
+            onMouseLeave={edgeLeave}
           />
           <aside
             id="app-sidebar"
