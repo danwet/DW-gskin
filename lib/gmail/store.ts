@@ -148,7 +148,8 @@ export async function saveMessages(
     subject: sanitizeText(message.subject),
     snippet: sanitizeText(message.snippet),
     body: sanitizeText(message.body ?? "").slice(0, 20_000),
-    body_html: sanitizeText(keepHeadAndTail(message.bodyHtml ?? "", 40_000)),
+    // The popup renders the newsletter as it was sent, so keep the whole document.
+    body_html: sanitizeText(keepHeadAndTail(message.bodyHtml ?? "", 600_000)),
     received_at: message.receivedAt,
     imported_at: new Date().toISOString(),
   }));
@@ -240,6 +241,19 @@ export function keepHeadAndTail(html: string, limit = 40_000): string {
   const head = Math.floor(limit * 0.25);
   const tail = limit - head;
   return `${html.slice(0, head)}\n<!-- ingekort -->\n${html.slice(-tail)}`;
+}
+
+/** The full HTML of one stored message, for the popup preview. */
+export async function storedMessageHtml(userId: string, messageId: string): Promise<string | null> {
+  const supabase = await dbClient();
+  const { data } = await supabase
+    .from("dw_gmail_messages")
+    .select("body_html")
+    .eq("user_id", userId)
+    .eq("message_id", messageId)
+    .maybeSingle();
+  const row = data as { body_html?: string | null } | null;
+  return row?.body_html ?? null;
 }
 
 export type StoredMessageKey = { message_id: string; thread_id: string };

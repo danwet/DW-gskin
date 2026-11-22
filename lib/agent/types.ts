@@ -98,6 +98,8 @@ export type MailAssessment = {
   unsubscribe?: UnsubscribeInfo;
   /** Plain-text body, retained for the newsletter easy-reader view. */
   body?: string;
+  /** The original message has HTML we can render in the popup. */
+  hasHtml?: boolean;
   /** HTML body, retained so the newsletter reader can show images. */
   bodyHtml?: string;
   /** Detected shipment/tracking update, when present. */

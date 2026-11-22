@@ -207,7 +207,7 @@ export function buildAssessment(
     updatedAt: now.toISOString(),
     unsubscribe: detectUnsubscribe(latest) ?? undefined,
     body: latest.body || undefined,
-    bodyHtml: latest.bodyHtml || undefined,
+    hasHtml: Boolean(latest.bodyHtml),
     shipment: detectShipment(latest) ?? undefined,
     payment: detectPayment(latest) ?? undefined,
     thread: conversation.map((message) => ({

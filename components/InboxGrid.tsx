@@ -583,6 +583,33 @@ export function InboxModal({
 
   const newsletterImages = item.bodyHtml ? extractImages(item.bodyHtml) : [];
 
+  // The newsletter HTML is fetched when the popup opens: keep the inbox light,
+  // and fall back to the plain text when there is nothing to render.
+  const canPreview = Boolean(item.hasHtml && item.sourceMessageId && item.source !== "scan");
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewFailed, setPreviewFailed] = useState(false);
+
+  useEffect(() => {
+    if (!canPreview || !item.sourceMessageId) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const response = await fetch(`/api/inbox/preview?id=${encodeURIComponent(item.sourceMessageId ?? "")}`, {
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error("geen inhoud");
+        const html = await response.text();
+        if (alive && html.trim()) setPreviewHtml(html);
+        else if (alive) setPreviewFailed(true);
+      } catch {
+        if (alive) setPreviewFailed(true);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [canPreview, item.sourceMessageId]);
+
   // Snoozing drops the card exactly one tier for a day.
   const tier = cardTier(item, Date.now());
   const nextTier: "later" | "info" | null = tier === "urgent" ? "later" : tier === "later" ? "info" : null;
@@ -717,7 +744,21 @@ export function InboxModal({
           </div>
         ) : null}
 
-        {(item.unsubscribe ||
+        {previewHtml ? (
+          <section className="mt-5">
+            <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">Nieuwsbrief</p>
+            {/* Rendered as sent, so the layout and images survive. */}
+            <iframe
+              title={`Nieuwsbrief: ${item.subject}`}
+              srcDoc={previewHtml}
+              sandbox=""
+              className="mt-2 h-[440px] w-full rounded-2xl border border-[var(--line)] bg-white"
+            />
+          </section>
+        ) : null}
+
+        {(!previewHtml || previewFailed) &&
+        (item.unsubscribe ||
           item.classification === "info" ||
           item.classification === "unclassified" ||
           // A reply needs the original text above the concept, otherwise you
