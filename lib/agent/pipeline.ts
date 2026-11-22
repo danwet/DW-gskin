@@ -54,6 +54,21 @@ export async function runMailAgent(now = new Date(), options?: { force?: boolean
     if (!connection) {
       const reason = await connectionProblem();
 
+      // A local dev server shares this database but not the key, so its failed
+      // runs would otherwise pollute the production history.
+      if (process.env.VERCEL !== "1" && /ontsleuteld|niet worden gelezen/i.test(reason)) {
+        return {
+          ok: false,
+          source,
+          model: label,
+          processed: 0,
+          messagesSeen: 0,
+          conversations: 0,
+          errors: [reason],
+          note: "Lokale omgeving: de Gmail-toegang is hier niet te ontsleutelen. Niets opgeslagen.",
+        };
+      }
+
       async function connectionProblem(): Promise<string> {
         const state = await readActiveGmailConnection().catch(() => null);
         if (!state || state.ok) {
