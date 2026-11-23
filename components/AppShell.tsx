@@ -7,6 +7,7 @@ import { signOutOfDashboard } from "@/app/login/actions";
 import { useApp, type SyncProgressView } from "./AppProvider";
 import { DraftDialog } from "./DraftDialog";
 import { LoopPreview } from "./LoopPreview";
+import { NewMailSheet } from "./NewMailSheet";
 import { PaymentModal } from "./PaymentModal";
 import { SettingsDialog } from "./SettingsDialog";
 import { BrandMark } from "./BrandMark";
@@ -25,6 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const pinned = settings.sidebarMode === "pinned";
   const [floatingOpen, setFloatingOpen] = useState(false);
+  const [nieuweMail, setNieuweMail] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const asideRef = useRef<HTMLElement | null>(null);
@@ -184,6 +186,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
+      {/* Nieuwe mail: grote glazen knop rechtsonder, altijd bereikbaar. */}
+      <button
+        type="button"
+        onClick={() => setNieuweMail(true)}
+        aria-label="Nieuwe mail"
+        // btn-primary zet zelf `position: relative`; !fixed houdt de knop rechtsonder.
+        className="btn-primary focus-ring !fixed right-6 bottom-6 z-40 grid h-14 w-14 place-items-center rounded-full shadow-[var(--shadow)]"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </button>
+      <NewMailSheet open={nieuweMail} onClose={() => setNieuweMail(false)} />
       <SettingsDialog />
       <DraftDialog />
       <LoopPreview />

@@ -33,6 +33,7 @@ export function Modal({
   waarschuwing = false,
   icon,
   linksboven,
+  rechtsboven,
   bottomPadding = 0,
   vastHoogte = false,
   vasteHoogte = false,
@@ -60,6 +61,8 @@ export function Modal({
   icon?: React.ReactNode;
   /** Vrij element linksboven op de sheet, naast de sluitknop. */
   linksboven?: React.ReactNode;
+  /** Vrij element rechtsboven, links van de sluitknop. */
+  rechtsboven?: React.ReactNode;
   /** Extra witte ruimte onderaan de content (in px). */
   bottomPadding?: number;
   /**
@@ -210,7 +213,9 @@ export function Modal({
 
             <div className="pointer-events-none absolute inset-x-0 top-2.5 flex items-start justify-between px-4">
               <div className="pointer-events-auto flex items-center gap-2">{linksboven}</div>
-              <button
+              <div className="pointer-events-auto flex items-center gap-2">
+                {rechtsboven}
+                <button
                 type="button"
                 onClick={() => onOpenChange(false)}
                 aria-label="Sluiten"
@@ -219,7 +224,8 @@ export function Modal({
                 style={{ position: "relative", top: "auto", right: "auto", pointerEvents: "auto" }}
               >
                 <X aria-hidden className="size-5" strokeWidth={2.5} />
-              </button>
+                </button>
+              </div>
             </div>
           </div>
 

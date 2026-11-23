@@ -2,6 +2,7 @@ import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { loadAgentConfig } from "@/lib/agent/config";
 import { getGmailRefreshToken } from "@/lib/gmail/connection";
 import { sendGmailReply, type Attachment } from "@/lib/agent/gmail-send";
+import { opschonenHandtekening } from "@/lib/handtekening";
 import { markArchivedByAgent, markSent, readAssessments, saveDraft } from "@/lib/agent/store";
 import { archiveGmailMessage, markGmailMessageRead } from "@/lib/gmail/actions";
 import { listStoredMessages } from "@/lib/gmail/store";
@@ -20,6 +21,7 @@ async function sendReply(request: Request) {
   const form = await request.formData().catch(() => null);
   const conversationId = typeof form?.get("conversationId") === "string" ? (form.get("conversationId") as string) : "";
   const draft = typeof form?.get("body") === "string" ? (form.get("body") as string) : "";
+  const draftHtml = typeof form?.get("html") === "string" ? (form.get("html") as string) : "";
   if (!conversationId || !draft.trim()) {
     return Response.json({ ok: false, error: "conversationId en body zijn verplicht" }, { status: 400 });
   }
@@ -53,7 +55,10 @@ async function sendReply(request: Request) {
     to: item.fromEmail,
     subject,
     body: draft,
-    signatureHtml: config.emailSignature || undefined,
+    bodyHtml: draftHtml ? opschonenHandtekening(draftHtml) : undefined,
+    // Staat de handtekening al in de aangeleverde HTML, dan niet nog eens.
+    signatureHtml:
+      (form?.get("signature") === "included" ? "" : opschonenHandtekening(config.emailSignature)) || undefined,
     attachments,
   });
 

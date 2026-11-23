@@ -882,6 +882,26 @@ html.glas-safari .glas-balk {
 }
 
 /* Veld met alleen een lijn eronder; de cursor toont waar je typt. */
+/* De handtekening komt uit een mailclient en heeft donkere letters, die op een
+   donkere achtergrond wegvallen. In dark mode draaien we de helderheid om en
+   draaien we de afbeeldingen terug, zodat logo en foto's kloppen blijven. */
+.handtekening {
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* In light mode blijft de handtekening zoals hij is: de blauwe naam, de donkere
+   tekst. Alleen in dark mode draaien we de helderheid om, zodat donkere letters
+   licht worden en de blauwe naam een lichte blauwtint krijgt; afbeeldingen
+   draaien we terug zodat het logo klopt. */
+.dark .handtekening {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.dark .handtekening img,
+.dark .handtekening svg {
+  filter: invert(1) hue-rotate(180deg);
+}
+
 .veld-underline {
   width: 100%;
   border: 0;
@@ -891,7 +911,8 @@ html.glas-safari .glas-balk {
   caret-color: var(--blue);
   transition: border-color 0.15s ease;
 }
-.veld-underline:focus {
+.veld-underline:focus,
+.veld-underline:focus-within {
   border-bottom-color: var(--blue);
   outline: none;
 }

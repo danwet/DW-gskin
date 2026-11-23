@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { subscribeFocusTab } from "@/lib/focus-tab";
 import { orderNewestFirst, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
 import { invoiceTier } from "@/lib/agent/invoice-tier";
+import { opschonenHandtekening } from "@/lib/handtekening";
 import type { MailAssessment } from "@/lib/agent/types";
 import { InvoiceBlock, timeZoneOf, UrgencyPill } from "./AgentInbox";
 import { Modal } from "@/components/kit/modal";
@@ -740,7 +741,49 @@ export function InboxModal({
   const canPreview = Boolean(item.hasHtml && item.sourceMessageId && item.source !== "scan");
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewActief, setPreviewActief] = useState(false);
+  // Eerste versie van de handtekening, één keer vastgelegd voor het bewerkbare
+  // vlak; daarna bepaalt de browser de inhoud.
+  const [beginHandtekening, setBeginHandtekening] = useState("");
+  const [conceptHtml, setConceptHtml] = useState("");
+  const conceptVeld = useRef<HTMLDivElement>(null);
+  const [handtekeningKlaar, setHandtekeningKlaar] = useState(false);
+  // Beginwaarde van het concept, één keer bepaald: React laat het vlak daarna
+  // met rust, anders springt de cursor of verdwijnt de tekst.
+  const [beginConcept] = useState(() => escapeHtml(item.draftReply ?? ""));
   const [previewFailed, setPreviewFailed] = useState(false);
+
+  // De handtekening uit Instellingen, zodat je onder het concept ziet wat er
+  // automatisch onder de mail komt.
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const response = await fetch("/api/settings", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = (await response.json()) as { email?: { signature?: string } };
+        if (!alive) return;
+        const schoon = opschonenHandtekening(data.email?.signature?.trim() ?? "");
+        setBeginHandtekening((huidig) => huidig || schoon);
+      } catch {
+        // Zonder handtekening blijft het concept gewoon staan.
+      } finally {
+        if (alive) setHandtekeningKlaar(true);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Concept plus handtekening in één vel, één keer gevuld.
+  useEffect(() => {
+    const element = conceptVeld.current;
+    if (!element || !handtekeningKlaar || element.dataset.gevuld) return;
+    element.innerHTML = `${beginConcept}${
+      beginHandtekening ? `<div class="handtekening" style="margin-top:16px">${beginHandtekening}</div>` : ""
+    }`;
+    element.dataset.gevuld = "1";
+  }, [handtekeningKlaar, beginConcept, beginHandtekening]);
 
   useEffect(() => {
     if (!canPreview || !item.sourceMessageId) return;
@@ -787,6 +830,11 @@ export function InboxModal({
       const form = new FormData();
       form.set("conversationId", item.conversationId);
       form.set("body", draft);
+      // Concept plus de handtekening zoals die nu in het vel staat; allebei
+      // aanpasbaar voordat je verstuurt.
+      form.set("html", conceptHtml || escapeHtml(draft));
+      // De handtekening zit hierboven al in, dus niet nog eens toevoegen.
+      form.set("signature", "included");
       for (const file of attachments) form.append("files", file);
 
       const response = await fetch("/api/agent/send", { method: "POST", body: form });
@@ -1037,7 +1085,7 @@ export function InboxModal({
 
         {item.draftReply ? (
           <div className="mt-4">
-            <div className="flex items-center justify-between">
+            <div className="mx-[5%] flex items-center justify-between">
               <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)]">CONCEPT</p>
               <button
                 type="button"
@@ -1055,14 +1103,27 @@ export function InboxModal({
                 {copied ? "Gekopieerd" : "Kopieer"}
               </button>
             </div>
-            <div className="mt-2 flex flex-col gap-3 sm:flex-row">
-              <textarea
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                rows={8}
-                aria-label="Concept e-mail"
-                className="min-h-[160px] flex-1 resize-y rounded-2xl border border-[var(--line)] bg-[var(--bg)] p-4 text-[13px] leading-6 text-[var(--ink)] outline-none focus:border-[var(--blue)]"
-              />
+            <div className="mx-[5%] mt-2 flex flex-col gap-[35px] sm:flex-row">
+              {/* Echt HTML-vlak: opmaak en links worden getoond zoals ze
+                  verstuurd worden, niet als losse tekens. */}
+              {/* Eén vel: het concept staat bovenaan, de handtekening eronder,
+                  en je typt gewoon in hetzelfde vlak. */}
+              <div className="veld-underline min-w-0 flex-1 px-0 py-2">
+                <div
+                  ref={conceptVeld}
+                  contentEditable
+                  role="textbox"
+                  aria-multiline="true"
+                  aria-label="Concept e-mail"
+                  suppressContentEditableWarning
+                  onInput={(event) => {
+                    setDraft(event.currentTarget.innerText);
+                    setConceptHtml(event.currentTarget.innerHTML);
+                  }}
+                  className="w-full bg-transparent text-[14px] leading-6 text-[var(--ink)] outline-none [font-family:Helvetica,Arial,sans-serif] [&_a]:text-[var(--blue)] [&_a]:underline"
+                />
+              </div>
+
               <div
                 onDragOver={(event) => {
                   event.preventDefault();
@@ -1112,7 +1173,7 @@ export function InboxModal({
                 ) : null}
               </div>
             </div>
-            <p className="mt-1 text-[12px] text-[var(--muted)]">Bewerk het concept voordat je verstuurt.</p>
+            <p className="mx-[5%] mt-1 text-[12px] text-[var(--muted)]">Bewerk het concept voordat je verstuurt.</p>
           </div>
         ) : null}
 
@@ -1355,4 +1416,15 @@ export function InboxModal({
       </div>
     </Modal>
   );
+}
+
+/** Platte tekst naar HTML, zodat het HTML-vak ook zonder opmaak klopt. */
+function escapeHtml(text: string): string {
+  const schoon = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const blokken = /\n\s*\n/.test(schoon) ? schoon.split(/\n\s*\n+/) : schoon.split(/\n/);
+  return blokken
+    .map((blok) => blok.trim())
+    .filter(Boolean)
+    .map((blok) => `<p>${blok.replace(/\n/g, "<br>")}</p>`)
+    .join("");
 }

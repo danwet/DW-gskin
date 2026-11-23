@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/kit/modal";
+import { opschonenHandtekening } from "@/lib/handtekening";
 import { useApp } from "./AppProvider";
 
 export function DraftDialog() {
   const { draft, setDraft, approved, approveDraft, updateDraftBody } = useApp();
   const [copied, setCopied] = useState(false);
   const [handtekening, setHandtekening] = useState("");
+  const [conceptHtml, setConceptHtml] = useState("");
   const [bijlagen, setBijlagen] = useState<File[]>([]);
   const [sleep, setSleep] = useState(false);
   const [versturen, setVersturen] = useState<"rust" | "bezig" | "klaar" | "fout">("rust");
@@ -61,6 +63,7 @@ export function DraftDialog() {
       const vorm = new FormData();
       vorm.set("conversationId", draft.id);
       vorm.set("body", draft.draft);
+      if (conceptHtml) vorm.set("html", conceptHtml);
       for (const bestand of bijlagen) vorm.append("files", bestand);
       const response = await fetch("/api/agent/send", { method: "POST", body: vorm });
       const data = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
@@ -133,15 +136,25 @@ export function DraftDialog() {
         {/* Links: het concept op een vel papier, met de handtekening eronder. */}
         <div className="rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 shadow-[0_1px_2px_rgba(16,24,40,0.05)]">
           <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">Concept</p>
-          <ReplyField value={draft.draft} onChange={(text) => updateDraftBody(draft.id, text)} />
+          <ReplyField
+            value={conceptHtml || escapeHtml(draft.draft)}
+            onChange={(text, html) => {
+              setConceptHtml(html);
+              updateDraftBody(draft.id, text);
+            }}
+          />
           {handtekening ? (
             <div className="mt-3 border-t border-[var(--line)] pt-3">
               <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">
                 Handtekening · wordt automatisch toegevoegd
               </p>
               {/* Alleen ter controle: de verzendlaag zet hem onder de mail, dus
-                  je hoeft hem niet zelf te typen. */}
-              <p className="mt-1 text-[14px] leading-6 whitespace-pre-line text-[var(--ink)]">{handtekening}</p>
+                  je hoeft hem niet zelf te typen. Eerst opschonen, want een
+                  handtekening uit een mailclient bevat soms kapotte tags. */}
+              <div
+                className="mt-1 text-[14px] leading-6 text-[var(--ink)] [&_img]:max-w-[220px]"
+                dangerouslySetInnerHTML={{ __html: opschonenHandtekening(handtekening) }}
+              />
             </div>
           ) : null}
         </div>
@@ -213,23 +226,50 @@ export function DraftDialog() {
   );
 }
 
-function ReplyField({ value, onChange }: { value: string; onChange: (text: string) => void }) {
-  const field = useRef<HTMLTextAreaElement>(null);
+/**
+ * Een echt HTML-vlak: wat er in staat wordt opgemaakt getoond en als HTML
+ * verstuurd (regels, nadruk, links). De tekstversie gaat mee als plain text.
+ */
+function ReplyField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (text: string, html: string) => void;
+}) {
+  const field = useRef<HTMLDivElement>(null);
 
-  useLayoutEffect(() => {
+  // Alleen bij een nieuwe waarde van buiten bijwerken, anders springt de cursor.
+  useEffect(() => {
     const element = field.current;
     if (!element) return;
-    element.style.height = "auto";
-    element.style.height = `${element.scrollHeight}px`;
+    if (element.innerHTML !== value) element.innerHTML = value;
   }, [value]);
 
   return (
-    <textarea
+    <div
       ref={field}
-      value={value}
+      contentEditable
+      role="textbox"
+      aria-multiline="true"
       aria-label="Concept"
-      onChange={(event) => onChange(event.target.value)}
-      className="mt-2 w-full resize-none bg-transparent text-[15px] leading-7 text-[var(--ink)] outline-none"
+      suppressContentEditableWarning
+      onInput={(event) => {
+        const element = event.currentTarget;
+        onChange(element.innerText, element.innerHTML);
+      }}
+      className="mt-2 w-full bg-transparent text-[14px] leading-6 text-[var(--ink)] outline-none [font-family:Helvetica,Arial,sans-serif] [&_a]:text-[var(--blue)] [&_a]:underline"
     />
   );
+}
+
+/** Zet platte tekst om naar HTML, zodat het HTML-vak ook klopt zonder opmaak. */
+function escapeHtml(text: string): string {
+  const schoon = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const blokken = /\n\s*\n/.test(schoon) ? schoon.split(/\n\s*\n+/) : schoon.split(/\n/);
+  return blokken
+    .map((blok) => blok.trim())
+    .filter(Boolean)
+    .map((blok) => `<p>${blok.replace(/\n/g, "<br>")}</p>`)
+    .join("");
 }

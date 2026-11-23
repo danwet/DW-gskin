@@ -40,8 +40,12 @@ function safeFilename(name: string): string {
 export function buildRawMessage(options: {
   from: string;
   to: string;
+  cc?: string;
+  bcc?: string;
   subject: string;
   body: string;
+  /** HTML-versie van de tekst; als die er is, gaat die mee in de HTML-tak. */
+  bodyHtml?: string;
   signatureHtml?: string;
   attachments?: Attachment[];
 }): string {
@@ -51,6 +55,8 @@ export function buildRawMessage(options: {
   const headers = [
     `From: ${options.from}`,
     `To: ${options.to}`,
+    ...(options.cc ? [`Cc: ${options.cc}`] : []),
+    ...(options.bcc ? [`Bcc: ${options.bcc}`] : []),
     `Subject: ${encodeSubject(options.subject)}`,
     "MIME-Version: 1.0",
   ];
@@ -58,9 +64,10 @@ export function buildRawMessage(options: {
   let contentPart: string;
   if (signatureHtml) {
     const boundary = `dw-alt-${Date.now()}`;
-    const html =
-      `<div style="white-space:pre-wrap">${escapeHtml(options.body)}</div>` +
-      `<div style="margin-top:16px">${signatureHtml}</div>`;
+    const tekstDeel = options.bodyHtml?.trim()
+      ? options.bodyHtml
+      : `<div style="white-space:pre-wrap">${escapeHtml(options.body)}</div>`;
+    const html = tekstDeel + `<div style="margin-top:16px">${signatureHtml}</div>`;
     const plainPart = [
       "Content-Type: text/plain; charset=UTF-8",
       "Content-Transfer-Encoding: base64",
@@ -117,12 +124,56 @@ export function buildRawMessage(options: {
   return [...headers, mixedPart].join("\r\n");
 }
 
+export async function sendGmailMessage(options: {
+  refreshToken: string;
+  from: string;
+  to: string;
+  cc?: string;
+  bcc?: string;
+  subject: string;
+  body: string;
+  bodyHtml?: string;
+  signatureHtml?: string;
+  attachments?: Attachment[];
+}): Promise<SendResult> {
+  if (!options.refreshToken) {
+    return { ok: false, reason: "not_configured", message: "Gmail is niet gekoppeld." };
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(options.to.split(",")[0]?.trim() ?? "")) {
+    return { ok: false, reason: "invalid_recipient", message: "Vul een geldig e-mailadres bij Aan in." };
+  }
+  const token = await refreshGoogleAccessToken(options.refreshToken);
+  if (!token) {
+    return { ok: false, reason: "auth_failed", message: "Kon het Gmail access token niet vernieuwen." };
+  }
+  const raw = buildRawMessage(options);
+  const response = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token.access_token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ raw: base64Url(raw) }),
+  });
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    const scopeMissing = response.status === 403 && /insufficient|scope|permission/i.test(text);
+    return {
+      ok: false,
+      reason: scopeMissing ? "scope_missing" : "send_failed",
+      message: scopeMissing
+        ? "De Gmail-token mist de gmail.send-scope."
+        : `Gmail kon het bericht niet versturen (${response.status}).`,
+    };
+  }
+  const data = (await response.json().catch(() => null)) as { id?: string } | null;
+  return { ok: true, id: data?.id ?? "" };
+}
+
 export async function sendGmailReply(options: {
   refreshToken: string;
   from: string;
   to: string;
   subject: string;
   body: string;
+  bodyHtml?: string;
   signatureHtml?: string;
   attachments?: Attachment[];
 }): Promise<SendResult> {
