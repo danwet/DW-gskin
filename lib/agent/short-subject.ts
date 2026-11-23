@@ -12,7 +12,7 @@ const TE_LANG = 60;
  * bestaande kaarten opnieuw gedaan: de regels veranderen, dus oude titels
  * kunnen niet blijven staan.
  */
-export const SHORT_SUBJECT_VERSION = 2;
+export const SHORT_SUBJECT_VERSION = 3;
 
 /** Onderwerpen korter dan dit hoeven niet opnieuw, ook niet bij een reindex. */
 const MIN_VOOR_REINDEX = 30;
@@ -20,7 +20,7 @@ const MIN_VOOR_REINDEX = 30;
 const SYSTEM = `Je maakt een korte versie van een e-mailonderwerp voor op een kaartje.
 Antwoord met precies deze JSON: {"kort":"<max 50 tekens>"}
 Regels: behoud de betekenis, laat beleefdheidsvormen weg, geen aanhalingstekens, geen punt aan het eind.
-Gaat het om een factuur, zet dan altijd het factuurnummer in de korte titel: "Factuur <nummer> · <leverancier>".
+Gaat het om een factuur, zet dan het factuurnummer in de korte titel: "Factuur <nummer>", zonder leverancier (dat is de afzender, die staat al boven de kaart).
 Dit geldt voor elke soort mail, ook nieuwsbrieven en informatieve mail: een te lang onderwerp wordt daar ook ingekort.
 Laat bij een nieuwsbrief de nieuwsbriefnaam staan en kort de rest in.
 Kort nooit een persoonsnaam in: "van", "van de", "de", "der", "ten" en "ter" horen bij de achternaam, dus "Van de Wetering" blijft heel.

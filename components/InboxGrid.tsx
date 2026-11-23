@@ -414,6 +414,26 @@ function balanceTwoLines(text: string): [string, string | null] {
   return [tidy(words.slice(0, bestIndex).join(" ")), tidy(words.slice(bestIndex).join(" "))];
 }
 
+/** Deterministische "willekeur" per kaart:zelfde kaart, zelfde plek. */
+function lossePlek(key: string): { hoek: number; x: number; y: number } {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i += 1) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const rand = (n: number) => {
+    h ^= h << 13;
+    h ^= h >>> 17;
+    h ^= h << 5;
+    return Math.abs(h % n);
+  };
+  // Kleine hoek, klein beetje schuiven: het moet gevallen lijken, niet scheef.
+  const hoek = -2.4 + rand(49) / 10; // −2,4° t/m +2,4°
+  const x = rand(13) - 6; // −6 t/m +6 px
+  const y = rand(9) - 4; // −4 t/m +4 px
+  return { hoek: Math.round(hoek * 10) / 10, x, y };
+}
+
 function BalancedText({ text, className }: { text: string; className: string }) {
   const [line1, line2] = balanceTwoLines(text);
   return (
@@ -452,10 +472,10 @@ export function InboxCard({
   flat?: boolean;
 }) {
   const urgency = urgencyFor(item, now, timeZone);
-  const tilts = ["rotate-[2.5deg]", "-rotate-[1.5deg]", "-rotate-[3deg]", "rotate-[2deg]"];
-  const tilt = flat ? "" : tilts[index % tilts.length];
-  const overlap = flat ? "" : index % 2 === 1 ? (index % 4 === 3 ? "sm:-ml-8" : "sm:-ml-4") : "";
-  const rowOverlap = flat ? "" : index >= 2 ? "sm:-mt-6" : "";
+  // Kaarten horen los op tafel te liggen, niet in een ritme. De hoek en de
+  // verschuiving komen daarom uit een hash van het gesprek: elke kaart heeft
+  // zijn eigen plek, maar wel dezelfde bij elke herlaadbeurt.
+  const los = flat ? null : lossePlek(item.conversationId);
   const zIndex = Math.min(2 + index, 39);
   const consequence = item.consequence?.senderSays ?? item.consequence?.possible;
   const cta = ctaLabel(item);
@@ -480,8 +500,13 @@ export function InboxCard({
           onClick();
         }
       }}
-      style={{ "--card-z": zIndex } as React.CSSProperties}
-      className={`card-surface focus-ring relative z-[var(--card-z)] flex min-h-[270px] cursor-pointer flex-col items-center rounded-2xl px-[46px] pt-4 pb-6 text-center transition-transform hover:z-40 hover:-translate-y-0.5 hover:rotate-0 sm:min-h-[410px] ${tilt} ${overlap} ${rowOverlap}`}
+      style={
+        {
+          "--card-z": zIndex,
+          ...(los ? { "--card-tilt": `rotate(${los.hoek}deg) translate(${los.x}px, ${los.y}px)` } : {}),
+        } as React.CSSProperties
+      }
+      className="card-surface kaart-los focus-ring relative z-[var(--card-z)] flex min-h-[270px] cursor-pointer flex-col items-center rounded-2xl px-[46px] pt-4 pb-6 text-center transition-transform hover:z-40 hover:rotate-0 sm:min-h-[410px]"
     >
       <div className="absolute top-3 right-3 z-10">
         <UrgencyPill tone={pillTone(item, urgency.tone)} label={urgency.label} />

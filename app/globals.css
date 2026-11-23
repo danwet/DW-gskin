@@ -244,6 +244,16 @@ button {
  * Kaarten: in light mode een rustig, dekkend wit vlak met fijne contour en één
  * zachte schaduw (geen dure backdrop-filter per kaart). Dark behoudt het glas.
  */
+/* Elke kaart ligt met een eigen hoek op tafel; de waarde komt per kaart uit
+   een hash, zodat hij bij herladen niet verspringt. */
+.kaart-los {
+  transform: var(--card-tilt, none);
+}
+
+.kaart-los:hover {
+  transform: translateY(-2px) rotate(0deg);
+}
+
 .card-surface {
   background: var(--card-surface-bg);
   border: var(--card-surface-border);
