@@ -1,4 +1,5 @@
 import { invoiceTier } from "./invoice-tier";
+import { SHORT_SUBJECT_VERSION } from "./short-subject";
 import type { InvoiceAssessment } from "./types";
 import type { AssessmentDraft, ShipmentDraft } from "./classify";
 import type { PurchaseInfo } from "./types";
@@ -374,6 +375,7 @@ export function buildAssessment(
     classification: draft.classification,
     category: draft.category,
     shortSubject: draft.shortSubject,
+    shortSubjectVersion: draft.shortSubject ? SHORT_SUBJECT_VERSION : undefined,
     viaModel: draft.viaModel ?? false,
     // Een factuur volgt de uiterste betaaldatum, niet het bedrag en niet het
     // model: ver weg is 'mag', dichtbij (of onbekend) is 'moet'.

@@ -98,6 +98,8 @@ export type MailAssessment = {
   category?: "order" | "invoice" | "appointment" | "question" | "admin" | "newsletter" | "other";
   /** Korte versie van het onderwerp, voor als het niet op twee regels past. */
   shortSubject?: string;
+  /** Met welke regelversie de korte titel is gemaakt; lager betekent opnieuw. */
+  shortSubjectVersion?: number;
 
   classification: AgentClassification;
   nextAction: string;
@@ -182,6 +184,9 @@ export type AgentMeta = {
    * slaat ze over, anders komt een gearchiveerde mail elke ronde terug.
    */
   hiddenMessageIds?: string[];
+  /** Versie van de regels voor de korte titel; lager betekent opnieuw doen. */
+  shortSubjectVersion?: number;
+
   lastRunAt: string | null;
   lastSuccessfulRunAt: string | null;
   lastError: string | null;

@@ -631,13 +631,15 @@ export function updateMeta(patch: Partial<AgentMeta>): Promise<void> {
   });
 }
 
-/** Korte onderwerpregel voor op de kaart. */
-export function setShortSubject(conversationId: string, shortSubject: string): Promise<void> {
+/** Korte onderwerpregel voor op de kaart, met de versie van de regels erbij. */
+export function setShortSubject(conversationId: string, shortSubject: string, version: number): Promise<void> {
   return withLock(async () => {
     const state = await readState();
     const item = state.assessments[conversationId];
-    if (!item || item.shortSubject === shortSubject) return;
+    if (!item) return;
+    if (item.shortSubject === shortSubject && item.shortSubjectVersion === version) return;
     item.shortSubject = shortSubject;
+    item.shortSubjectVersion = version;
     await writeState(state);
   });
 }
