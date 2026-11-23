@@ -13,8 +13,8 @@ import { BrandMark } from "./BrandMark";
 
 const NAV = [
   { href: "/", label: "Focus", icon: "home" as const },
-  { href: "/bewaren", label: "Bewaard", icon: "save" as const },
   { href: "/scan", label: "Uploaden", icon: "scan" as const },
+  { href: "/bewaren", label: "Bewaard", icon: "save" as const },
   { href: "/afgehandeld", label: "Afgehandeld", icon: "done" as const },
   { href: "/agent", label: "Agent", icon: "agent" as const },
 ];
