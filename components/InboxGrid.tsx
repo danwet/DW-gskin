@@ -683,7 +683,7 @@ export function InboxModal({
   onError?: (message: string) => void;
 }) {
   const urgency = urgencyFor(item, now, timeZone);
-  const { settings } = useApp();
+  const { settings, account } = useApp();
   const [handled, setHandled] = useState(item.handledByUser === true);
   const [declaration, setDeclaration] = useState(item.declaration);
   const [saved, setSaved] = useState(Boolean(item.savedAt));
@@ -740,7 +740,9 @@ export function InboxModal({
 
   // The newsletter HTML is fetched when the popup opens: keep the inbox light,
   // and fall back to the plain text when there is nothing to render.
-  const canPreview = Boolean(item.hasHtml && item.sourceMessageId && item.source !== "scan");
+  // Altijd proberen: ook een ouder bericht kan zijn HTML-inhoud nog krijgen via
+  // de aanvulling, en dan moet de handtekening gewoon zichtbaar zijn.
+  const canPreview = Boolean(item.sourceMessageId && item.source !== "scan");
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewActief, setPreviewActief] = useState(false);
   // Eerste versie van de handtekening, één keer vastgelegd voor het bewerkbare
@@ -837,8 +839,8 @@ export function InboxModal({
       form.set("html", conceptHtml || escapeHtml(draft));
       // De handtekening zit hierboven al in, dus niet nog eens toevoegen.
       form.set("signature", "included");
-      // De volledige naam uit Instellingen gaat als afzender mee.
-      form.set("fromName", settings.emailName ?? "");
+      // Naam uit Instellingen, anders de naam uit je account.
+      form.set("fromName", (settings.emailName ?? "").trim() || (account?.name ?? "").trim());
       for (const file of attachments) form.append("files", file);
 
       const response = await fetch("/api/agent/send", { method: "POST", body: form });
@@ -954,12 +956,14 @@ export function InboxModal({
           </div>
         ) : null}
 
-        {canPreview ? (
+        {/* Alleen als er echt HTML is: een leeg venster met "laadt niet" helpt
+            niemand. Ontbreekt de inhoud, dan staat de tekst eronder. */}
+        {previewHtml ? (
           <section className="mt-5">
             {/* Bij een nieuwsbrief is het de mail zelf; bij al het andere de
                 aanleiding van dit gesprek. */}
             <p className="ml-[5%] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">
-              {isNewsletter ? "Nieuwsbrief" : "Aanleiding"}
+              {item.unsubscribe ? "Nieuwsbrief" : "Aanleiding"}
             </p>
             {previewHtml ? (
               // Eerst bewust klikken: anders scrolt de nieuwsbrief mee met de
@@ -1025,18 +1029,27 @@ export function InboxModal({
           Boolean(item.draftReply)) &&
         item.body ? (
           <section className="mt-5">
-            <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">
+            <p className="mx-[5%] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">
               {item.draftReply ? "Oorspronkelijk bericht" : "Bericht"}
             </p>
-            <div
-              className={`mt-2 space-y-3 text-[14px] leading-6 text-[var(--ink)] ${
-                item.draftReply ? "max-h-[220px] overflow-y-auto rounded-2xl bg-[var(--bg)] px-4 py-3" : ""
-              }`}
-            >
-              {item.body.split(/\n{2,}/).map((paragraph, index) => (
-                <p key={index} className="whitespace-pre-line">{paragraph.trim()}</p>
-              ))}
-            </div>
+            {previewHtml ? (
+              // De mail zoals hij verstuurd is: opmaak en handtekening erbij,
+              // direct in het vak in plaats van in een apart venster.
+              <div
+                className="handtekening mx-[5%] mt-2 max-h-[420px] overflow-y-auto text-[14px] leading-6 text-[var(--ink)] [&_img]:max-w-full [&_img]:rounded-lg [&_table]:max-w-full"
+                dangerouslySetInnerHTML={{ __html: opschonenHandtekening(previewHtml) }}
+              />
+            ) : (
+              <div
+                className={`mx-[5%] mt-2 space-y-3 text-[14px] leading-6 text-[var(--ink)] ${
+                  item.draftReply ? "max-h-[220px] overflow-y-auto rounded-2xl bg-[var(--bg)] px-4 py-3" : ""
+                }`}
+              >
+                {item.body.split(/\n{2,}/).map((paragraph, index) => (
+                  <p key={index} className="whitespace-pre-line">{paragraph.trim()}</p>
+                ))}
+              </div>
+            )}
             {newsletterImages.length > 0 ? (
               <div className="mt-4 grid gap-2">
                 {newsletterImages.map((src, index) => (

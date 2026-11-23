@@ -307,3 +307,27 @@ export async function clearTriagedFlag(userId: string, threadId: string): Promis
     .eq("user_id", userId)
     .eq("thread_id", threadId);
 }
+
+/** Berichten waarvan de HTML-inhoud ontbreekt, oudste eerst. */
+export async function listMessagesWithoutHtml(userId: string, limit = 3): Promise<string[]> {
+  const supabase = await dbClient();
+  const { data } = await supabase
+    .from("dw_gmail_messages")
+    .select("message_id")
+    .eq("user_id", userId)
+    .is("body_html", null)
+    .order("received_at", { ascending: false })
+    .limit(limit);
+  return ((data ?? []) as { message_id: string }[]).map((row) => row.message_id);
+}
+
+/** Vult de HTML-inhoud van een bericht aan. */
+export async function setMessageHtml(userId: string, messageId: string, html: string): Promise<void> {
+  const supabase = await dbClient();
+  await supabase
+    .from("dw_gmail_messages")
+    .update({ body_html: sanitizeText(keepHeadAndTail(html, 600_000)) })
+    .eq("user_id", userId)
+    .eq("message_id", messageId)
+    .is("body_html", null);
+}

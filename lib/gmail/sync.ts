@@ -25,8 +25,10 @@ import {
   listStoredMessages,
   getImportState,
   listThreadMessages,
+  listMessagesWithoutHtml,
   listUntriagedMessages,
   markThreadTriaged,
+  setMessageHtml,
   saveMessages,
   updateImportState,
   type ImportPhase,
@@ -476,6 +478,23 @@ async function applyAnsweredThreads(
   return { archived: answered.length, reopened: reopened.length };
 }
 
+
+/** Vult ontbrekende HTML-inhoud aan, een paar berichten per ronde. */
+async function backfillHtmlBodies(userId: string, refreshToken: string, limit = 3): Promise<number> {
+  const ontbreekt = await listMessagesWithoutHtml(userId, limit);
+  if (ontbreekt.length === 0) return 0;
+  const token = await refreshGoogleAccessToken(refreshToken);
+  if (!token) return 0;
+  let gevuld = 0;
+  for (const id of ontbreekt) {
+    const bericht = await fetchGmailMessage(token.access_token, id).catch(() => null);
+    if (!bericht?.bodyHtml) continue;
+    await setMessageHtml(userId, id, bericht.bodyHtml).catch(() => null);
+    gevuld += 1;
+  }
+  return gevuld;
+}
+
 export async function syncStep(
   userId: string,
   refreshToken: string,
@@ -511,6 +530,8 @@ export async function syncStep(
   const recentImported = await importRecentMail(userId, refreshToken).catch(() => 0);
   imported += recentImported;
   const sentImported = await importSentReplies(userId, refreshToken).catch(() => 0);
+  // Berichten van vóór de HTML-opslag misten hun inhoud; die halen we bij.
+  await backfillHtmlBodies(userId, refreshToken).catch(() => 0);
   imported += sentImported;
   const answered = await applyAnsweredThreads(userId, ownerEmail).catch(() => ({ archived: 0, reopened: 0 }));
 
