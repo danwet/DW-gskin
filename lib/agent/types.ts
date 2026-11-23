@@ -171,6 +171,11 @@ export type AgentMeta = {
   /** Gmail history cursor for reconciling deletions and archive actions. */
   gmailHistoryId?: string;
   /** Snapshot of the last archive/trash, so it can be undone. */
+  /**
+   * Reading state for the notification bell. Stored on the server so the badge
+   * is the same on every device.
+   */
+  notifications?: { since: string | null; read: string[] };
   lastAction?: LastMailAction | null;
 };
 

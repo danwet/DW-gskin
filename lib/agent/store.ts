@@ -561,6 +561,33 @@ export function updateMeta(patch: Partial<AgentMeta>): Promise<void> {
   });
 }
 
+/** Leest de gelezen-status van de notificaties (server-side, per account). */
+export async function readNotificationState(): Promise<{ since: string | null; read: string[] }> {
+  const state = await readState();
+  const stored = state.meta.notifications;
+  return {
+    since: stored?.since ?? null,
+    read: Array.isArray(stored?.read) ? stored.read.slice(-500) : [],
+  };
+}
+
+/** Schrijft de gelezen-status weg, zodat elk apparaat hetzelfde bolletje ziet. */
+export function writeNotificationState(next: {
+  since?: string | null;
+  read?: string[];
+}): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    const current = state.meta.notifications ?? { since: null, read: [] };
+    state.meta.notifications = {
+      since: next.since !== undefined ? next.since : current.since,
+      // Bewaar alleen de laatste 500, anders groeit dit voor altijd door.
+      read: (next.read !== undefined ? next.read : current.read).slice(-500),
+    };
+    await writeState(state);
+  });
+}
+
 /** Clears everything; used by the verification harness to start from a clean slate. */
 export function resetAgentStore(): Promise<void> {
   return withLock(async () => {

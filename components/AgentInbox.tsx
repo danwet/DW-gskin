@@ -282,36 +282,67 @@ export function useInbox() {
     setItems((current) => current.filter((entry) => entry.conversationId !== conversationId));
   }, []);
 
-  // New mail since you last looked. Kept in the browser: it is your reading
-  // state, not something the server needs to know.
+  // New mail since you last looked. Kept on the server so the badge is the same
+  // on every device; the browser only mirrors it.
   const [notif, setNotif] = useState<{ since: string | null; read: string[] }>(() => ({
     since: null,
     read: [],
   }));
+  const [notifLoaded, setNotifLoaded] = useState(false);
 
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem("dw-notifications-v1");
-      if (raw) {
-        const parsed = JSON.parse(raw) as { since?: string | null; read?: string[] };
-        setNotif({ since: parsed.since ?? null, read: Array.isArray(parsed.read) ? parsed.read : [] });
-      }
-    } catch {
-      // First run: the baseline is stamped below.
-    }
+  // Bewaar de stand op de server; de browser is alleen een spiegel.
+  const saveNotif = useCallback((next: { since?: string | null; read?: string[]; markAllRead?: boolean }) => {
+    void fetch("/api/notifications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(next),
+    }).catch(() => undefined);
   }, []);
 
   useEffect(() => {
-    if (notif.since !== null || items.length === 0) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const response = await fetch("/api/notifications", { cache: "no-store" });
+        const data = (await response.json()) as { since?: string | null; read?: string[] };
+        if (!alive) return;
+        if (data.since || (data.read ?? []).length > 0) {
+          setNotif({ since: data.since ?? null, read: Array.isArray(data.read) ? data.read : [] });
+        } else {
+          // Eerste keer op de server: neem de stand van dit apparaat over.
+          try {
+            const raw = window.localStorage.getItem("dw-notifications-v1");
+            if (raw) {
+              const parsed = JSON.parse(raw) as { since?: string | null; read?: string[] };
+              const migrated = {
+                since: parsed.since ?? null,
+                read: Array.isArray(parsed.read) ? parsed.read : [],
+              };
+              setNotif(migrated);
+              saveNotif(migrated);
+            }
+          } catch {
+            // Geen lokale stand: de basislijn wordt hieronder gezet.
+          }
+        }
+      } catch {
+        // Zonder server: de lijst begint gewoon leeg.
+      } finally {
+        if (alive) setNotifLoaded(true);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [saveNotif]);
+
+  useEffect(() => {
+    if (!notifLoaded || notif.since !== null || items.length === 0) return;
     const newest = items.reduce((latest, item) => (item.receivedAt > latest ? item.receivedAt : latest), "");
     const next = { since: newest || new Date().toISOString(), read: notif.read };
     setNotif(next);
-    try {
-      window.localStorage.setItem("dw-notifications-v1", JSON.stringify(next));
-    } catch {
-      // Without storage the list simply starts empty.
-    }
-  }, [items, notif]);
+    saveNotif(next);
+  }, [items, notif, notifLoaded, saveNotif]);
 
   const newItems = useMemo(() => {
     if (!notif.since) return [];
@@ -351,30 +382,22 @@ export function useInbox() {
     });
   }, [newItems]);
 
-  const markNewRead = useCallback((conversationId: string) => {
-    setNotif((current) => {
-      if (current.read.includes(conversationId)) return current;
-      const next = { ...current, read: [...current.read, conversationId] };
-      try {
-        window.localStorage.setItem("dw-notifications-v1", JSON.stringify(next));
-      } catch {
-        // Nothing to do.
-      }
-      return next;
-    });
-  }, []);
+  const markNewRead = useCallback(
+    (conversationId: string) => {
+      setNotif((current) => {
+        if (current.read.includes(conversationId)) return current;
+        const next = { ...current, read: [...current.read, conversationId] };
+        saveNotif({ read: next.read });
+        return next;
+      });
+    },
+    [saveNotif],
+  );
 
   const markAllNewRead = useCallback(() => {
-    setNotif((current) => {
-      const next = { since: new Date().toISOString(), read: [] };
-      try {
-        window.localStorage.setItem("dw-notifications-v1", JSON.stringify(next));
-      } catch {
-        // Nothing to do.
-      }
-      return next;
-    });
-  }, []);
+    setNotif({ since: new Date().toISOString(), read: [] });
+    saveNotif({ markAllRead: true });
+  }, [saveNotif]);
 
   const openNewItem = useCallback(
     (item: MailAssessment) => {
