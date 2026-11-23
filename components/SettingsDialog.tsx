@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Modal } from "@/components/kit/modal";
 import { useApp } from "./AppProvider";
+import { opschonenHandtekening } from "@/lib/handtekening";
 
 type ProviderId = "openai" | "anthropic" | "gemini" | "openrouter";
 
@@ -529,23 +530,27 @@ function ConnectionsSection({
         </div>
 
         <div className="rounded-2xl border border-[var(--line)] px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[14px] font-medium">E-mailhandtekening</p>
-              <p className="mt-0.5 text-[13px] text-[var(--muted)]">HTML die onder elke verzonden e-mail wordt geplaatst.</p>
-            </div>
-            <Status dot={signature.trim().length > 0} label={signature.trim() ? "Ingesteld" : "Geen handtekening"} />
-          </div>
+          <p className="text-[14px] font-medium">E-mailhandtekening</p>
           <div className="mt-3">
-            <Field label="Handtekening (HTML)">
-              <textarea
-                value={signature}
-                onChange={(event) => setSignature(event.target.value)}
-                rows={5}
-                placeholder={'<p>Met vriendelijke groet,<br/>Je naam</p>'}
-                className={`w-full ${areaClass}`}
-              />
-            </Field>
+            <textarea
+              value={signature}
+              onChange={(event) => setSignature(event.target.value)}
+              rows={5}
+              aria-label="Handtekening (HTML)"
+              placeholder={'<p>Met vriendelijke groet,<br/>Je naam</p>'}
+              className={`w-full ${areaClass}`}
+            />
+            {/* Zoals hij onder een mail komt te staan, zodat je meteen ziet wat
+                er verstuurd wordt. */}
+            {signature.trim() ? (
+              <div className="mt-3 rounded-xl border border-[var(--line)] px-3 py-2">
+                <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">Voorbeeld</p>
+                <div
+                  className="handtekening mt-1 text-[14px] leading-6 text-[var(--ink)] [&_img]:max-w-[190px]"
+                  dangerouslySetInnerHTML={{ __html: opschonenHandtekening(signature) }}
+                />
+              </div>
+            ) : null}
             <button type="button" onClick={onSaveSignature} disabled={saving} className={`${primaryClass} mt-3`}>
               Handtekening opslaan
             </button>
