@@ -481,7 +481,7 @@ export function InboxCard({
         }
       }}
       style={{ "--card-z": zIndex } as React.CSSProperties}
-      className={`card-surface focus-ring relative z-[var(--card-z)] flex min-h-[270px] cursor-pointer flex-col items-center rounded-2xl px-4 pt-4 pb-6 text-center transition-transform hover:z-40 hover:-translate-y-0.5 hover:rotate-0 sm:min-h-[410px] ${tilt} ${overlap} ${rowOverlap}`}
+      className={`card-surface focus-ring relative z-[var(--card-z)] flex min-h-[270px] cursor-pointer flex-col items-center rounded-2xl px-[46px] pt-4 pb-6 text-center transition-transform hover:z-40 hover:-translate-y-0.5 hover:rotate-0 sm:min-h-[410px] ${tilt} ${overlap} ${rowOverlap}`}
     >
       <div className="absolute top-3 right-3 z-10">
         <UrgencyPill tone={pillTone(item, urgency.tone)} label={urgency.label} />
