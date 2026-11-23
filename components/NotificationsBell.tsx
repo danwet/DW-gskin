@@ -5,6 +5,7 @@ import {
   enableNotifications,
   notificationPermission,
   notificationsSupported,
+  setWantedOnThisDevice,
   wantedOnThisDevice,
 } from "@/lib/desktop-notify";
 import { timeZoneOf } from "./AgentInbox";
@@ -56,10 +57,12 @@ export function NotificationsBell({
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open]);
-  // When the desktop already announces new mail, listing it here again is noise.
+  // Het aanzetten van desktopmeldingen is een apparaatinstelling; die mag de
+  // lijst en het bolletje nooit beïnvloeden. Nieuwe berichten blijven altijd
+  // staan, ook als dit apparaat ze ook als systeemmelding toont.
   const desktopActive = desktop === "granted" && desktopWanted;
-  const showNew = newItems.length > 0 && !desktopActive;
-  const count = items.length + (desktopActive ? 0 : newItems.length);
+  const showNew = newItems.length > 0;
+  const count = items.length + newItems.length;
 
   return (
     <div ref={rootRef} className="relative">
@@ -137,24 +140,31 @@ export function NotificationsBell({
               </>
             ) : null}
 
-            {(notificationsSupported() && !desktopActive) || showNew ? (
+            {notificationsSupported() || showNew ? (
               <div className="mt-2 rounded-xl border border-[var(--line)] bg-[var(--bg)] p-1">
-                {notificationsSupported() && !desktopActive ? (
+                {notificationsSupported() ? (
                   <button
                     type="button"
                     onClick={async () => {
+                      // Alleen een apparaatinstelling: nooit iets als gelezen
+                      // wegzetten en nooit de lijst of het bolletje verbergen.
+                      if (desktopActive) {
+                        setWantedOnThisDevice(false);
+                        setDesktopWanted(false);
+                        return;
+                      }
                       const result = await enableNotifications();
                       setDesktop(result);
                       setDesktopWanted(result === "granted");
-                      // Alleen toestemming vragen: de meldingen mogen niet
-                      // stilletjes als gelezen worden weggezet.
                     }}
                     className="focus-ring flex w-full items-center justify-center rounded-lg px-3 py-1.5 text-center font-medium whitespace-nowrap text-[var(--muted)]"
                     style={{ fontSize: "10px", lineHeight: "14px" }}
                   >
                     {desktop === "denied"
                       ? "Meldingen geblokkeerd in de browser"
-                      : "Meldingen op dit apparaat aanzetten"}
+                      : desktopActive
+                        ? "Systeemmeldingen op dit apparaat uit"
+                        : "Meldingen op dit apparaat aanzetten"}
                   </button>
                 ) : null}
 
