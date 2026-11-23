@@ -492,6 +492,21 @@ export function saveConversation(conversationId: string, saved: boolean): Promis
   });
 }
 
+/** Bewaaroordeel van het model: is het gesprek klaar of wacht er nog actie? */
+export function setSavedVerdict(
+  conversationId: string,
+  verdict: { stopped: boolean; reason?: string; at: string } | null,
+): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    const item = state.assessments[conversationId];
+    if (!item) return;
+    if (verdict) item.savedVerdict = verdict;
+    else delete item.savedVerdict;
+    await writeState(state);
+  });
+}
+
 export function setDeclaration(
   conversationId: string,
   declaration: "none" | "pending" | "declared" | null,

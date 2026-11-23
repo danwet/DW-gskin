@@ -80,6 +80,11 @@ export type MailAssessment = {
    */
   tier?: "moet" | "mag" | "hoeft_niet";
   /**
+   * Het oordeel bij bewaren: is het gesprek tot stilstand gekomen (informatie)
+   * of wacht er nog een actie van jou?
+   */
+  savedVerdict?: { stopped: boolean; reason?: string; at: string };
+  /**
    * True zodra er een bericht van jou in de thread staat. Zo'n thread is nooit
    * "hoeft niet": je hebt er zelf naar gehandeld.
    */

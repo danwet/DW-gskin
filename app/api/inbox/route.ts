@@ -3,6 +3,7 @@ import { markHandled, readMeta, readStateOnce, saveConversation, setDeclaration,
 import { loadAgentConfig } from "@/lib/agent/config";
 import { gmailConfigured, resolveMailSource } from "@/lib/agent/mail-source";
 import { healInvoiceDueDates } from "@/lib/agent/invoice-heal";
+import { judgeSavedConversation } from "@/lib/agent/saved-verdict";
 import { runMailAgent } from "@/lib/agent/pipeline";
 import type { MailAssessment } from "@/lib/agent/types";
 import { resolveGmailConnection } from "@/lib/gmail/connection";
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
   const snoozeTier = body?.snoozedTier ?? body?.tier ?? null;
 
   try {
-    let item = null;
+    let item: MailAssessment | null = null;
     if (body?.action === "snooze" || snoozeUntil !== undefined) {
       item = await snoozeConversation(conversationId, snoozeUntil ?? null, snoozeTier);
     } else if (body?.handled !== undefined) {
@@ -134,6 +135,15 @@ export async function POST(request: Request) {
       item = await setDeclaration(conversationId, body.declaration as "none" | "pending" | "declared");
     } else if (body?.saved !== undefined) {
       item = await saveConversation(conversationId, Boolean(body.saved));
+      // Bij bewaren bepaalt het model of het gesprek klaar is of dat er nog
+      // iets wacht; de pil op de kaart laat dat zien.
+      if (body.saved) {
+        const judged = await judgeSavedConversation(user.id, conversationId).catch(() => false);
+        if (judged) {
+          const state = await readStateOnce();
+          item = state.assessments.find((entry) => entry.conversationId === conversationId) ?? item;
+        }
+      }
     } else {
       return Response.json({ error: "Onbekende actie." }, { status: 400 });
     }

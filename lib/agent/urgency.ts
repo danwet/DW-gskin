@@ -70,6 +70,17 @@ export function urgencyFor(
   const deadline = parseDeadline(assessment.deadline) ?? parseDeadline(invoice?.dueDate ?? null);
   const today = startOfDayInZone(timeZone, now);
 
+  // Bij bewaren heeft het model gezegd of het gesprek klaar is of dat er nog
+  // iets wacht; dat is dan de boodschap van de pil.
+  if (assessment.savedAt && assessment.savedVerdict) {
+    const gestopt = assessment.savedVerdict.stopped;
+    return {
+      tone: gestopt ? "green" : "orange",
+      label: gestopt ? "Afgerond" : "Actie wacht",
+      deadlineValue: deadline?.getTime() ?? null,
+      deadlineText: deadlineText(deadline),
+    };
+  }
   if (handled && !needsAttention) {
     // A paid invoice says so; "afgehandeld" belongs to mail without a bill.
     const label = invoice || assessment.declaration ? "Betaald" : "Afgehandeld";
