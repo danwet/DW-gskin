@@ -698,7 +698,7 @@ export function InvoiceBlock({ item }: { item: MailAssessment }) {
         : "Geen eurofactuur.";
 
   return (
-    <div className="relative mt-[2px] rounded-2xl bg-[var(--bg)] px-4 pt-3 pb-[32px]">
+    <div className="relative mt-[2px] rounded-2xl bg-[var(--bg)] px-4 pt-3 pb-[31px]">
       {/* De QR ligt als losse laag boven het vlak, rechts uitgelijnd op de rand. */}
       <div className="min-w-0">
         <p className="relative -top-[2px] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)]">FACTUURINFORMATIE</p>
@@ -720,7 +720,7 @@ export function InvoiceBlock({ item }: { item: MailAssessment }) {
 
       {epc ? (
         // Alleen om de QR een wit vlak: de scanner heeft contrast nodig.
-        <div className="absolute top-[4px] right-[4px] z-10 rounded-2xl bg-white p-3 shadow-[0_6px_18px_-8px_rgba(16,24,40,0.35)]">
+        <div className="absolute top-[4px] right-[4px] z-10 rounded-2xl bg-white p-3">
           <QRCodeSVG value={epc} size={128} level="M" aria-label="SEPA-betaling QR-code" />
         </div>
       ) : (
