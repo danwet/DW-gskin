@@ -194,8 +194,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         // btn-primary zet zelf `position: relative`; !fixed houdt de knop rechtsonder.
         className="btn-primary focus-ring !fixed right-6 bottom-6 z-40 grid h-14 w-14 place-items-center rounded-full shadow-[var(--shadow)]"
       >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-          <path d="M12 5v14M5 12h14" />
+        {/* Nieuwe mail: een pen op een vel, geen plus. */}
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z" />
         </svg>
       </button>
       <NewMailSheet open={nieuweMail} onClose={() => setNieuweMail(false)} />
