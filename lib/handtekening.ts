@@ -13,10 +13,8 @@ export function opschonenHandtekening(html: string): string {
     .replace(/<\/style=[^>]*>/gi, "")
     .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
     .replace(/javascript:/gi, "")
-    // Lege blokken en rijen losse <br> onderaan zorgen voor een vel dat meters
-    // hoog wordt; die halen we weg.
-    .replace(/<div[^>]*>(\s|&nbsp;|<br\s*\/?>)*<\/div>/gi, "")
-    .replace(/(<br\s*\/?>\s*){3,}/gi, "<br><br>")
-    .replace(/(<br\s*\/?>\s*)+$/gi, "")
+    // Alleen écht lege blokken gaan weg. <br>-regels blijven staan: die geven
+    // de optische ruimte tussen twee mails en zijn dus de bedoeling.
+    .replace(/<div[^>]*>(\s|&nbsp;)*<\/div>/gi, "")
     .trim();
 }
