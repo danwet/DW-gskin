@@ -312,7 +312,8 @@ button {
 .glass-chip,
 .btn-secondary {
   position: relative;
-  overflow: hidden;
+  /* Geen overflow-hidden: de glans volgt de eigen radius, maar een badge die
+     buiten de knop steekt (zoals op de bel) mag niet afgeknipt worden. */
   transition: background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease,
     transform 0.08s ease;
 }
