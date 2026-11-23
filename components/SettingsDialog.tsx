@@ -649,7 +649,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Status({ dot, label }: { dot: boolean; label: string }) {
   return (
     <span className="flex shrink-0 items-center gap-1.5 text-[13px] font-medium">
-      <span className={`h-1.5 w-1.5 rounded-full ${dot ? "bg-[var(--green)]" : "bg-[var(--faint)]"}`} />
+      <span className={`h-1.5 w-1.5 rounded-full ${dot ? "bg-[var(--dot-green)]" : "bg-[var(--faint)]"}`} />
       {label}
     </span>
   );
