@@ -231,7 +231,9 @@ export async function triageStep(userId: string, ownerEmail?: string | null): Pr
   if (untriaged.length === 0) {
     const state = await getImportState(userId);
     if (state && state.phase !== "done") await updateImportState(userId, { phase: "done" });
-    return { ok: true, step: "idle", processed: 0, progress: await readProgress(userId) };
+    // Ook zonder nieuwe mail: kaarten van vóór het urgentie-oordeel bijwerken.
+    const filled = await backfillTiers(userId, { provider, apiKey, model });
+    return { ok: true, step: "idle", processed: filled, progress: await readProgress(userId) };
   }
 
   const grouped = groupByConversation(untriaged);
