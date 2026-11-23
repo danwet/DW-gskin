@@ -308,17 +308,22 @@ export async function clearTriagedFlag(userId: string, threadId: string): Promis
     .eq("thread_id", threadId);
 }
 
-/** Berichten waarvan de HTML-inhoud ontbreekt, oudste eerst. */
+/**
+ * Berichten waarvan de HTML-inhoud ontbreekt. Bij het opslaan komt er een lege
+ * string in te staan als er geen HTML was, dus null alléén is niet genoeg.
+ */
 export async function listMessagesWithoutHtml(userId: string, limit = 3): Promise<string[]> {
   const supabase = await dbClient();
   const { data } = await supabase
     .from("dw_gmail_messages")
-    .select("message_id")
+    .select("message_id, body_html")
     .eq("user_id", userId)
-    .is("body_html", null)
     .order("received_at", { ascending: false })
-    .limit(limit);
-  return ((data ?? []) as { message_id: string }[]).map((row) => row.message_id);
+    .limit(60);
+  return ((data ?? []) as { message_id: string; body_html: string | null }[])
+    .filter((row) => !(row.body_html ?? "").trim())
+    .slice(0, limit)
+    .map((row) => row.message_id);
 }
 
 /** Vult de HTML-inhoud van een bericht aan. */
@@ -328,6 +333,5 @@ export async function setMessageHtml(userId: string, messageId: string, html: st
     .from("dw_gmail_messages")
     .update({ body_html: sanitizeText(keepHeadAndTail(html, 600_000)) })
     .eq("user_id", userId)
-    .eq("message_id", messageId)
-    .is("body_html", null);
+    .eq("message_id", messageId);
 }

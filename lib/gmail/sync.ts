@@ -263,6 +263,15 @@ export async function triageStep(userId: string, ownerEmail?: string | null): Pr
       )
     : untriaged;
 
+  // Wat we overslaan (je eigen antwoord in een bestaand gesprek) hoeft geen
+  // kaart, maar moet wél als beoordeeld gemarkeerd worden. Anders blijft het
+  // voor altijd in de wachtrij staan en lijkt de agent eindeloos bezig.
+  const overgeslagen = untriaged.filter((message) => !relevant.includes(message));
+  for (const message of overgeslagen) {
+    const threadId = message.threadId ?? message.id;
+    await markThreadTriaged(userId, threadId).catch(() => null);
+  }
+
   const grouped = groupByConversation(relevant);
   const threads = Array.from(grouped.entries())
     .map(([conversationId, list]) => ({ conversationId, latest: list[list.length - 1] }))

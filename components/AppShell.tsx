@@ -237,14 +237,14 @@ function SidebarContent({
   // During triage the useful total is what still needs judging plus what is
   // already done; threadsImported is 0 when nothing new arrived.
   const remaining = syncProgress?.pending ?? 0;
-  const total = triaging
-    ? (syncProgress?.triaged ?? 0) + remaining || null
-    : (syncProgress?.total ?? null);
-  const shown = triaging ? (syncProgress?.triaged ?? 0) : (syncProgress?.imported ?? 0);
+  // Tijdens het beoordelen is er geen betrouwbare noemer: het aantal dat al
+  // beoordeeld is telt op over alle rondes. We tonen daarom wat er nog ligt.
+  const total = triaging ? null : (syncProgress?.total ?? null);
+  const shown = triaging ? remaining : (syncProgress?.imported ?? 0);
   const importTotal = syncingNow && total ? total : null;
-  const percent = importTotal ? Math.min(100, Math.round((shown / importTotal) * 100)) : 0;
+  const percent = importTotal ? Math.min(100, Math.round(((total ?? 0) - shown) / (total ?? 1) * 100)) : 0;
   const progressLabel = triaging ? "Beoordelen" : "Indexeren";
-  const progressUnit = "berichten";
+  const progressUnit = triaging ? "te gaan" : "berichten";
 
   return (
     <div className="sidebar-enter relative z-10 flex min-h-0 flex-1 flex-col">
