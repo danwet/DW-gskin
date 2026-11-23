@@ -174,6 +174,11 @@ export type RunRecord = {
 };
 
 export type AgentMeta = {
+  /**
+   * Berichten die de gebruiker zelf uit de inbox haalde. De recente-import
+   * slaat ze over, anders komt een gearchiveerde mail elke ronde terug.
+   */
+  hiddenMessageIds?: string[];
   lastRunAt: string | null;
   lastSuccessfulRunAt: string | null;
   lastError: string | null;

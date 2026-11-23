@@ -33,17 +33,35 @@ function isoToDisplay(iso: string): string {
   return `${match[3]} / ${match[2]} / ${match[1]}`;
 }
 
-/** Wat de gebruiker typt (dd/mm/yyyy) terug naar ISO, of null als het geen datum is. */
-function displayToIso(text: string): string | null {
-  const digits = text.replace(/\D/g, "");
-  if (digits.length !== 8) return null;
-  const day = Number(digits.slice(0, 2));
-  const month = Number(digits.slice(2, 4));
-  const year = Number(digits.slice(4));
+/**
+ * Wat de gebruiker typt terug naar ISO, of null als het geen datum is.
+ * Zowel "06/12/2026" als "6-12-2026", "6 12 26" en "6/12/2026" worden geaccepteerd:
+ * een voorloopnul hoeft niet, en een jaartal van twee cijfers telt als 20xx.
+ */
+export function displayToIso(text: string): string | null {
+  const metScheiding = /^(\d{1,2})\s*[-/.\s]\s*(\d{1,2})\s*[-/.\s]\s*(\d{2,4})$/.exec(text.trim());
+  let day: number;
+  let month: number;
+  let year: number;
+  if (metScheiding) {
+    day = Number(metScheiding[1]);
+    month = Number(metScheiding[2]);
+    year = Number(metScheiding[3]);
+  } else {
+    // Zonder scheidingstekens blijft de oude vorm werken: 06122026.
+    const digits = text.replace(/\D/g, "");
+    if (digits.length !== 8) return null;
+    day = Number(digits.slice(0, 2));
+    month = Number(digits.slice(2, 4));
+    year = Number(digits.slice(4));
+  }
+  if (year < 100) year += 2000;
+  if (year < 1900 || year > 2200) return null;
   if (month < 1 || month > 12 || day < 1 || day > 31) return null;
   const probe = new Date(year, month - 1, day, 12);
   if (probe.getFullYear() !== year || probe.getMonth() !== month - 1 || probe.getDate() !== day) return null;
-  return `${digits.slice(4)}-${digits.slice(2, 4)}-${digits.slice(0, 2)}`;
+  const iso = (value: number, length = 2) => String(value).padStart(length, "0");
+  return `${iso(year, 4)}-${iso(month)}-${iso(day)}`;
 }
 
 /** Schuift een ISO-datum een aantal dagen op of terug. */

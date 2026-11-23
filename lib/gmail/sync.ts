@@ -6,6 +6,7 @@ import { loadAgentConfig, type ProviderId } from "../agent/config";
 import {
   markArchivedByAgent,
   readAssessments,
+  readMeta,
   setAssessmentTier,
   setUserReplied,
   unarchiveConversation,
@@ -363,7 +364,9 @@ async function importRecentMail(userId: string, refreshToken: string): Promise<n
   if (!page.ok || page.ids.length === 0) return 0;
 
   const known = new Set((await listStoredMessages(userId)).map((row) => row.message_id));
-  const fresh = page.ids.filter((id) => !known.has(id)).slice(0, 8);
+  // Wat je zelf archiveerde komt hier niet opnieuw binnen.
+  const verborgen = new Set((await readMeta()).hiddenMessageIds ?? []);
+  const fresh = page.ids.filter((id) => !known.has(id) && !verborgen.has(id)).slice(0, 8);
   if (fresh.length === 0) return 0;
 
   const messages = [];

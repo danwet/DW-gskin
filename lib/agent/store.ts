@@ -492,6 +492,30 @@ export function saveConversation(conversationId: string, saved: boolean): Promis
   });
 }
 
+/** Onthoudt dat deze berichten bewust uit de inbox verdwenen. */
+export function rememberHiddenMessages(ids: string[]): Promise<void> {
+  if (ids.length === 0) return Promise.resolve();
+  return withLock(async () => {
+    const state = await readState();
+    const huidig = new Set(state.meta.hiddenMessageIds ?? []);
+    for (const id of ids) huidig.add(id);
+    // Alleen de recente onthouden: ouder dan dit komt toch niet meer binnen.
+    state.meta.hiddenMessageIds = [...huidig].slice(-500);
+    await writeState(state);
+  });
+}
+
+/** Een bericht kwam terug in de inbox: niet langer verborgen. */
+export function forgetHiddenMessages(ids: string[]): Promise<void> {
+  if (ids.length === 0) return Promise.resolve();
+  return withLock(async () => {
+    const state = await readState();
+    const weg = new Set(ids);
+    state.meta.hiddenMessageIds = (state.meta.hiddenMessageIds ?? []).filter((id) => !weg.has(id));
+    await writeState(state);
+  });
+}
+
 /** Bewaaroordeel van het model: is het gesprek klaar of wacht er nog actie? */
 export function setSavedVerdict(
   conversationId: string,

@@ -129,7 +129,9 @@ export function InboxGrid({
     else snoozedIntoInfo.push(item);
   }
 
-  const infoTab = [...orderedInfo, ...orderNewestFirst(snoozedIntoInfo)];
+  // Alles samen opnieuw sorteren: een afgelopen snooze hoorde niet onderaan te
+  // belanden maar gewoon op zijn plek tussen de rest.
+  const infoTab = orderNewestFirst([...orderedInfo, ...snoozedIntoInfo]);
 
   const isEmpty = ordered.length === 0 && orderedInfo.length === 0 && orderedDeclare.length === 0;
 

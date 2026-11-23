@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   enableNotifications,
   notificationPermission,
   notificationsSupported,
+  setWantedOnThisDevice,
   wantedOnThisDevice,
 } from "@/lib/desktop-notify";
 import { timeZoneOf } from "./AgentInbox";
@@ -38,11 +39,25 @@ export function NotificationsBell({
   const [desktop, setDesktop] = useState<NotificationPermission | "unsupported">("default");
   const [desktopWanted, setDesktopWanted] = useState(false);
 
-  useEffect(() => {
+  // De toestemming van de browser is de waarheid: staat hij op "granted", dan
+  // zijn meldingen aan — ook als de lokale vlag ooit is blijven hangen.
+  const syncPermission = useCallback(() => {
     if (typeof window === "undefined") return;
-    setDesktop(notificationPermission());
-    setDesktopWanted(wantedOnThisDevice());
+    const permission = notificationPermission();
+    setDesktop(permission);
+    if (permission === "granted") {
+      setWantedOnThisDevice(true);
+      setDesktopWanted(true);
+    } else {
+      setDesktopWanted(wantedOnThisDevice());
+    }
   }, []);
+
+  useEffect(() => {
+    syncPermission();
+    window.addEventListener("focus", syncPermission);
+    return () => window.removeEventListener("focus", syncPermission);
+  }, [syncPermission]);
 
   // Klik buiten de popup (en buiten de bel zelf) sluit hem.
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -155,7 +170,7 @@ export function NotificationsBell({
                     style={{ fontSize: "10px", lineHeight: "14px" }}
                   >
                     {desktop === "denied"
-                      ? "Meldingen geblokkeerd in de browser"
+                      ? "Geblokkeerd voor deze site — zet het aan via het slotje"
                       : "Notificaties aanzetten"}
                   </button>
                 ) : null}

@@ -2,9 +2,11 @@ import "server-only";
 
 import { refreshGoogleAccessToken } from "../google-token";
 import {
+  forgetHiddenMessages,
   markArchivedByAgent,
   readAssessments,
   readMeta,
+  rememberHiddenMessages,
   removeAssessments,
   unarchiveConversation,
   updateMeta,
@@ -161,6 +163,9 @@ export async function reconcileGmailHistory(
           stored.filter((row) => purchases.has(row.thread_id)).map((row) => row.message_id),
         );
         const targets = [...gone].filter((id) => !keep.has(id));
+        // Onthoud wat je zelf uit de inbox haalde, zodat de recente-import het
+        // niet elke ronde opnieuw binnenhaalt.
+        await rememberHiddenMessages(targets);
         const emptied = await purgeMessages(userId, targets);
         await removeAssessments(emptied.filter((id) => !archived.has(id) && !purchases.has(id)));
         if (purchases.size > 0) await markArchivedByAgent([...purchases]);
@@ -180,6 +185,7 @@ export async function reconcileGmailHistory(
         if (messages.length > 0) await saveMessages(userId, messages);
         // Post comes back into the inbox: an earlier archive in that thread no
         // longer applies, otherwise the card stays hidden while Gmail shows it.
+        await forgetHiddenMessages([...backInInbox]);
         for (const id of backInInbox) {
           const threadId =
             messages.find((message) => message.id === id)?.threadId ?? threadOf.get(id) ?? id;
