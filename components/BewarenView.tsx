@@ -11,13 +11,15 @@ export function BewarenView() {
   const now = new Date();
   const timeZone = timeZoneOf();
 
+  // De maand waarin de mail verstuurd is bepaalt de indeling, niet wanneer je
+  // hem bewaarde: een oude mail die je vandaag opbergt hoort bij zijn eigen maand.
   const saved = inbox.items
     .filter((item) => Boolean(item.savedAt))
-    .sort((a, b) => Date.parse(b.savedAt!) - Date.parse(a.savedAt!));
+    .sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
 
   const groups: { key: string; label: string; items: MailAssessment[] }[] = [];
   for (const item of saved) {
-    const date = new Date(item.savedAt!);
+    const date = new Date(item.receivedAt);
     const key = `${date.getFullYear()}-${date.getMonth()}`;
     const label = date.toLocaleDateString("nl-NL", { month: "long", year: "numeric" });
     const group = groups.find((g) => g.key === key);
@@ -48,7 +50,14 @@ export function BewarenView() {
         <div className="space-y-10">
           {groups.map((group) => (
             <section key={group.key}>
-              <h2 className="mb-4 text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)] capitalize">{group.label}</h2>
+              {/* De maand met een lijn die naast het label begint en tot de
+                  rechterkant doorloopt; verticaal in het midden van de tekst. */}
+              <div className="mb-4 flex items-center gap-3">
+                <h2 className="shrink-0 text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)] capitalize">
+                  {group.label}
+                </h2>
+                <span aria-hidden="true" className="h-px flex-1 bg-[var(--line)]" />
+              </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {group.items.map((item, index) => (
                   <InboxCard
