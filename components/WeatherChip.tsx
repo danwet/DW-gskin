@@ -17,7 +17,7 @@ export function WeatherChip() {
         <span className="tnum block text-[14px] leading-none font-semibold text-[var(--ink)]">
           {weather ? `${weather.temperature}°` : weatherError ? "—" : "…"}
         </span>
-        <span className="mt-1 block text-[11px] text-[var(--muted)]">
+        <span className="-mt-px block text-[11px] text-[var(--muted)]">
           {weather?.condition ?? (weatherError ? "Locatie onbekend" : "Weer laden")}
         </span>
       </span>
