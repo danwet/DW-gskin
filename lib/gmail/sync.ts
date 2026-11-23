@@ -16,6 +16,7 @@ import type { InboundMessage } from "../agent/types";
 import { refreshGoogleAccessToken } from "../google-token";
 import { fetchGmailMessage, listGmailInbox, listGmailRecent, listGmailSent } from "./fetch";
 import { backfillSavedVerdicts } from "../agent/saved-verdict";
+import { backfillShortSubjects } from "../agent/short-subject";
 import { reconcileGmailHistory } from "./history";
 import { archiveGmailMessage, markGmailMessageRead } from "./actions";
 import {
@@ -505,6 +506,8 @@ export async function syncStep(
 
   // Bewaarde mails zonder oordeel krijgen dat alsnog van het model.
   await backfillSavedVerdicts(userId).catch(() => 0);
+  // En lange onderwerpen krijgen een korte versie voor op de kaart.
+  await backfillShortSubjects().catch(() => 0);
 
   // Order mail whose status is now stored goes to the archive by itself.
   const autoArchived = await archiveProcessedOrders(userId, refreshToken).catch(() => 0);

@@ -37,6 +37,8 @@ export type AssessmentDraft = {
   classification: AgentClassification;
   /** De soort mail, door het model benoemd. */
   category?: MailCategory;
+  /** Korte weergave van het onderwerp voor op de kaart. */
+  shortSubject?: string;
   /** Het oordeel van het model over de urgentie van vandaag. */
   tier?: "moet" | "mag" | "hoeft_niet";
   /** True wanneer het model deze beoordeling heeft gemaakt (i.p.v. de regels). */
@@ -74,6 +76,11 @@ const ASSESSMENT_SCHEMA = {
       enum: ["moet", "mag", "hoeft_niet"],
       description:
         "How much attention this needs TODAY. 'moet' = money is owed (any invoice, bill or payment request, regardless of amount or due date), a deadline within days, or someone blocked without you. 'mag' = worth doing but harmless to postpone (activating a direct debit, settings, routine admin). 'hoeft_niet' = purely informational.",
+    },
+    shortSubject: {
+      type: "string",
+      description:
+        "A short version of the subject for the card, at most about 50 characters or 7 words, keeping the meaning. Empty string when the subject already fits.",
     },
     nextAction: { type: "string" },
     priorityReason: { type: "string" },
@@ -171,6 +178,7 @@ const INSTRUCTION_LINES = [
   "draftReply: a short, ready-to-send reply in the language of the sender when classification is reply_needed; otherwise null.",
   "Never invent amounts, dates, or consequences. Prefer null or empty over guessing.",
   "If the thread already contains a message from the user (you answered earlier), the latest mail is a reply to you. Such a thread is never info and never a newsletter: use action_needed, reply_needed or waiting, so it never drops into the lowest tier.",
+  "shortSubject: the subject often runs long. Give a shorter version of at most about 50 characters or seven words that still says what the mail is about; leave it empty when the subject already fits on two lines. Never invent a different subject.",
   "category names the kind of mail as you read it: order (something bought, a purchase confirmation, licence, subscription or trial), invoice (something still to pay), appointment, question (addressed to the user), admin (paperwork, contracts, changes), newsletter, other. Decide it by what the mail means, not by a word in the subject.",
   "A purchase is an order, not information: a receipt, order confirmation, licence, subscription, upgrade or free trial from a shop or from a payment provider (Paddle, Stripe, Mollie, Apple, Google Play, PayPal) must fill the purchase object. A trial that has started is a purchase too — name the product and when it ends. Such a mail is never info and never a newsletter.",
   "A free trial charges nothing today: use status trial, fill endsAt with the day the trial ends, and leave amount null unless money was actually taken. Only a paid order gets status paid with an amount.",
@@ -280,6 +288,7 @@ export function normalizeDraft(value: unknown): AssessmentDraft {
   return {
     classification,
     category,
+    shortSubject: str(row.shortSubject) || undefined,
     viaModel: true,
     tier: tier ?? (classification === "info" ? "hoeft_niet" : classification === "waiting" ? "mag" : "mag"),
     nextAction: str(row.nextAction),

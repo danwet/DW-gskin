@@ -373,6 +373,7 @@ export function buildAssessment(
     link: latest.link,
     classification: draft.classification,
     category: draft.category,
+    shortSubject: draft.shortSubject,
     viaModel: draft.viaModel ?? false,
     // Een factuur volgt de uiterste betaaldatum, niet het bedrag en niet het
     // model: ver weg is 'mag', dichtbij (of onbekend) is 'moet'.

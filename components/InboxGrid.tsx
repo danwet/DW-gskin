@@ -531,7 +531,9 @@ export function InboxCard({
             onderwerp schuiven daardoor samen naar beneden. */}
         <p className="w-full truncate text-[22px] leading-7 font-semibold text-[var(--ink)]">{item.from}</p>
         <BalancedText
-          text={item.subject}
+          // Past het onderwerp niet op twee regels, dan gaf het model een korte
+          // versie; die houdt de kaart leesbaar.
+          text={item.shortSubject || item.subject}
           className="flex min-h-[40px] w-full flex-col justify-start text-[14px] leading-5 text-[var(--muted)]"
         />
       </div>

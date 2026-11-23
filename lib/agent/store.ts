@@ -631,6 +631,17 @@ export function updateMeta(patch: Partial<AgentMeta>): Promise<void> {
   });
 }
 
+/** Korte onderwerpregel voor op de kaart. */
+export function setShortSubject(conversationId: string, shortSubject: string): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    const item = state.assessments[conversationId];
+    if (!item || item.shortSubject === shortSubject) return;
+    item.shortSubject = shortSubject;
+    await writeState(state);
+  });
+}
+
 /** Vult de uiterste betaaldatum aan op een bestaande factuurkaart. */
 export function setInvoiceDueDate(
   conversationId: string,

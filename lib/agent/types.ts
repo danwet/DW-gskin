@@ -96,6 +96,9 @@ export type MailAssessment = {
    * soort, in plaats van dat een keyword bepaalt hoe hij behandeld wordt.
    */
   category?: "order" | "invoice" | "appointment" | "question" | "admin" | "newsletter" | "other";
+  /** Korte versie van het onderwerp, voor als het niet op twee regels past. */
+  shortSubject?: string;
+
   classification: AgentClassification;
   nextAction: string;
   priorityReason: string;
