@@ -6,7 +6,7 @@ export function BrandMark({ className = "" }: { className?: string }) {
   return (
     <div className={className}>
       <img src="/dw-mark.png" alt="DW" className="h-auto w-full dark:invert" />
-      <p className="mt-1.5 pl-[0.7em] text-center text-[10px] font-light uppercase tracking-[0.7em] text-[var(--muted)]">
+      <p className="mt-1.5 pl-[0.7em] text-center text-[12px] font-light uppercase tracking-[0.7em] text-[var(--muted)]">
         GSKIN
       </p>
     </div>

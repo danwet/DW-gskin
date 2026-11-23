@@ -124,7 +124,7 @@ export function DraftDialog() {
               type="button"
               onClick={() => void verstuur()}
               disabled={versturen === "bezig" || !draft.draft.trim()}
-              className="btn-primary focus-ring rounded-full px-5 py-2 text-[14px] font-medium disabled:opacity-60"
+              className="btn-primary focus-ring rounded-full px-5 py-2 text-[14px] disabled:opacity-60"
             >
               {versturen === "bezig" ? "Versturen…" : "Versturen"}
             </button>

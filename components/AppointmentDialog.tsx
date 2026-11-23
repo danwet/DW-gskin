@@ -249,7 +249,7 @@ export function AppointmentDialog({
                 type="button"
                 onClick={() => (event?.recurring ? setAskScope(true) : void remove("one"))}
                 disabled={busy}
-                className="btn-secondary focus-ring shrink-0 rounded-full px-4 py-3 text-[13px] leading-none font-medium whitespace-nowrap text-[var(--danger)] disabled:opacity-60"
+                className="btn-secondary focus-ring shrink-0 rounded-full px-4 py-3 text-[13px] leading-none whitespace-nowrap text-[var(--danger)] disabled:opacity-60"
               >
                 Verwijderen
               </button>
@@ -259,7 +259,7 @@ export function AppointmentDialog({
                 type="button"
                 onClick={() => void save()}
                 disabled={busy}
-                className="btn-primary focus-ring shrink-0 rounded-full px-8 py-3 text-[14px] leading-none font-medium disabled:opacity-60"
+                className="btn-primary focus-ring shrink-0 rounded-full px-8 py-3 text-[14px] leading-none disabled:opacity-60"
               >
                 {busy ? "Bezig…" : "Opslaan"}
               </button>

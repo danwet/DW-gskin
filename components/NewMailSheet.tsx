@@ -185,7 +185,7 @@ export function NewMailSheet({ open, onClose }: { open: boolean; onClose: () => 
               type="button"
               onClick={() => void verstuur()}
               disabled={stand === "bezig" || !aan.trim() || !onderwerp.trim()}
-              className="btn-primary focus-ring rounded-full px-5 py-2 text-[14px] font-medium disabled:opacity-60"
+              className="btn-primary focus-ring rounded-full px-5 py-2 text-[14px] disabled:opacity-60"
             >
               {stand === "bezig" ? "Versturen…" : "Versturen"}
             </button>
@@ -303,7 +303,7 @@ export function NewMailSheet({ open, onClose }: { open: boolean; onClose: () => 
             <button
               type="button"
               onClick={() => invoer.current?.click()}
-              className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[12px] font-medium"
+              className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[12px]"
             >
               Kies bestanden
             </button>

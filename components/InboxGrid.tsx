@@ -580,14 +580,16 @@ export function InboxCard({
         ) : null}
 
         <div className={isNewsletter ? "mt-auto w-full" : "w-full"}>
-            <div className="mt-3 flex items-center justify-center gap-2">
+            {/* Actie en prullenbak naast elkaar, onderaan, met een beetje
+                ruimte ertussen. Geen pixelgegoochel: gewoon een flex-rij. */}
+            <div className={`flex items-center justify-center gap-3 ${isNewsletter ? "" : "mt-3"}`}>
               <button
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
                   openCta();
                 }}
-                className={`focus-ring relative w-[60%] rounded-full px-3 py-2 text-[13px] font-medium ${
+                className={`focus-ring rounded-full px-5 py-2 text-[13px] ${
                   isPrimaryCta(item) ? "btn-primary" : "btn-secondary"
                 }`}
               >
@@ -602,7 +604,7 @@ export function InboxCard({
                   }}
                   aria-label="Naar de prullenbak"
                   title="Naar de prullenbak"
-                  className="glass-chip focus-ring grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full text-[var(--muted)] hover:text-[var(--danger)]"
+                  className="glass-chip focus-ring grid h-10 w-10 shrink-0 place-items-center rounded-full text-[var(--muted)] hover:text-[var(--danger)]"
                 >
                   <TrashIcon />
                 </button>
@@ -1164,7 +1166,7 @@ export function InboxModal({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[12px] font-medium"
+                  className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[12px]"
                 >
                   Kies bestanden
                 </button>
@@ -1222,7 +1224,7 @@ export function InboxModal({
                 // Gedeclareerd is klaar: de mail gaat naar het archief.
                 runAction("archive");
               }}
-              className="btn-primary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+              className="btn-primary focus-ring rounded-full px-3 py-1.5 text-[13px]"
             >
               Gedeclareerd
             </button>
@@ -1233,7 +1235,7 @@ export function InboxModal({
                 type="button"
                 onClick={() => void sendReply()}
                 disabled={sending || !draft.trim()}
-                className="btn-primary relative rounded-full px-4 py-2 text-[13px] font-medium disabled:opacity-60"
+                className="btn-primary relative rounded-full px-4 py-2 text-[13px] disabled:opacity-60"
               >
                 {sending ? "Versturen…" : "Verstuur"}
               </button>
@@ -1241,7 +1243,7 @@ export function InboxModal({
                 type="button"
                 onClick={() => void runAction("archive")}
                 disabled={Boolean(busyAction)}
-                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px]"
               >
                 Archiveren
               </button>
@@ -1249,7 +1251,7 @@ export function InboxModal({
                 type="button"
                 onClick={() => void runAction("trash")}
                 disabled={Boolean(busyAction)}
-                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px]"
               >
                 Verwijderen
               </button>
@@ -1262,7 +1264,7 @@ export function InboxModal({
                   // Saving moves the mail out of Focus, so the popup can go.
                   if (next) onClose();
                 }}
-                className="btn-secondary focus-ring ml-auto rounded-full px-4 py-2 text-[13px] font-medium"
+                className="btn-secondary focus-ring ml-auto rounded-full px-4 py-2 text-[13px]"
               >
                 {saved ? "Bewaard" : "Bewaren"}
               </button>
@@ -1273,7 +1275,7 @@ export function InboxModal({
                     setHandled((value) => !value);
                     onToggleHandled(item);
                   }}
-                  className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+                  className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px]"
                 >
                   {handled ? "Ongedaan maken" : "Afhandelen"}
                 </button>
@@ -1285,7 +1287,7 @@ export function InboxModal({
                 type="button"
                 onClick={() => void runAction("archive")}
                 disabled={Boolean(busyAction)}
-                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px]"
               >
                 Archiveren
               </button>
@@ -1293,7 +1295,7 @@ export function InboxModal({
                 type="button"
                 onClick={() => void runAction("trash")}
                 disabled={Boolean(busyAction)}
-                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px]"
               >
                 Verwijderen
               </button>
@@ -1311,7 +1313,7 @@ export function InboxModal({
                     if (next && hasPayableInvoice(item) && !declaration) setShowDeclarePrompt(true);
                     if (!next) setShowDeclarePrompt(false);
                   }}
-                  className={`focus-ring relative rounded-full px-3 py-1.5 text-[13px] font-medium ${
+                  className={`focus-ring relative rounded-full px-3 py-1.5 text-[13px] ${
                     handled ? "btn-secondary text-[var(--muted)]" : "btn-primary"
                   }`}
                 >
@@ -1324,7 +1326,7 @@ export function InboxModal({
                     type="button"
                     onClick={() => void runAction("archive")}
                     disabled={Boolean(busyAction)}
-                    className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+                    className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px]"
                   >
                     Archiveren
                   </button>
@@ -1332,7 +1334,7 @@ export function InboxModal({
                     type="button"
                     onClick={() => void runAction("trash")}
                     disabled={Boolean(busyAction)}
-                    className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+                    className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px]"
                   >
                     Verwijderen
                   </button>
@@ -1346,7 +1348,7 @@ export function InboxModal({
                 type="button"
                 onClick={() => void runAction("archive")}
                 disabled={Boolean(busyAction)}
-                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px]"
               >
                 Archiveren
               </button>
@@ -1354,7 +1356,7 @@ export function InboxModal({
                 type="button"
                 onClick={() => void runAction("trash")}
                 disabled={Boolean(busyAction)}
-                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium"
+                className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px]"
               >
                 Verwijderen
               </button>
@@ -1365,7 +1367,7 @@ export function InboxModal({
               type="button"
               onClick={onUnsubscribe}
               disabled={unsubState === "sending" || unsubState === "sent"}
-              className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium disabled:opacity-60"
+              className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] disabled:opacity-60"
             >
               {unsubLabel(unsub)}
             </button>
@@ -1383,7 +1385,7 @@ export function InboxModal({
                 // Saving moves the mail out of Focus, so the popup can go.
                 if (next) onClose();
               }}
-              className="btn-secondary focus-ring ml-auto rounded-full px-4 py-2 text-[13px] font-medium"
+              className="btn-secondary focus-ring ml-auto rounded-full px-4 py-2 text-[13px]"
             >
               {saved ? "Bewaard" : "Bewaren"}
             </button>
@@ -1392,7 +1394,7 @@ export function InboxModal({
             <button
               type="button"
               onClick={snoozeTomorrow}
-              className={`btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] font-medium ${
+              className={`btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px] ${
                 item.draftReply || (onSave && tier !== "info") ? "" : "ml-auto"
               }`}
             >
@@ -1415,7 +1417,7 @@ export function InboxModal({
                   // the popup, drops the card and archives it as read.
                   runAction("archive");
                 }}
-                className="btn-primary focus-ring rounded-full px-4 py-1.5 text-[13px] font-medium"
+                className="btn-primary focus-ring rounded-full px-4 py-1.5 text-[13px]"
               >
                 Ja, declareren
               </button>
@@ -1427,7 +1429,7 @@ export function InboxModal({
                   setShowDeclarePrompt(false);
                   runAction("archive");
                 }}
-                className="btn-secondary focus-ring rounded-full px-4 py-1.5 text-[13px] font-medium"
+                className="btn-secondary focus-ring rounded-full px-4 py-1.5 text-[13px]"
               >
                 Nee
               </button>

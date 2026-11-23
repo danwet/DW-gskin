@@ -101,8 +101,9 @@ export function SelectorPill<T extends string>({
                 className={cn(
                   "group relative t-meta h-8 min-w-0 whitespace-nowrap rounded-full transition-colors",
                   !vullend && zes && "cat-dicht",
-                  // `!` omdat de typografie-klasse t-meta anders van de utility wint.
-                  actief ? "font-semibold! text-black" : "text-ink-muted hover:text-ink",
+                  // Alle labels even zwaar: het actieve label onderscheidt zich
+                  // door de glazen druppel en de kleur, niet door dikte.
+                  actief ? "font-normal! text-black" : "font-normal! text-ink-muted hover:text-ink",
                 )}
               >
                 {actief && <GlasDruppel layoutId={druppelId} className="inset-0" />}
@@ -111,18 +112,16 @@ export function SelectorPill<T extends string>({
                   {optie.badge ? (
                     <span
                       className={cn(
-                        "inline-flex h-[17px] min-w-[17px] items-center justify-center rounded-full px-1.5 text-[10px] leading-none font-semibold transition-colors",
-                        // Net als het label licht het balletje op bij hover.
-                        !actief && "group-hover:bg-[var(--ink)]",
-                        // Omgekeerd: op de actieve pil een donker balletje met wit
-                        // cijfer, daarbuiten een wit balletje met zwart cijfer.
-                        // In licht mode is --muted donker en --ink licht; het cijfer moet dus per
-                        // thema omklappen om leesbaar te blijven.
+                        // Een omtrek in plaats van een gevuld balletje: dat
+                        // weegt visueel minder naast het label.
+                        "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border px-1.5 text-[10px] leading-none font-medium transition-colors",
                         optie.badgeAlert
-                          ? "bg-[var(--dot-red)] text-white"
+                          ? "border-[var(--dot-red)] text-[var(--dot-red)]"
                           : actief
-                            ? "bg-black text-white dark:text-[var(--muted)]"
-                            : "bg-[var(--muted)] text-[#eef0f3] dark:text-black",
+                            // Zelfde kleur als het label: de cirkel en het
+                            // cijfer erven de tekstkleur van de actieve pil.
+                            ? "border-current text-current"
+                            : "border-[var(--muted)]/60 text-[var(--muted)]",
                       )}
                     >
                       {optie.badge}
