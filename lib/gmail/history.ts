@@ -1,7 +1,14 @@
 import "server-only";
 
 import { refreshGoogleAccessToken } from "../google-token";
-import { readAssessments, readMeta, removeAssessments, unarchiveConversation, updateMeta } from "../agent/store";
+import {
+  markArchivedByAgent,
+  readAssessments,
+  readMeta,
+  removeAssessments,
+  unarchiveConversation,
+  updateMeta,
+} from "../agent/store";
 import { listStoredMessages, purgeMessages, saveMessages } from "./store";
 import { fetchGmailMessage, listGmailInbox } from "./fetch";
 
@@ -143,9 +150,21 @@ export async function reconcileGmailHistory(
 
       if (gone.size > 0) {
         const archived = await archivedThreads();
-        const emptied = await purgeMessages(userId, [...gone]);
-        await removeAssessments(emptied.filter((id) => !archived.has(id)));
-        removed += gone.size;
+        // Een aankoop is een feit, geen inbox-item: die bewaren we ook als de
+        // mail in Gmail gearchiveerd is. Anders verdwijnt je aankoopgeschiedenis
+        // zodra je de bevestiging opruimt.
+        const purchases = new Set(
+          (await readAssessments()).filter((item) => item.purchase).map((item) => item.conversationId),
+        );
+        const stored = await listStoredMessages(userId);
+        const keep = new Set(
+          stored.filter((row) => purchases.has(row.thread_id)).map((row) => row.message_id),
+        );
+        const targets = [...gone].filter((id) => !keep.has(id));
+        const emptied = await purgeMessages(userId, targets);
+        await removeAssessments(emptied.filter((id) => !archived.has(id) && !purchases.has(id)));
+        if (purchases.size > 0) await markArchivedByAgent([...purchases]);
+        removed += targets.length;
       }
 
       if (backInInbox.size > 0) {

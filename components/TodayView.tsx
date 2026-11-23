@@ -289,10 +289,37 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
   }
   // Iets dat gekocht is (licentie, abonnement, trial) hoort bij Bestellingen,
   // ook als er geen pakket bij komt kijken.
-  const purchaseEntries = items
-    // Het model noemt de mailsoort; een order zonder expliciete aankoopgegevens
-    // hoort hier ook, zodat niets buiten de lijst valt.
-    .filter((item) => (item.purchase || item.category === "order") && !item.archivedAt)
+  // Eén regel per aankoop, niet per bevestiging: een payment provider stuurt
+  // vaak meerdere ontvangstbewijzen voor hetzelfde bedrag. Dezelfde
+  // transactiereferentie, of hetzelfde bedrag bij dezelfde winkel, is dezelfde
+  // aankoop; het aantal komt achter de regel te staan.
+  const purchaseGroups = new Map<
+    string,
+    { item: (typeof items)[number]; count: number; amount: number; receivedAt: string }
+  >();
+  for (const item of items) {
+    // Een betaalbevestiging staat al bij "Betaald"; hier zou hij dubbel tellen.
+    if (item.payment) continue;
+    const p = item.purchase;
+    const bedrag = Number(p?.amount ?? 0);
+    if (!p || bedrag <= 0) continue;
+    // Dezelfde aankoop herken je aan de transactiereferentie; zonder referentie
+    // aan hetzelfde bedrag bij dezelfde winkel.
+    const shop = (p.shop ?? item.from ?? "").toLowerCase().trim();
+    const key = p.orderNumber ? `ref:${shop}:${p.orderNumber.toLowerCase()}` : `amt:${shop}:${bedrag}`;
+    const group = purchaseGroups.get(key);
+    if (!group) {
+      purchaseGroups.set(key, { item, count: 1, amount: bedrag, receivedAt: item.receivedAt });
+    } else {
+      group.count += 1;
+      group.amount += bedrag;
+      if (Date.parse(item.receivedAt) > Date.parse(group.receivedAt)) {
+        group.item = item;
+        group.receivedAt = item.receivedAt;
+      }
+    }
+  }
+  const purchaseEntries = [...purchaseGroups.values()]
     .sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt))
     .slice(0, 6);
 
@@ -361,20 +388,21 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
             </li>
           );
         })}
-        {purchaseEntries.map((item) => {
+        {purchaseEntries.map((entry) => {
+          const item = entry.item;
           const p = item.purchase ?? { status: "unknown" as const };
           const label =
             p.status === "trial"
               ? `Proefperiode${p.endsAt ? ` t/m ${formatDate(p.endsAt)}` : ""}`
-              : p.status === "paid"
-                ? "Gekocht"
+              : p.status === "paid" || p.status === "unknown"
+                ? "Betaald"
                 : p.status === "renewed"
                   ? "Verlengd"
                   : p.status === "refunded"
                     ? "Terugbetaald"
                     : p.status === "cancelled"
                       ? "Opgezegd"
-                      : "Aankoop";
+                      : "Betaald";
           const kleur =
             p.status === "trial"
               ? "var(--dot-orange)"
@@ -385,14 +413,19 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
             <li key={`aankoop-${item.conversationId}`} className="flex items-start gap-3">
               <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: kleur }} />
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-semibold text-[var(--ink)]">{label}</p>
+                <p className="text-[13px] font-semibold text-[var(--ink)]">
+                  {label}
+                  {entry.count > 1 ? <span className="font-normal text-[var(--muted)]"> · {entry.count}×</span> : null}
+                </p>
                 <div className="mt-1 flex items-baseline justify-between gap-3">
                   <p className="truncate text-[13px] text-[var(--ink)]">
                     {p.shop ?? item.from}
                     {p.product && p.product !== p.shop ? <span className="text-[var(--muted)]"> · {p.product}</span> : null}
                   </p>
-                  {p.amount != null ? (
-                    <p className="shrink-0 text-[12px] text-[var(--muted)]">€ {p.amount.toFixed(2).replace(".", ",")}</p>
+                  {entry.amount > 0 ? (
+                    <p className="shrink-0 text-[12px] text-[var(--muted)]">
+                      € {entry.amount.toFixed(2).replace(".", ",")}
+                    </p>
                   ) : null}
                 </div>
               </div>
