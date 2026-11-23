@@ -301,12 +301,15 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
     // Een betaalbevestiging staat al bij "Betaald"; hier zou hij dubbel tellen.
     if (item.payment) continue;
     const p = item.purchase;
-    const bedrag = Number(p?.amount ?? 0);
-    if (!p || bedrag <= 0) continue;
-    // Dezelfde aankoop herken je aan de transactiereferentie; zonder referentie
-    // aan hetzelfde bedrag bij dezelfde winkel.
+    if (!p) continue;
+    const bedrag = Number(p.amount ?? 0);
+    // Een gratis trial kost niets; dat mag hem niet uit de lijst halen.
+    // Dezelfde aankoop herken je aan de transactiereferentie, anders aan
+    // hetzelfde bedrag (of dezelfde einddatum) bij dezelfde winkel.
     const shop = (p.shop ?? item.from ?? "").toLowerCase().trim();
-    const key = p.orderNumber ? `ref:${shop}:${p.orderNumber.toLowerCase()}` : `amt:${shop}:${bedrag}`;
+    const key = p.orderNumber
+      ? `ref:${shop}:${p.orderNumber.toLowerCase()}`
+      : `amt:${shop}:${bedrag > 0 ? bedrag : (p.endsAt ?? "geen")}`;
     const group = purchaseGroups.get(key);
     if (!group) {
       purchaseGroups.set(key, { item, count: 1, amount: bedrag, receivedAt: item.receivedAt });

@@ -302,9 +302,12 @@ async function archiveProcessedOrders(userId: string, refreshToken: string): Pro
   const candidates = assessments.filter(
     (item) =>
       item.mailbox === "gmail" &&
-      Boolean(item.shipment || item.payment) &&
       !item.archivedAt &&
-      item.classification === "info",
+      // Verzend- en betaalbevestigingen zijn nieuws van de dag.
+      ((Boolean(item.shipment || item.payment) && item.classification === "info") ||
+        // Een aankoopbewijs is verwerkt zodra het in Bestellingen staat; alleen
+        // iets dat nog aandacht vraagt blijft in de inbox.
+        (Boolean(item.purchase) && item.tier !== "moet")),
   );
   if (candidates.length === 0) return 0;
 
