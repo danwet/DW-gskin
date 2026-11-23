@@ -32,9 +32,11 @@ function pillTone(item: MailAssessment, tone: UrgencyTone): UrgencyTone {
 }
 
 /** No deadline is neutral: grey, not the urgency colour. */
-function deadlineClass(urgency: { tone: UrgencyTone; deadlineText: string }): string {
+function deadlineClass(item: MailAssessment, urgency: { tone: UrgencyTone; deadlineText: string }): string {
   if (!urgency.deadlineText || urgency.deadlineText === "Geen deadline") return "text-[var(--muted)]";
-  return TONE_TEXT[urgency.tone];
+  // Dezelfde kleur als de pil: anders staat er een oranje datum naast een rode
+  // pil en lijkt het of er twee waarheden zijn.
+  return TONE_TEXT[pillTone(item, urgency.tone)];
 }
 
 const TONE_TEXT: Record<UrgencyTone, string> = {
@@ -571,7 +573,7 @@ export function InboxCard({
         {!isNewsletter && urgency.deadlineValue != null ? (
           <div className="flex w-full flex-col items-center gap-1">
             <p className="translate-y-[7px] text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]">Uiterste datum:</p>
-            <p className={`tnum text-[13px] font-medium ${deadlineClass(urgency)}`}>{urgency.deadlineText}</p>
+            <p className={`tnum text-[13px] font-medium ${deadlineClass(item, urgency)}`}>{urgency.deadlineText}</p>
           </div>
         ) : null}
 
@@ -882,7 +884,7 @@ export function InboxModal({
 
         <div className="flex flex-col gap-3">
           {urgency.deadlineText !== "Geen deadline" ? (
-            <p className={`tnum text-[13px] font-medium ${deadlineClass(urgency)}`}>
+            <p className={`tnum text-center text-[13px] font-medium ${deadlineClass(item, urgency)}`}>
               {hasPayableInvoice(item) ? "Uiterste betaaldatum" : "Uiterste datum"} · {urgency.deadlineText}
             </p>
           ) : null}

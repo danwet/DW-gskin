@@ -166,7 +166,7 @@ const INSTRUCTION_LINES = [
   "nextAction must never contain an amount, a date or an invoice number; those belong in the structured fields below. If the amount is unknown, write 'Betaal factuur' without a number.",
   "nextAction: a SHORT imperative, max ~5 words. Examples: 'Betaal factuur €300', 'Beantwoord email', 'Geen actie'. Never embed the reason, sender name or invoice description here.",
   "priorityReason: the sharp reason why this needs attention now, max ~8 words. Examples: 'Kickoff hangt van jou af', 'Escalatie dreigt', 'Incasso dreigt', 'De ander is aan zet'. Never use soft phrasing like 'controleer of al betaald is'.",
-  "deadline: the explicit date as YYYY-MM-DD, or null when none is stated.",
+  "deadline: only a date the mail actually states, as YYYY-MM-DD. When the sender names no date, return null — never invent one. A mail that asks for an answer without naming a date gets null; the app then uses a normal response window.",
   "senderSays: only what the sender explicitly claims will happen if you do not act (for example a collection agency, suspension, or cancellation). possibleConsequence: your own inference, used only when the sender did not state one. Both null when nothing concrete is known.",
   "A receipt or confirmation of a payment you already sent (for example a PayPal receipt) is info, never action_needed, and it is never something to pay again.",
   "An invoice, factuur, nota or rekening from a supplier is always action_needed — also when the amount is not stated, when it comes from a noreply address, and when it can only be paid in the supplier's own portal instead of from the mail. It is never info and never a newsletter.",

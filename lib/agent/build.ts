@@ -291,6 +291,14 @@ export function groupByConversation(messages: InboundMessage[]): Map<string, Inb
  * The model understands the wording, the rules guarantee a status. Merge them so
  * a mail always has a usable shipment, with the model's reading in front.
  */
+/** Drie dagen na ontvangst, als de mail zelf geen datum noemt. */
+function adviesDeadline(receivedAt: string | undefined): string | undefined {
+  const basis = receivedAt ? new Date(receivedAt) : new Date();
+  if (Number.isNaN(basis.getTime())) return undefined;
+  basis.setDate(basis.getDate() + 3);
+  return basis.toLocaleDateString("sv-SE");
+}
+
 function mergeShipment(
   draft: ShipmentDraft | null | undefined,
   detected: ShipmentInfo | null,
@@ -389,7 +397,14 @@ export function buildAssessment(
       invoice?.currency,
     ),
     priorityReason: draft.priorityReason || "",
-    deadline: draft.deadline ?? undefined,
+    // Geen datum in de mail? Dan hanteren we een normale reactietermijn van
+    // drie dagen in plaats van een verzonnen datum. Zo blijft de pil eerlijk:
+    // "over 3 dagen" en de datum eronder wijzen dezelfde kant op.
+    deadline:
+      draft.deadline ??
+      (draft.classification === "action_needed" || draft.classification === "reply_needed"
+        ? adviesDeadline(latest.receivedAt)
+        : undefined),
     consequence,
     impact: draft.impact ?? undefined,
     invoice,
