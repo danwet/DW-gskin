@@ -40,7 +40,7 @@ export function AgendaPanel() {
             <li key={event.id} className="relative">
               <span
                 className="absolute top-1 -left-[25px] h-2 w-2 rounded-full"
-                style={{ background: event.color ?? "var(--blue)" }}
+                style={{ background: event.color ?? "var(--dot-blue)" }}
               />
               <button
                 type="button"
@@ -71,7 +71,7 @@ export function AgendaPanel() {
             <li key={event.id} className="relative">
               <span
                 className="absolute top-1 -left-[25px] h-2 w-2 rounded-full"
-                style={{ background: event.color ?? "var(--blue)" }}
+                style={{ background: event.color ?? "var(--dot-blue)" }}
               />
               <button
                 type="button"

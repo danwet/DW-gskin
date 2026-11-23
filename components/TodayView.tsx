@@ -300,13 +300,14 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
 
   const [openTrail, setOpenTrail] = useState<{ shipment: ShipmentInfo; trail: TrailStep[] } | null>(null);
 
+  // Dezelfde stipkleuren als op de kaarten, zodat de zijbalk één taal spreekt.
   const statusColor = (status: string) =>
     status === "Geleverd"
-      ? "var(--green)"
+      ? "var(--dot-green)"
       : status === "Onderweg"
-        ? "var(--blue)"
+        ? "var(--dot-blue)"
         : status === "Verzonden"
-          ? "var(--orange)"
+          ? "var(--dot-orange)"
           : "var(--muted)";
 
   const formatDate = (iso: string) => {
@@ -353,7 +354,7 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
         })}
         {paymentEntries.map((entry, index) => (
           <li key={`betaald-${entry.supplier}-${index}`} className="flex items-start gap-3">
-            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--green)" }} />
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--dot-green)" }} />
             <div className="min-w-0 flex-1">
               <p className="text-[13px] font-semibold text-[var(--ink)]">Betaald</p>
               <div className="mt-1 flex items-baseline justify-between gap-3">
@@ -435,13 +436,13 @@ function DaySummary({
         <ul className="mt-4 space-y-2 text-[14px] leading-6 text-[var(--ink)]">
           {beantwoord > 0 ? (
             <li className="flex items-center gap-2.5">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--blue)" }} />
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--dot-blue)" }} />
               <span>{beantwoord} {beantwoord === 1 ? "bericht beantwoord" : "berichten beantwoord"}</span>
             </li>
           ) : null}
           {betaald > 0 ? (
             <li className="flex items-center gap-2.5">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--green)" }} />
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--dot-green)" }} />
               <span>{betaald} {betaald === 1 ? "factuur betaald" : "facturen betaald"}</span>
             </li>
           ) : null}
@@ -453,19 +454,19 @@ function DaySummary({
           ) : null}
           {orderChanges > 0 ? (
             <li className="flex items-center gap-2.5">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--blue)" }} />
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--dot-blue)" }} />
               <span>{orderChanges} orderstatus bijgewerkt</span>
             </li>
           ) : null}
           {paymentChanges > 0 ? (
             <li className="flex items-center gap-2.5">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--green)" }} />
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--dot-green)" }} />
               <span>{paymentChanges} betaalstatus bijgewerkt</span>
             </li>
           ) : null}
           {gescand > 0 ? (
             <li className="flex items-center gap-2.5">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--orange)" }} />
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--dot-orange)" }} />
               <span>{gescand} {gescand === 1 ? "factuur gescand" : "facturen gescand"}</span>
             </li>
           ) : null}
