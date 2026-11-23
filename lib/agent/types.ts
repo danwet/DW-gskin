@@ -186,6 +186,14 @@ export type AgentMeta = {
    * slaat ze over, anders komt een gearchiveerde mail elke ronde terug.
    */
   hiddenMessageIds?: string[];
+  /** Wat de HTML-aanvulling deed in de laatste ronde. */
+  htmlBackfill?: {
+    at: string;
+    gevonden: number;
+    gevuld: number;
+    details?: string[];
+    fout?: string;
+  };
   /** Versie van de regels voor de korte titel; lager betekent opnieuw doen. */
   shortSubjectVersion?: number;
 

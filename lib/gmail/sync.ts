@@ -10,6 +10,7 @@ import {
   setAssessmentTier,
   setUserReplied,
   unarchiveConversation,
+  updateMeta,
   upsertAssessments,
 } from "../agent/store";
 import type { InboundMessage } from "../agent/types";
@@ -491,16 +492,35 @@ async function applyAnsweredThreads(
 /** Vult ontbrekende HTML-inhoud aan, een paar berichten per ronde. */
 async function backfillHtmlBodies(userId: string, refreshToken: string, limit = 3): Promise<number> {
   const ontbreekt = await listMessagesWithoutHtml(userId, limit);
-  if (ontbreekt.length === 0) return 0;
+  // Leg vast wat deze stap doet, zodat een lege kolom niet giswerk oplevert.
+  if (ontbreekt.length === 0) {
+    await updateMeta({ htmlBackfill: { at: new Date().toISOString(), gevonden: 0, gevuld: 0 } }).catch(() => null);
+    return 0;
+  }
   const token = await refreshGoogleAccessToken(refreshToken);
-  if (!token) return 0;
+  if (!token) {
+    await updateMeta({ htmlBackfill: { at: new Date().toISOString(), gevonden: ontbreekt.length, gevuld: 0, fout: "geen token" } }).catch(() => null);
+    return 0;
+  }
   let gevuld = 0;
+  const details: string[] = [];
   for (const id of ontbreekt) {
     const bericht = await fetchGmailMessage(token.access_token, id).catch(() => null);
-    if (!bericht?.bodyHtml) continue;
+    if (!bericht) {
+      details.push(`${id}: niet opgehaald`);
+      continue;
+    }
+    if (!bericht.bodyHtml) {
+      details.push(`${id}: geen html in dit bericht`);
+      continue;
+    }
     await setMessageHtml(userId, id, bericht.bodyHtml).catch(() => null);
     gevuld += 1;
+    details.push(`${id}: gevuld (${bericht.bodyHtml.length})`);
   }
+  await updateMeta({
+    htmlBackfill: { at: new Date().toISOString(), gevonden: ontbreekt.length, gevuld, details },
+  }).catch(() => null);
   return gevuld;
 }
 
