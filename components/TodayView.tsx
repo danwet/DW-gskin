@@ -266,40 +266,26 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
   // Payment confirmations sit in the same panel, grouped per supplier so a
   // second receipt shows as "Leverancier (2)".
   const payments = new Map<string, { supplier: string; count: number; receivedAt: string; amount?: number }>();
-  // All payments per supplier, so the row shows what was paid in total and not
-  // just the last receipt.
-  const paidTotals = new Map<string, { count: number; amount: number }>();
   for (const item of items) {
     if (!item.payment) continue;
-    const key = item.payment.supplier.toLowerCase();
-    const total = paidTotals.get(key) ?? { count: 0, amount: 0 };
-    total.count += 1;
-    total.amount += Number(item.payment.amount ?? 0);
-    paidTotals.set(key, total);
-
-    // A payment confirmation is news on the day it arrives; after the 05:00
-    // rollover it drops out, exactly like a delivered order.
+    // Een betaalbevestiging hoort bij de dag dat hij binnenkwam: na de wissel
+    // om 05:00 valt hij uit het paneel én uit het bedrag.
     if (Date.parse(item.receivedAt) < startOfToday.getTime()) continue;
+    const key = item.payment.supplier.toLowerCase();
     const existing = payments.get(key);
     if (existing) {
+      // Het bedrag telt op: meerdere betalingen aan dezelfde leverancier.
       existing.count += 1;
+      existing.amount = Number(existing.amount ?? 0) + Number(item.payment.amount ?? 0);
       if (Date.parse(item.receivedAt) > Date.parse(existing.receivedAt)) existing.receivedAt = item.receivedAt;
     } else {
       payments.set(key, {
         supplier: item.payment.supplier,
         count: 1,
         receivedAt: item.receivedAt,
-        amount: item.payment.amount,
+        amount: Number(item.payment.amount ?? 0),
       });
     }
-  }
-
-  // Het bedrag in de rij is het totaal van alle betalingen aan die leverancier.
-  for (const [key, entry] of payments) {
-    const total = paidTotals.get(key);
-    if (!total) continue;
-    entry.count = total.count;
-    if (total.amount > 0) entry.amount = total.amount;
   }
   const paymentEntries = [...payments.values()].sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
 

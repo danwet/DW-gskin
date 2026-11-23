@@ -471,26 +471,27 @@ export function InboxCard({
         </span>
       ) : null}
 
-      <div className="flex w-full flex-col items-center gap-2 pt-12">
+      {/* Nieuwsbrief-logo zweeft boven de tekst: de tekst begint altijd op
+          dezelfde hoogte, ongeacht hoe hoog het logo is. */}
+      {item.logoUrl && isNewsletter ? (
+        <img
+          src={item.logoUrl}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          className="absolute inset-x-0 top-[100px] mx-auto max-h-12 w-1/2 object-contain"
+        />
+      ) : null}
+
+      <div className={`flex w-full flex-col items-center gap-2 ${isNewsletter ? "pt-[162px]" : "pt-12"}`}>
+        {/* Het logo staat bij een nieuwsbrief boven de afzender; naam en
+            onderwerp schuiven daardoor samen naar beneden. */}
         <p className="w-full truncate text-[22px] leading-7 font-semibold text-[var(--ink)]">{item.from}</p>
         <BalancedText
           text={item.subject}
           className="flex min-h-[40px] w-full flex-col justify-start text-[14px] leading-5 text-[var(--muted)]"
         />
       </div>
-
-      {item.logoUrl && isNewsletter ? (
-        // Centred in the free space between the subject and the buttons below.
-        <div className="flex w-full flex-1 items-center justify-center py-2">
-          <img
-            src={item.logoUrl}
-            alt=""
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            className="max-h-12 w-1/2 object-contain"
-          />
-        </div>
-      ) : null}
 
       <div className="flex w-full flex-1 flex-col justify-between py-4">
         {!isNewsletter ? (
@@ -510,7 +511,7 @@ export function InboxCard({
           </div>
         ) : null}
 
-        <div className={isNewsletter && !item.logoUrl ? "mt-auto w-full" : "w-full"}>
+        <div className={isNewsletter ? "mt-auto w-full" : "w-full"}>
             <div className="mt-3 flex items-center justify-center gap-2">
               <button
                 type="button"
