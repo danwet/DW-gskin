@@ -108,8 +108,15 @@ export function HandledView() {
                   className="cursor-pointer border-t border-[var(--line)] align-top transition-colors hover:bg-[var(--bg)]"
                 >
                   <td className="px-4 py-3">
-                    <p className="line-clamp-1 text-[14px] font-medium text-[var(--ink)]">{item.subject}</p>
-                    <p className="mt-0.5 truncate text-[12px] text-[var(--muted)]">{item.from}</p>
+                    <p className="line-clamp-1 text-[14px] font-medium text-[var(--ink)]">
+                      {item.shortSubject || item.subject}
+                    </p>
+                    <p className="mt-0.5 truncate text-[12px] text-[var(--muted)]">
+                      {item.from}
+                      {/* Het factuurnummer hoort zichtbaar te zijn: daar zoek je
+                          een factuur later op terug. */}
+                      {item.invoice?.invoiceNumber ? ` · ${item.invoice.invoiceNumber}` : ""}
+                    </p>
                   </td>
                   <td className="hidden px-4 py-3 text-[13px] text-[var(--muted)] sm:table-cell">{item.from}</td>
                   <td className="hidden px-4 py-3 text-[13px] text-[var(--muted)] md:table-cell">{soortLabel(item)}</td>
