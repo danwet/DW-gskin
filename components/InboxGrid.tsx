@@ -58,6 +58,7 @@ export function InboxGrid({
   onRemove,
   onUpdate,
   onError,
+  onSeen,
 }: {
   items: MailAssessment[];
   infoItems: MailAssessment[];
@@ -72,6 +73,8 @@ export function InboxGrid({
   onRemove?: (conversationId: string) => void;
   onUpdate?: (item: MailAssessment) => void;
   onError?: (message: string) => void;
+  /** Een kaart is geopend: dan is hij geen nieuwe melding meer. */
+  onSeen?: (item: MailAssessment) => void;
 }) {
   const [selected, setSelected] = useState<MailAssessment | null>(null);
 
@@ -220,7 +223,11 @@ export function InboxGrid({
           now={now}
           timeZone={timeZone}
           onDeclare={onDeclare}
-          onOpen={(item) => setSelected(item)}
+          onOpen={(item) => {
+            // Gelezen vanuit het overzicht: dan is hij geen nieuwe melding meer.
+            onSeen?.(item);
+            setSelected(item);
+          }}
           onTrash={trashFromCard}
         />
       )}
@@ -689,29 +696,6 @@ export function InboxModal({
 
   // The newsletter HTML is fetched when the popup opens: keep the inbox light,
   // and fall back to the plain text when there is nothing to render.
-  // Het hele gesprek, inclusief onze eigen antwoorden.
-  type ThreadMessage = { id: string; from: string; fromMe: boolean; receivedAt: string; text: string };
-  const [thread, setThread] = useState<ThreadMessage[] | null>(null);
-  useEffect(() => {
-    let alive = true;
-    void (async () => {
-      try {
-        const response = await fetch(
-          `/api/inbox/thread?conversationId=${encodeURIComponent(item.conversationId)}`,
-          { cache: "no-store" },
-        );
-        if (!response.ok) return;
-        const data = (await response.json()) as { messages?: ThreadMessage[] };
-        if (alive) setThread(Array.isArray(data.messages) ? data.messages : []);
-      } catch {
-        // Zonder gesprek blijft de samenvatting staan.
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [item.conversationId]);
-
   const canPreview = Boolean(item.hasHtml && item.sourceMessageId && item.source !== "scan");
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
@@ -919,36 +903,6 @@ export function InboxModal({
           </section>
         ) : null}
 
-        {thread && thread.length > 1 ? (
-          <section className="mt-5">
-            <p className="ml-[5%] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">
-              Gesprek ({thread.length})
-            </p>
-            <ul className="mx-[5%] mt-2 space-y-2">
-              {thread.map((message) => (
-                <li
-                  key={message.id}
-                  className={`rounded-2xl border border-[var(--line)] px-3.5 py-2.5 ${
-                    message.fromMe ? "bg-[var(--blue-soft)]" : "bg-[var(--bg)]"
-                  }`}
-                >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="truncate text-[12px] font-semibold text-[var(--ink)]">
-                      {message.fromMe ? "Jij" : message.from}
-                    </p>
-                    <p className="shrink-0 text-[11px] text-[var(--muted)]">
-                      {new Date(message.receivedAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })}
-                    </p>
-                  </div>
-                  <p className="mt-1 line-clamp-4 text-[13px] leading-5 whitespace-pre-line text-[var(--muted)]">
-                    {message.text || "(geen tekst)"}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
         {(!canPreview || previewFailed) &&
         (item.unsubscribe ||
           item.classification === "info" ||
@@ -1022,34 +976,6 @@ export function InboxModal({
           >
             Bekijk scan →
           </a>
-        ) : null}
-
-        {item.thread && item.thread.length > 1 ? (
-          <details className="mt-4">
-            <summary className="cursor-pointer text-[12px] font-medium text-[var(--blue)]">
-              E-mailstring ({item.thread.length} berichten)
-            </summary>
-            <div className="mt-2 space-y-3 rounded-2xl bg-[var(--bg)] p-3">
-              {item.thread.map((msg, index) => (
-                <div key={index} className="pb-2 last:pb-0">
-                  <p className="text-[12px] font-semibold text-[var(--ink)]">
-                    {msg.from}
-                    <span className="font-normal text-[var(--muted)]">
-                      {" "}
-                      ·{" "}
-                      {new Date(msg.receivedAt).toLocaleString("nl-NL", {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </p>
-                  {msg.body ? <p className="mt-1 whitespace-pre-wrap text-[12px] leading-5 text-[var(--ink)]">{msg.body}</p> : null}
-                </div>
-              ))}
-            </div>
-          </details>
         ) : null}
 
         {item.draftReply ? (

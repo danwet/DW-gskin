@@ -205,6 +205,7 @@ export function TodayView() {
               onRemove={inbox.removeItem}
               onUpdate={inbox.updateItem}
               onError={inbox.setNotice}
+              onSeen={inbox.openNewItem}
             />
 
             <LegacyLoopsCard />

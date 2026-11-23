@@ -465,7 +465,7 @@ export function useInbox() {
 
   useEffect(() => () => setTopBar(null), [setTopBar]);
 
-  return { items, pending, progress, meta, model, gmail, undoable, undo, notice, setNotice, loading, error, reload, removeItem, updateItem, toggleHandled, snoozeItem, declareInvoice, saveItem };
+  return { items, pending, progress, meta, model, gmail, undoable, undo, notice, setNotice, loading, error, reload, removeItem, updateItem, toggleHandled, snoozeItem, declareInvoice, saveItem, openNewItem };
 }
 
 export function InboxListCard({
