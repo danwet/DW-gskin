@@ -277,7 +277,8 @@ function SidebarContent({
               aria-current={active ? "page" : undefined}
               className={`focus-ring relative flex items-center gap-3 py-2.5 pr-3 pl-5 text-[14px] whitespace-nowrap transition-colors ${
                 active
-                  ? "glas-selectie rounded-full font-semibold"
+                  // Zelfde glas als de actieknoppen (zoals "Kies bestand").
+                  ? "btn-primary rounded-full"
                   : "rounded-[14px] text-[var(--ink)]/85 hover:bg-[var(--glass-bg-soft)]"
               }`}
             >

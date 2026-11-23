@@ -20,23 +20,18 @@ const GROOT_MS = 140;
  * Ruststand: subtiel verticaal verloop van donkerder bovenaan (#DFDDDE) naar
  * #E2E0E1 / #E3E1E2 — de actieve selectiepil.
  */
-// Donker mode: dezelfde glasdichtheid als de actieve menukeuze, zodat de zwarte
-// letters leesbaar blijven. Een te ijle vulling maakt de pil bijna onzichtbaar
-// en dan valt de tekst weg tegen de donkere balk.
+// Ruststand = exact het glas van de actieknoppen (.btn-primary), zodat de
+// selectie er hetzelfde uitziet als de knoppen en menu-items. De beweging zit
+// in de tussenstand hieronder, niet in een afwijkende rustkleur.
 const RUST_VULLING =
-  "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.48) 12%, rgba(255,255,255,0.26) 55%, rgba(255,255,255,0.44) 100%)";
+  "linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.35) 14%, rgba(255,255,255,0.16) 55%, rgba(255,255,255,0.35) 100%)";
 
-/**
- * Licht mode: de balk is daar bijna wit, dus een bijna-witte druppel valt weg.
- * Een koeler en iets dieper lichaam houdt hem zichtbaar, met dezelfde witte
- * randen als glans.
- */
 const RUST_VULLING_LICHT =
-  "linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.22) 8%, rgba(196,198,205,0.12) 35%, rgba(203,205,212,0.11) 65%, rgba(255,255,255,0.35) 100%)";
+  "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.18) 8%, rgba(190,192,198,0.08) 35%, rgba(199,201,207,0.07) 65%, rgba(255,255,255,0.3) 100%)";
 
-/** Licht mode: iets diepere schaduw, zodat hij echt boven de balk ligt. */
+/** Licht mode: dezelfde schaduw als .btn-primary in licht mode. */
 const RUST_SCHADUW_LICHT =
-  "inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(255,255,255,0.65), inset 0 0 0 1px rgba(255,255,255,0.55), 0 2px 4px rgba(16,24,40,0.16), 0 8px 20px rgba(16,24,40,0.12)";
+  "inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(255,255,255,0.6), inset 0 0 0 1px rgba(255,255,255,0.5), 0 2px 4px rgba(16,24,40,0.14), 0 10px 24px rgba(16,24,40,0.12)";
 
 /** Tijdens de overgang: doorschijnend wit glas, met dezelfde stopstructuur. */
 const GLAS_VULLING =
@@ -45,8 +40,9 @@ const GLAS_VULLING =
 /** Vier lagen, exact parallel aan GLAS_SCHADUW, zodat Framer Motion ze kan faden. */
 // Rust: heldere rand boven, donkere rand onder, zachte gloed binnenin en een
 // schaduw eronder — dat tilt hem van de balk af.
+/** Donker mode: dezelfde schaduw als .btn-primary in donker mode. */
 const RUST_SCHADUW =
-  "inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(255,255,255,0.6), inset 0 0 0 1px rgba(255,255,255,0.5), 0 2px 4px rgba(16,24,40,0.14), 0 8px 20px rgba(16,24,40,0.1)";
+  "inset 0 1px 0 rgba(255,255,255,0.75), inset 0 -1px 0 rgba(255,255,255,0.3), inset 0 0 0 1px rgba(255,255,255,0.22), 0 1px 2px rgba(0,0,0,0.35), 0 8px 20px rgba(0,0,0,0.3)";
 const GLAS_SCHADUW =
   "inset 0 1.5px 2px rgba(255,255,255,0.95), inset 2px 0 3px rgba(0,175,255,0.35), inset -2px 0 3px rgba(255,75,0,0.35), 0 8px 22px rgba(0,0,0,0.15)";
 
@@ -122,12 +118,19 @@ export function GlasDruppel({
           backgroundImage: bezig ? GLAS_VULLING : rustVulling,
           // In donker mode een lichte ondergrond onder het verloop, net als de
           // menukeuze: zo blijft de pil licht en de donkere tekst leesbaar.
-          backgroundColor: donker && !bezig ? "rgba(255,255,255,0.10)" : undefined,
+          // Zelfde ondertint als .btn-primary: 0.08 in donker, 0.06 in licht.
+          backgroundColor: bezig ? undefined : donker ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.06)",
           boxShadow: bezig ? GLAS_SCHADUW : rustSchaduw,
         }}
         style={{
-          backdropFilter: bezig ? "url(#liquid-lens) blur(1px) contrast(1.05)" : "none",
-          WebkitBackdropFilter: bezig ? "url(#liquid-lens) blur(1px) contrast(1.05)" : "none",
+          // In rust hetzelfde glasfilter als de knoppen; tijdens de beweging de
+          // lens die het liquid-effect geeft.
+          backdropFilter: bezig
+            ? "url(#liquid-lens) blur(1px) contrast(1.05)"
+            : "blur(22px) saturate(1.9)",
+          WebkitBackdropFilter: bezig
+            ? "url(#liquid-lens) blur(1px) contrast(1.05)"
+            : "blur(22px) saturate(1.9)",
         }}
       />
     </motion.div>

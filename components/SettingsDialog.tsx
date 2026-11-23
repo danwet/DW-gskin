@@ -205,7 +205,8 @@ export function SettingsDialog() {
                 aria-current={category === item.id ? "page" : undefined}
                 className={`focus-ring shrink-0 py-2.5 pr-3 pl-5 text-left text-[14px] whitespace-nowrap ${
                   category === item.id
-                    ? "glas-selectie rounded-full font-semibold"
+                    // Zelfde glas als de actieknoppen en het actieve menu-item.
+                    ? "btn-primary rounded-full"
                     : "rounded-full text-[var(--ink)]/85 hover:bg-[var(--bg)]"
                 }`}
               >
