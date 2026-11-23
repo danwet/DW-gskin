@@ -300,6 +300,7 @@ export function buildAssessment(
     fromEmail: counterparty.fromEmail,
     link: latest.link,
     classification: draft.classification,
+    viaModel: draft.viaModel ?? false,
     tier: draft.tier,
     nextAction: withInvoiceAmount(
       normalizeNextAction(draft.nextAction || "Bekijk deze mail.", invoice?.amount),

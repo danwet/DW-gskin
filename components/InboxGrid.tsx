@@ -803,6 +803,13 @@ export function InboxModal({
               Opnieuw aandacht
             </p>
           ) : null}
+          {/* Zichtbaar wanneer de fallback is gebruikt, zodat een regelbeoordeling
+              nooit voor modelwerk wordt aangezien. */}
+          {item.viaModel === false ? (
+            <p className="rounded-full bg-[var(--muted)]/15 px-2.5 py-1 text-[11px] font-medium text-ink-faint">
+              Regelbeoordeling
+            </p>
+          ) : null}
         </>
       }
     >

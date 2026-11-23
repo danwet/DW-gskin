@@ -65,6 +65,8 @@ export type MailAssessment = {
    * "mag" kan wachten, "hoeft_niet" is alleen informatie.
    */
   tier?: "moet" | "mag" | "hoeft_niet";
+  /** True wanneer het model (niet de regel-fallback) de beoordeling maakte. */
+  viaModel?: boolean;
   classification: AgentClassification;
   nextAction: string;
   priorityReason: string;

@@ -35,6 +35,8 @@ export type AssessmentDraft = {
   classification: AgentClassification;
   /** Het oordeel van het model over de urgentie van vandaag. */
   tier?: "moet" | "mag" | "hoeft_niet";
+  /** True wanneer het model deze beoordeling heeft gemaakt (i.p.v. de regels). */
+  viaModel?: boolean;
   nextAction: string;
   priorityReason: string;
   deadline: string | null;
@@ -200,6 +202,7 @@ export function normalizeDraft(value: unknown): AssessmentDraft {
     row.tier === "moet" || row.tier === "mag" || row.tier === "hoeft_niet" ? row.tier : undefined;
   return {
     classification,
+    viaModel: true,
     tier: tier ?? (classification === "info" ? "hoeft_niet" : classification === "waiting" ? "mag" : "mag"),
     nextAction: str(row.nextAction),
     priorityReason: str(row.priorityReason),
