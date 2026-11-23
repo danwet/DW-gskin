@@ -59,6 +59,7 @@ export function InboxGrid({
   onUpdate,
   onError,
   onSeen,
+  unreadIds,
 }: {
   items: MailAssessment[];
   infoItems: MailAssessment[];
@@ -75,6 +76,8 @@ export function InboxGrid({
   onError?: (message: string) => void;
   /** Een kaart is geopend: dan is hij geen nieuwe melding meer. */
   onSeen?: (item: MailAssessment) => void;
+  /** Gesprekken die nieuw zijn sinds de laatste keer kijken. */
+  unreadIds?: string[];
 }) {
   const [selected, setSelected] = useState<MailAssessment | null>(null);
 
@@ -141,11 +144,22 @@ export function InboxGrid({
   ];
 
   // De selector toont het aantal achter het label, net als de oude pillen.
+  // Staat er nieuwe, ongelezen mail in een categorie, dan kleurt dat balletje
+  // rood; zodra je die mail leest dooft het weer.
+  const ongelezen = new Set(unreadIds ?? []);
+  const heeftNieuwe = (tabId: (typeof tabs)[number]["id"]) => {
+    if (ongelezen.size === 0) return false;
+    const inTab =
+      tabId === "urgent" ? urgent : tabId === "later" ? later : tabId === "info" ? infoTab : orderedDeclare;
+    return inTab.some((item) => ongelezen.has(item.conversationId));
+  };
+
   const selectorOpties = tabs.map((tab) => ({
     waarde: tab.id,
     label: tab.label,
     badge: String(tab.count),
     titel: tab.label,
+    badgeAlert: heeftNieuwe(tab.id),
   }));
   const activeCards =
     activeTab === "urgent" ? urgent : activeTab === "later" ? later : activeTab === "info" ? infoTab : orderedDeclare;

@@ -465,7 +465,33 @@ export function useInbox() {
 
   useEffect(() => () => setTopBar(null), [setTopBar]);
 
-  return { items, pending, progress, meta, model, gmail, undoable, undo, notice, setNotice, loading, error, reload, removeItem, updateItem, toggleHandled, snoozeItem, declareInvoice, saveItem, openNewItem };
+  // Welke gesprekken zijn ongelezen sinds de laatste keer kijken? De pill in het
+  // overzicht gebruikt dat om een categorie rood te markeren.
+  const unreadIds = newItems.map((item) => item.conversationId);
+
+  return {
+    items,
+    pending,
+    progress,
+    meta,
+    model,
+    gmail,
+    undoable,
+    undo,
+    notice,
+    setNotice,
+    loading,
+    error,
+    reload,
+    removeItem,
+    updateItem,
+    toggleHandled,
+    snoozeItem,
+    declareInvoice,
+    saveItem,
+    openNewItem,
+    unreadIds,
+  };
 }
 
 export function InboxListCard({

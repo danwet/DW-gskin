@@ -86,6 +86,31 @@ export async function getGmailConnection(userId: string): Promise<GmailConnectio
   return row ? toConnection(row) : null;
 }
 
+/**
+ * Zelfde sleutel als getGmailRefreshToken, maar met de reden erbij: "koppel
+ * opnieuw" is alleen juist als de koppeling echt weg is, niet als de sleutel
+ * hier niet past.
+ */
+export type RefreshTokenState =
+  | { ok: true; token: string }
+  | { ok: false; reason: "no-row" | "needs-reconnect" | "decrypt" | "read" };
+
+export async function gmailRefreshTokenState(userId: string): Promise<RefreshTokenState> {
+  let row: Row | null;
+  try {
+    row = await readRow(userId);
+  } catch {
+    return { ok: false, reason: "read" };
+  }
+  if (!row) return { ok: false, reason: "no-row" };
+  if (row.status !== "connected") return { ok: false, reason: "needs-reconnect" };
+  try {
+    return { ok: true, token: decryptSecret(row.refresh_token_encrypted) };
+  } catch {
+    return { ok: false, reason: "decrypt" };
+  }
+}
+
 export async function getGmailRefreshToken(userId: string): Promise<string | null> {
   const row = await readRow(userId);
   if (!row || row.status !== "connected") return null;

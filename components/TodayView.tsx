@@ -206,6 +206,7 @@ export function TodayView() {
               onUpdate={inbox.updateItem}
               onError={inbox.setNotice}
               onSeen={inbox.openNewItem}
+              unreadIds={inbox.unreadIds}
             />
 
             <LegacyLoopsCard />

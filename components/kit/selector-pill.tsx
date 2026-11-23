@@ -16,6 +16,8 @@ export type SelectieOptie<T extends string> = {
   titel?: string;
   /** Klein getal in een balletje achter het label. */
   badge?: string;
+  /** Nieuwe, ongelezen mail in deze categorie: het balletje wordt rood. */
+  badgeAlert?: boolean;
 };
 
 /** Vijf of zes kolommen krijgen een vaste maximumbreedte. */
@@ -116,9 +118,11 @@ export function SelectorPill<T extends string>({
                         // cijfer, daarbuiten een wit balletje met zwart cijfer.
                         // In licht mode is --muted donker en --ink licht; het cijfer moet dus per
                         // thema omklappen om leesbaar te blijven.
-                        actief
-                          ? "bg-black text-white dark:text-[var(--muted)]"
-                          : "bg-[var(--muted)] text-[#eef0f3] dark:text-black",
+                        optie.badgeAlert
+                          ? "bg-[var(--dot-red)] text-white"
+                          : actief
+                            ? "bg-black text-white dark:text-[var(--muted)]"
+                            : "bg-[var(--muted)] text-[#eef0f3] dark:text-black",
                       )}
                     >
                       {optie.badge}

@@ -1,5 +1,5 @@
 import { sessionUser, unauthorized } from "@/lib/api-auth";
-import { getGmailRefreshToken, resolveGmailConnection } from "@/lib/gmail/connection";
+import { gmailRefreshTokenState, resolveGmailConnection } from "@/lib/gmail/connection";
 import { runGmailAction, type MailAction } from "@/lib/gmail/actions";
 import { listStoredMessages, purgeMessages } from "@/lib/gmail/store";
 import {
@@ -29,17 +29,21 @@ export async function POST(request: Request) {
   }
 
   const connection = await resolveGmailConnection(user.id, user.email).catch(() => null);
-  const refreshToken = await getGmailRefreshToken(user.id);
+  const tokenState = await gmailRefreshTokenState(user.id);
   if (!connection) {
     return Response.json({ error: "Gmail is niet gekoppeld." }, { status: 400 });
   }
-  if (!refreshToken) {
-    // The row exists but the token cannot be decrypted here (wrong secret).
-    return Response.json(
-      { error: "De Gmail-koppeling kon niet worden gelezen. Koppel opnieuw bij Instellingen → Verbindingen." },
-      { status: 409 },
-    );
+  if (!tokenState.ok) {
+    const uitleg: Record<typeof tokenState.reason, string> = {
+      "no-row": "Gmail is niet gekoppeld.",
+      "needs-reconnect": "De Gmail-koppeling staat op 'opnieuw koppelen'. Ga naar Instellingen → Verbindingen.",
+      decrypt:
+        "De opgeslagen Gmail-sleutel kan hier niet worden ontsleuteld. Dat komt door een afwijkende GMAIL_TOKEN_SECRET, niet door je koppeling: mail ophalen lukt nog wel, archiveren niet.",
+      read: "De koppeling kon niet worden gelezen door een storing bij de database. Probeer het zo nog eens.",
+    };
+    return Response.json({ error: uitleg[tokenState.reason], reason: tokenState.reason }, { status: 409 });
   }
+  const refreshToken = tokenState.token;
 
   const stored = (await listStoredMessages(user.id)).filter((row) => row.thread_id === conversationId);
   const assessment = (await readAssessments()).find((entry) => entry.conversationId === conversationId);
