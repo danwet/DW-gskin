@@ -146,9 +146,8 @@ export function NotificationsBell({
                       const result = await enableNotifications();
                       setDesktop(result);
                       setDesktopWanted(result === "granted");
-                      // The desktop takes over from the list here, so nothing
-                      // piles up unseen in the popup.
-                      if (result === "granted") onMarkAllNewRead?.();
+                      // Alleen toestemming vragen: de meldingen mogen niet
+                      // stilletjes als gelezen worden weggezet.
                     }}
                     className="focus-ring flex w-full items-center justify-center rounded-lg px-3 py-1.5 text-center font-medium whitespace-nowrap text-[var(--muted)]"
                     style={{ fontSize: "10px", lineHeight: "14px" }}
