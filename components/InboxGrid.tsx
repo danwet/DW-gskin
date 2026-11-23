@@ -554,7 +554,9 @@ export function InboxCard({
       <div className={`flex w-full flex-col items-center gap-2 ${isNewsletter ? "pt-[162px]" : "pt-12"}`}>
         {/* Het logo staat bij een nieuwsbrief boven de afzender; naam en
             onderwerp schuiven daardoor samen naar beneden. */}
-        <p className="w-full truncate text-[22px] leading-7 font-semibold text-[var(--ink)]">{item.from}</p>
+        <p className="line-clamp-2 w-full text-balance text-[22px] leading-7 font-semibold text-[var(--ink)]">
+          {item.from}
+        </p>
         <BalancedText
           // Past het onderwerp niet op twee regels, dan gaf het model een korte
           // versie; die houdt de kaart leesbaar.
