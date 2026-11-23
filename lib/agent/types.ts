@@ -100,6 +100,8 @@ export type MailAssessment = {
   shortSubject?: string;
   /** Met welke regelversie de korte titel is gemaakt; lager betekent opnieuw. */
   shortSubjectVersion?: number;
+  /** Met welke regelversie de deadline is bepaald; lager betekent opnieuw. */
+  deadlineVersion?: number;
 
   classification: AgentClassification;
   nextAction: string;

@@ -678,6 +678,19 @@ export function setShortSubject(conversationId: string, shortSubject: string, ve
 }
 
 /** Vult de uiterste betaaldatum aan op een bestaande factuurkaart. */
+/** Zet een andere uiterste datum op een kaart. */
+export function setAssessmentDeadline(conversationId: string, deadline: string, version: number): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    const item = state.assessments[conversationId];
+    if (!item) return;
+    if (item.deadline === deadline && item.deadlineVersion === version) return;
+    item.deadline = deadline;
+    item.deadlineVersion = version;
+    await writeState(state);
+  });
+}
+
 export function setInvoiceDueDate(
   conversationId: string,
   dueDate: string,

@@ -400,6 +400,7 @@ export function buildAssessment(
     // Geen datum in de mail? Dan hanteren we een normale reactietermijn van
     // drie dagen in plaats van een verzonnen datum. Zo blijft de pil eerlijk:
     // "over 3 dagen" en de datum eronder wijzen dezelfde kant op.
+    deadlineVersion: 2,
     deadline:
       draft.deadline ??
       (draft.classification === "action_needed" || draft.classification === "reply_needed"
