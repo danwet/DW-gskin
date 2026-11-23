@@ -129,16 +129,19 @@ export async function runMailAgent(now = new Date(), options?: { force?: boolean
       lastError: step.ok ? null : step.error ?? "Synchronisatie mislukt.",
       source,
       model: useModel ? provider : "rule",
-      conversationsProcessed: step.progress.imported,
-      messagesSeen: step.progress.imported,
+      conversationsProcessed: step.triaged,
+      messagesSeen: step.imported,
     });
+    // Per ronde, niet de opgetelde stand: anders leest de log elke ronde
+    // hetzelfde aantal en lijkt het werk zich te herhalen.
     await appendRun({
       at: now.toISOString(),
       ok: step.ok,
       source,
       model: useModel ? provider : "rule",
-      conversations: step.progress.threadsImported,
-      messages: step.progress.imported,
+      conversations: step.triaged,
+      skipped: step.progress.pending ?? 0,
+      messages: step.imported,
       error: step.ok ? null : step.error ?? "Synchronisatie mislukt.",
     });
     return {

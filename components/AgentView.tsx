@@ -95,9 +95,9 @@ export function AgentView() {
             <p className="text-[14px] leading-6 text-[var(--muted)]">Nog geen run uitgevoerd.</p>
           ) : (
             <ul className="space-y-3 text-[14px] leading-6 text-[var(--ink)]">
-              <li>{Math.max(runs[0].conversations - (runs[0].skipped ?? 0), 0)} gesprekken beoordeeld.</li>
-              <li>{runs[0].skipped ?? 0} gesprekken overgeslagen (al beoordeeld).</li>
-              <li>{runs[0].messages} berichten gelezen.</li>
+              <li>{runs[0].conversations} gesprekken beoordeeld.</li>
+              <li>{runs[0].skipped ?? 0} gesprekken wachten nog op een beoordeling.</li>
+              <li>{runs[0].messages} nieuwe berichten gelezen.</li>
               {runs[0].error ? <li className="text-[var(--danger)]">{runs[0].error}</li> : null}
               <li className="text-[var(--muted)]">
                 Bron: {runs[0].source === "gmail" ? "Gmail" : "Testdata"} · model: {runs[0].model}
