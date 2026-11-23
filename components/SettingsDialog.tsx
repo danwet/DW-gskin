@@ -189,7 +189,10 @@ export function SettingsDialog() {
     >
       <div className="flex flex-col md:flex-row">
         <div className="flex flex-col border-b border-hairline p-5 md:w-[220px] md:shrink-0 md:border-r md:border-b-0 md:p-6">
-          <nav className="mt-5 flex gap-1 overflow-x-auto md:flex-col" aria-label="Instellingencategorieën">
+          <nav
+            className="mt-5 flex gap-1 overflow-x-auto px-3 pt-2 pb-3 md:flex-col md:overflow-visible md:px-3 md:pt-2"
+            aria-label="Instellingencategorieën"
+          >
             {CATEGORIES.map((item) => (
               <button
                 key={item.id}
