@@ -20,7 +20,7 @@ export function TopBar() {
         disabled={!undoable}
         aria-label="Laatste actie terugzetten"
         title={undoable ? "Laatste actie terugzetten" : "Nog niets om terug te zetten"}
-        className="glass-chip focus-ring grid h-8 w-8 place-items-center rounded-full text-[var(--ink)] disabled:opacity-40"
+        className="btn-primary focus-ring grid h-8 w-8 place-items-center rounded-full text-[var(--ink)] disabled:opacity-40"
       >
         <UndoIcon />
       </button>
@@ -48,7 +48,7 @@ export function TopBar() {
         onClick={() => void refresh()}
         disabled={refreshing || !ready}
         aria-label="Bijwerken"
-        className="glass-chip focus-ring grid h-8 w-8 place-items-center rounded-full text-[var(--ink)] disabled:opacity-60"
+        className="btn-primary focus-ring grid h-8 w-8 place-items-center rounded-full text-[var(--ink)] disabled:opacity-60"
       >
         <RefreshIcon spinning={refreshing} />
       </button>

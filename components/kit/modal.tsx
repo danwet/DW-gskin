@@ -215,15 +215,14 @@ export function Modal({
               <div className="pointer-events-auto flex items-center gap-2">{linksboven}</div>
               <div className="pointer-events-auto flex items-center gap-2">
                 {rechtsboven}
+                {/* Zelfde glas als de nieuwe-mail-knop. */}
                 <button
-                type="button"
-                onClick={() => onOpenChange(false)}
-                aria-label="Sluiten"
-                className="glas-sluiten"
-                // De glasstijl zet zichzelf absoluut; in de balk bepaalt de flexbox.
-                style={{ position: "relative", top: "auto", right: "auto", pointerEvents: "auto" }}
-              >
-                <X aria-hidden className="size-5" strokeWidth={2.5} />
+                  type="button"
+                  onClick={() => onOpenChange(false)}
+                  aria-label="Sluiten"
+                  className="btn-primary focus-ring grid h-8 w-8 place-items-center rounded-full text-[var(--ink)]"
+                >
+                  <X aria-hidden className="size-4" strokeWidth={2.5} />
                 </button>
               </div>
             </div>

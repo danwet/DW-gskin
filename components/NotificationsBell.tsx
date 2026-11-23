@@ -85,7 +85,7 @@ export function NotificationsBell({
         onClick={() => setOpen((value) => !value)}
         aria-label={`Notificaties (${count})`}
         aria-expanded={open}
-        className="glass-chip focus-ring relative grid h-8 w-8 place-items-center rounded-full text-[var(--ink)]"
+        className="btn-primary focus-ring relative grid h-8 w-8 place-items-center rounded-full text-[var(--ink)]"
       >
         <BellIcon />
         {count > 0 ? (

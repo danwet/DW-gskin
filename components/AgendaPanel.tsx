@@ -22,7 +22,7 @@ export function AgendaPanel() {
           onClick={() => setCreating(true)}
           aria-label="Afspraak toevoegen"
           title="Afspraak toevoegen"
-          className="glass-chip focus-ring grid h-7 w-7 shrink-0 place-items-center rounded-full text-[var(--ink)]"
+          className="btn-primary focus-ring grid h-7 w-7 shrink-0 place-items-center rounded-full text-[var(--ink)]"
         >
           <PlusIcon />
         </button>
