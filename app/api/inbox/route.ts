@@ -2,6 +2,7 @@ import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { markHandled, readMeta, readStateOnce, saveConversation, setDeclaration, snoozeConversation } from "@/lib/agent/store";
 import { loadAgentConfig } from "@/lib/agent/config";
 import { gmailConfigured, resolveMailSource } from "@/lib/agent/mail-source";
+import { healInvoiceDueDates } from "@/lib/agent/invoice-heal";
 import { runMailAgent } from "@/lib/agent/pipeline";
 import type { MailAssessment } from "@/lib/agent/types";
 import { resolveGmailConnection } from "@/lib/gmail/connection";
@@ -70,7 +71,9 @@ export async function GET() {
 
       // Only live Gmail assessments: the demo cards never join this list.
       const raw = stateDoc.assessments.filter((item) => item.mailbox === "gmail");
-      const items = raw;
+      // Een factuur zonder uiterste betaaldatum haalt zijn datum hier uit de
+      // opgeslagen mail, zodat de kaart op eigen gegevens wordt ingedeeld.
+      const items = await healInvoiceDueDates(user.id, raw);
 
       return Response.json({ items, pending: [], progress, meta, model, gmail: connection, undoable: Boolean(meta.lastAction) });
     }

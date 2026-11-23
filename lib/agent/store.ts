@@ -561,6 +561,22 @@ export function updateMeta(patch: Partial<AgentMeta>): Promise<void> {
   });
 }
 
+/** Vult de uiterste betaaldatum aan op een bestaande factuurkaart. */
+export function setInvoiceDueDate(
+  conversationId: string,
+  dueDate: string,
+  tier?: "moet" | "mag" | "hoeft_niet",
+): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    const item = state.assessments[conversationId];
+    if (!item?.invoice || item.invoice.dueDate === dueDate) return;
+    item.invoice.dueDate = dueDate;
+    if (tier) item.tier = tier;
+    await writeState(state);
+  });
+}
+
 /** Zet alleen het urgentie-oordeel van het model op een bestaande kaart. */
 export function setAssessmentTier(conversationId: string, tier: "moet" | "mag" | "hoeft_niet"): Promise<void> {
   return withLock(async () => {

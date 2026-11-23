@@ -21,7 +21,7 @@ const GROOT_MS = 140;
  * #E2E0E1 / #E3E1E2 — de actieve selectiepil.
  */
 const RUST_VULLING =
-  "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.40) 6%, rgba(190,192,198,0.60) 28%, rgba(199,201,207,0.55) 72%, rgba(255,255,255,0.80) 100%)";
+  "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.18) 8%, rgba(190,192,198,0.10) 35%, rgba(199,201,207,0.09) 65%, rgba(255,255,255,0.30) 100%)";
 
 /**
  * Licht mode: de balk is daar bijna wit, dus een bijna-witte druppel valt weg.
@@ -29,11 +29,11 @@ const RUST_VULLING =
  * randen als glans.
  */
 const RUST_VULLING_LICHT =
-  "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(243,244,247,0.85) 6%, rgba(196,198,205,0.9) 28%, rgba(203,205,212,0.85) 72%, rgba(240,241,244,0.95) 100%)";
+  "linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.22) 8%, rgba(196,198,205,0.12) 35%, rgba(203,205,212,0.11) 65%, rgba(255,255,255,0.35) 100%)";
 
 /** Licht mode: iets diepere schaduw, zodat hij echt boven de balk ligt. */
 const RUST_SCHADUW_LICHT =
-  "inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 1px rgba(0,0,0,0.18), inset 0 0 0 0.5px rgba(255,255,255,0.6), 0 1.5px 4px rgba(0,0,0,0.22)";
+  "inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(255,255,255,0.65), inset 0 0 0 1px rgba(255,255,255,0.55), 0 2px 4px rgba(16,24,40,0.16), 0 8px 20px rgba(16,24,40,0.12)";
 
 /** Tijdens de overgang: doorschijnend wit glas, met dezelfde stopstructuur. */
 const GLAS_VULLING =
@@ -43,7 +43,7 @@ const GLAS_VULLING =
 // Rust: heldere rand boven, donkere rand onder, zachte gloed binnenin en een
 // schaduw eronder — dat tilt hem van de balk af.
 const RUST_SCHADUW =
-  "inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 1px rgba(0,0,0,0.14), inset 0 0 0 0.5px rgba(255,255,255,0.55), 0 1px 3px rgba(0,0,0,0.16)";
+  "inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(255,255,255,0.6), inset 0 0 0 1px rgba(255,255,255,0.5), 0 2px 4px rgba(16,24,40,0.14), 0 8px 20px rgba(16,24,40,0.1)";
 const GLAS_SCHADUW =
   "inset 0 1.5px 2px rgba(255,255,255,0.95), inset 2px 0 3px rgba(0,175,255,0.35), inset -2px 0 3px rgba(255,75,0,0.35), 0 8px 22px rgba(0,0,0,0.15)";
 

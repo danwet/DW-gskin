@@ -1,3 +1,5 @@
+import { invoiceTier } from "./invoice-tier";
+import type { InvoiceAssessment } from "./types";
 import type { AssessmentDraft, ShipmentDraft } from "./classify";
 import type { InboundMessage, MailAssessment, ShipmentInfo } from "./types";
 import { detectUnsubscribe } from "./unsubscribe";
@@ -108,6 +110,49 @@ export function amountFromInvoiceText(text: string): number | null {
  * account shows up next to "afgeschreven van" or "uw rekening" — so candidates
  * are scored rather than taken in order of appearance.
  */
+function isoFromDutch(day: string, month: string, year: string): string {
+  const y = year.length === 2 ? `20${year}` : year;
+  return `${y}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+/** Telt dagen op bij een jjjj-mm-dd en geeft weer jjjj-mm-dd. */
+function addDays(iso: string, days: number): string {
+  const date = new Date(`${iso}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * Leest de uiterste betaaldatum uit een factuur. Naast een expliciete
+ * "uiterste betaaldatum" komt de datum vaak indirect: een factuurdatum plus een
+ * betaaltermijn ("binnen 14 dagen"), zoals bij energiefacturen.
+ */
+export function dueDateFromInvoiceText(text: string): string | null {
+  const nl = text.match(
+    /(?:uiterste\s+betaaldatum|betaal(?:datum|termijn)|vervaldatum|due\s+date|payment\s+due)[^0-9]{0,30}(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/i,
+  );
+  if (nl) {
+    const [, d, m, y] = nl;
+    const year = y.length === 2 ? `20${y}` : y;
+    const dd = d.padStart(2, "0");
+    const mm = m.padStart(2, "0");
+    return `${year}-${mm}-${dd}`;
+  }
+  const iso = text.match(
+    /(?:uiterste\s+betaaldatum|betaal(?:datum|termijn)|vervaldatum|due\s+date|payment\s+due)[^0-9]{0,30}(20\d{2})-(\d{2})-(\d{2})/i,
+  );
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+
+  // Betaaltermijn: "binnen 14 dagen" gerekend vanaf de factuurdatum.
+  const term = text.match(/binnen\s+(\d{1,2})\s+(?:werk)?dagen/i);
+  const invoiceDate = text.match(/factuurdatum[^0-9]{0,20}(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/i);
+  if (term && invoiceDate) {
+    const [, d, m, y] = invoiceDate;
+    return addDays(isoFromDutch(d, m, y), Number(term[1]));
+  }
+  return null;
+}
+
 export function ibanFromInvoiceText(text: string): string | null {
   const pattern = /\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/g;
   const scored: { iban: string; score: number; at: number }[] = [];
@@ -280,7 +325,7 @@ export function buildAssessment(
         amount: closing ?? outstanding ?? attachmentAmount ?? singleTotal ?? draft.invoice.amount ?? bodyAmount ?? undefined,
         currency: draft.invoice.currency || undefined,
         iban: draft.invoice.iban || attachmentIban || undefined,
-        dueDate: draft.invoice.dueDate ?? undefined,
+        dueDate: draft.invoice.dueDate ?? (attachmentText ? dueDateFromInvoiceText(attachmentText) : null) ?? undefined,
         paymentStatus: draft.invoice.paymentStatus,
         paymentAdvice: draft.invoice.paymentAdvice || undefined,
         unreadAttachment: draft.invoice.unreadAttachment || undefined,
@@ -301,7 +346,12 @@ export function buildAssessment(
     link: latest.link,
     classification: draft.classification,
     viaModel: draft.viaModel ?? false,
-    tier: draft.tier,
+    // Een factuur volgt de uiterste betaaldatum, niet het bedrag en niet het
+    // model: ver weg is 'mag', dichtbij (of onbekend) is 'moet'.
+    tier:
+      invoice && invoice.paymentStatus
+        ? (invoiceTier(invoice as InvoiceAssessment) ?? draft.tier)
+        : draft.tier,
     nextAction: withInvoiceAmount(
       normalizeNextAction(draft.nextAction || "Bekijk deze mail.", invoice?.amount),
       invoice?.amount,

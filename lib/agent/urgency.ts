@@ -65,7 +65,9 @@ export function urgencyFor(
   const handled = assessment.handledByUser === true;
   const needsAttention = assessment.needsAttention === true;
   const invoice = assessment.invoice;
-  const deadline = parseDeadline(assessment.deadline);
+  // Een factuur heeft vaak geen losse deadline in de mail; de uiterste
+  // betaaldatum uit de factuur zelf telt dan als de deadline.
+  const deadline = parseDeadline(assessment.deadline) ?? parseDeadline(invoice?.dueDate ?? null);
   const today = startOfDayInZone(timeZone, now);
 
   if (handled && !needsAttention) {
@@ -100,11 +102,10 @@ export function urgencyFor(
     return { tone: "blue", label: "Geen directe tijdsdruk", deadlineValue: deadline.getTime(), deadlineText: deadlineText(deadline) };
   }
 
-  // Any mail that expects something from you is red, even when its invoice
-  // status is merely unknown: a blue pill on a "Moet" card reads as if nothing
-  // is asked of you.
+  // Iets dat actie vraagt maar geen datum heeft, is niet urgent: rood is voor
+  // de kaarten in Moet, hier is het neutraal.
   if (assessment.classification === "action_needed" || assessment.classification === "reply_needed") {
-    return { tone: "red", label: "Actie nodig", deadlineValue: null, deadlineText: deadlineText(null) };
+    return { tone: "blue", label: "Geen directe tijdsdruk", deadlineValue: null, deadlineText: deadlineText(null) };
   }
   if (invoice?.paymentStatus === "unknown") {
     return { tone: "blue", label: "Betaalstatus controleren", deadlineValue: null, deadlineText: deadlineText(null) };
@@ -112,7 +113,7 @@ export function urgencyFor(
   if (invoice?.paymentStatus === "open_per_sender") {
     return { tone: "blue", label: "Openstaand volgens afzender", deadlineValue: null, deadlineText: deadlineText(null) };
   }
-  return { tone: "red", label: "Actie nodig", deadlineValue: null, deadlineText: deadlineText(null) };
+  return { tone: "blue", label: "Geen directe tijdsdruk", deadlineValue: null, deadlineText: deadlineText(null) };
 }
 
 function deadlineText(deadline: Date | null): string {

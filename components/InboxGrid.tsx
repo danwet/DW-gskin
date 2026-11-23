@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { subscribeFocusTab } from "@/lib/focus-tab";
 import { orderNewestFirst, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
+import { invoiceTier } from "@/lib/agent/invoice-tier";
 import type { MailAssessment } from "@/lib/agent/types";
 import { InvoiceBlock, timeZoneOf, UrgencyPill } from "./AgentInbox";
 import { Modal } from "@/components/kit/modal";
@@ -12,9 +13,17 @@ import { SelectorPill } from "@/components/kit/selector-pill";
  * Rood betekent "nu, in Moet". Dezelfde boodschap in Mag of Hoeft niet is
  * oranje: het is dan geen acute actie.
  */
+/**
+ * Rood is voor Moet, oranje voor Mag, en Hoeft niet houdt zijn eigen kleur.
+ * Zo lees je aan het bolletje meteen in welke tab je kijkt.
+ */
 function pillTone(item: MailAssessment, tone: UrgencyTone): UrgencyTone {
-  if (tone !== "red") return tone;
-  return focusTabFor(item) === "urgent" ? "red" : "orange";
+  // Betaald is betaald: groen blijft groen, in welke tab het kaartje ook staat.
+  if (tone === "green") return "green";
+  const tab = focusTabFor(item);
+  if (tab === "urgent") return "red";
+  if (tab === "info") return tone === "red" ? "blue" : tone;
+  return "orange";
 }
 
 /** No deadline is neutral: grey, not the urgency colour. */
@@ -294,6 +303,9 @@ function cardTier(item: MailAssessment, nowMs: number): "urgent" | "later" | "in
   if (item.snoozedUntil && Date.parse(item.snoozedUntil) > nowMs) {
     return item.snoozedTier ?? "later";
   }
+  // Een openstaande factuur volgt zijn uiterste betaaldatum: dichtbij is nu,
+  // ver weg mag wachten. Zo werkt het ook voor kaarten van vóór deze regel.
+  if (invoiceTier(item.invoice, nowMs)) return invoiceTier(item.invoice, nowMs) === "moet" ? "urgent" : "later";
   // Het model beoordeelt de urgentie; dat is het hele punt van deze app.
   if (item.tier) {
     if (item.tier === "moet") return "urgent";

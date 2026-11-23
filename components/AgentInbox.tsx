@@ -43,11 +43,11 @@ type InboxPayload = {
 export type InboxFilter = "active" | "info" | "all";
 
 const TONE_DOT: Record<UrgencyTone, string> = {
-  red: "var(--danger)",
-  orange: "var(--orange)",
-  yellow: "var(--yellow)",
-  blue: "var(--blue)",
-  green: "var(--green)",
+  red: "var(--dot-red)",
+  orange: "var(--dot-orange)",
+  yellow: "var(--dot-yellow, var(--yellow))",
+  blue: "var(--dot-blue)",
+  green: "var(--dot-green)",
   grey: "var(--muted)",
 };
 
