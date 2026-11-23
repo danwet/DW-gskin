@@ -304,6 +304,7 @@ export function useInbox() {
     void (async () => {
       try {
         const response = await fetch("/api/notifications", { cache: "no-store" });
+        if (!response.ok) return; // niets overschrijven bij een fout
         const data = (await response.json()) as { since?: string | null; read?: string[] };
         if (!alive) return;
         if (data.since || (data.read ?? []).length > 0) {
