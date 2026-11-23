@@ -5,6 +5,7 @@ import { formatClock } from "@/lib/greeting";
 import { useApp } from "./AppProvider";
 import { useInbox } from "./AgentInbox";
 import { useLiveMeta } from "./use-live-meta";
+import { PageTitle } from "./PageTitle";
 
 function formatRunTime(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -39,11 +40,8 @@ export function AgentView() {
   const active = connected;
 
   return (
-    <div className="mx-auto max-w-[880px] px-6 py-7 sm:px-8 sm:py-8">
-      <header className="mb-8">
-        <p className="text-[11px] font-medium tracking-[0.16em] text-[var(--muted)] uppercase">AGENT</p>
-        <h1 className="mt-1 text-[30px] font-bold tracking-[-0.03em] text-[var(--ink)]">Mail agent</h1>
-      </header>
+    <div className="mx-auto max-w-[1180px] px-6 pt-9 pb-7 sm:px-8 sm:pb-8">
+      <PageTitle eyebrow="Agent" title="Mail agent" />
 
       <div className="space-y-4">
         <section className="glass-panel rounded-[22px] p-5">

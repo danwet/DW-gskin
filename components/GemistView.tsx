@@ -1,20 +1,15 @@
 "use client";
 
 import { useInbox } from "./AgentInbox";
+import { PageTitle } from "./PageTitle";
 
 export function GemistView() {
   const { items, loading, error } = useInbox();
   const missed = items.filter((item) => item.classification === "unclassified");
 
   return (
-    <div className="mx-auto max-w-[880px] px-6 py-7 sm:px-8 sm:py-8 md:pt-14 md:pb-14">
-      <header className="mb-8">
-        <p className="text-[11px] font-medium tracking-[0.16em] text-[var(--muted)] uppercase">Gemist</p>
-        <h1 className="mt-1 text-[30px] font-bold tracking-[-0.03em] text-[var(--ink)]">Gemist</h1>
-        <p className="mt-2 text-[14px] text-[var(--muted)]">
-          Alles wat de agent niet kon indelen — niet als factuur, reactie, nieuwsbrief, order of verzending herkend.
-        </p>
-      </header>
+    <div className="mx-auto max-w-[880px] px-6 pt-9 pb-7 sm:px-8 sm:pb-8 md:pb-14">
+      <PageTitle eyebrow="Gemist" title="Gemist" />
 
       {loading ? (
         <p className="text-[14px] text-[var(--muted)]">Laden…</p>

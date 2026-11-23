@@ -180,7 +180,7 @@ export function TodayView() {
   const missedItems = visibleItems.filter((item) => item.classification === "unclassified");
 
   return (
-    <div className="mx-auto max-w-[1180px] px-6 pt-1 pb-7 sm:px-8 sm:pt-2 sm:pb-8 md:pt-4 md:pb-14">
+    <div className="mx-auto max-w-[1180px] px-6 pt-9 pb-7 sm:px-8 sm:pb-8 md:pb-14">
         {inbox.notice ? (
           <div className="glass-float fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-2xl px-4 py-2.5 text-[13px] text-[var(--ink)]">
             {inbox.notice}
@@ -188,7 +188,7 @@ export function TodayView() {
         ) : null}
       <GmailNotice />
       <TodayHeader />
-      <div className="mt-8 grid gap-0 lg:grid-cols-3 lg:gap-8">
+      <div className="grid gap-0 lg:grid-cols-3 lg:gap-8">
         <div className="lg:col-span-2">
           <div className="w-full space-y-6">
             <InboxGrid

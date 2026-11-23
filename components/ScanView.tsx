@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { isValidCalendarDate } from "@/lib/scan/validate";
+import { PageTitle } from "./PageTitle";
 
 type UploadResult = {
   scanId: string;
@@ -183,11 +184,8 @@ export function ScanView() {
   const field = (key: keyof FormState, value: string) => setForm((current) => (current ? { ...current, [key]: value } : current));
 
   return (
-    <div className="mx-auto max-w-[1180px] px-6 pt-1 pb-7 sm:px-8 sm:pt-2 sm:pb-8 md:pt-4 md:pb-14">
-      <header className="mb-8">
-        <p className="text-[11px] font-medium tracking-[0.16em] text-[var(--muted)] uppercase">Uploaden</p>
-        <h1 className="mt-1 text-[30px] font-bold tracking-[-0.03em] text-[var(--ink)]">Hardcopy facturen</h1>
-      </header>
+    <div className="mx-auto max-w-[1180px] px-6 pt-9 pb-7 sm:px-8 sm:pb-8 md:pb-14">
+      <PageTitle eyebrow="Uploaden" title="Hardcopy facturen" />
 
       {stage === "idle" || stage === "error" ? (
         <section

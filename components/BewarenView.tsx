@@ -4,6 +4,7 @@ import { useState } from "react";
 import { timeZoneOf, useInbox } from "./AgentInbox";
 import { InboxCard, InboxModal } from "./InboxGrid";
 import type { MailAssessment } from "@/lib/agent/types";
+import { PageTitle } from "./PageTitle";
 
 export function BewarenView() {
   const inbox = useInbox();
@@ -28,17 +29,13 @@ export function BewarenView() {
   }
 
   return (
-    <div className="mx-auto max-w-[1180px] px-6 pt-1 pb-7 sm:px-8 sm:pt-2 sm:pb-8 md:pt-4 md:pb-14">
+    <div className="mx-auto max-w-[1180px] px-6 pt-9 pb-7 sm:px-8 sm:pb-8 md:pb-14">
         {inbox.notice ? (
           <div className="glass-float fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-2xl px-4 py-2.5 text-[13px] text-[var(--ink)]">
             {inbox.notice}
           </div>
         ) : null}
-      <header className="mb-8">
-        <p className="text-[11px] font-medium tracking-[0.16em] text-[var(--muted)] uppercase">Bewaren</p>
-        <h1 className="mt-1 text-[30px] font-bold tracking-[-0.03em] text-[var(--ink)]">Bewaren</h1>
-        <p className="mt-2 text-[14px] text-[var(--muted)]">E-mails die je hebt bewaard voor later.</p>
-      </header>
+      <PageTitle eyebrow="Bewaren" title="Belangrijke berichten" />
 
       {inbox.loading ? (
         <p className="text-[14px] text-[var(--muted)]">Laden…</p>

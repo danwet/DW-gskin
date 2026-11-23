@@ -10,7 +10,6 @@ import { LoopPreview } from "./LoopPreview";
 import { PaymentModal } from "./PaymentModal";
 import { SettingsDialog } from "./SettingsDialog";
 import { BrandMark } from "./BrandMark";
-import { TopBar } from "./TopBar";
 
 const NAV = [
   { href: "/", label: "Focus", icon: "home" as const },
@@ -178,11 +177,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ) : null}
 
       <main className="min-w-0 flex-1 md:min-h-0 md:overflow-y-auto">
-        {/* Same spot on every page, aligned to the content column. */}
-        {/* Shifted down without pushing the page: only the cluster moves. */}
-        <div className="relative z-40 mx-auto flex w-full max-w-[1180px] translate-y-[25px] justify-end px-6 pt-1 sm:px-8">
-          <TopBar />
-        </div>
+        {/* Ruimte die de oude bovenbalk innam, zodat elke pagina op dezelfde
+            hoogte begint. De kop zelf zit in PageTitle. */}
+        <div className="h-5" aria-hidden="true" />
         {children}
       </main>
 
