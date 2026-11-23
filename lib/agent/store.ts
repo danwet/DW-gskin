@@ -65,6 +65,25 @@ export type UserMailState = {
 /** Applies the user layer on top of a freshly indexed assessment. */
 function withUserState(item: MailAssessment, user?: UserMailState): MailAssessment {
   if (!user) return item;
+
+  // Is er ná jouw afhandeling een nieuw bericht binnengekomen, dan geldt die
+  // afhandeling niet meer. Zonder deze controle blijft zo'n kaart voor altijd
+  // onzichtbaar, want de sync ziet hem als "al beoordeeld" en doet niets.
+  const laatsteBericht = Date.parse(item.receivedAt ?? "");
+  const afgehandeldOp = Date.parse(user.handledAt ?? user.archivedAt ?? "");
+  const verouderd =
+    Number.isFinite(laatsteBericht) &&
+    Number.isFinite(afgehandeldOp) &&
+    afgehandeldOp < laatsteBericht;
+
+  if (verouderd) {
+    return {
+      ...item,
+      needsAttention: true,
+      attentionReason: item.attentionReason ?? "Nieuw bericht in dit gesprek.",
+    };
+  }
+
   return {
     ...item,
     ...(user.handledByUser !== undefined ? { handledByUser: user.handledByUser } : {}),
