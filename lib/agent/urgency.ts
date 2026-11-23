@@ -75,7 +75,7 @@ export function urgencyFor(
   if (assessment.savedAt && assessment.savedVerdict) {
     const gestopt = assessment.savedVerdict.stopped;
     return {
-      tone: gestopt ? "green" : "orange",
+      tone: gestopt ? "green" : "red",
       label: gestopt ? "Afgerond" : "Actie wacht",
       deadlineValue: deadline?.getTime() ?? null,
       deadlineText: deadlineText(deadline),

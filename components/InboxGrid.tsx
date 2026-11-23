@@ -20,6 +20,9 @@ import { SelectorPill } from "@/components/kit/selector-pill";
 function pillTone(item: MailAssessment, tone: UrgencyTone): UrgencyTone {
   // Betaald is betaald: groen blijft groen, in welke tab het kaartje ook staat.
   if (tone === "green") return "green";
+  // Een bewaarde mail waar nog actie op wacht is rood, ook al staat hij in
+  // Hoeft niet: dat oordeel komt van het model, niet van de tab.
+  if (item.savedVerdict && !item.savedVerdict.stopped) return "red";
   const tab = focusTabFor(item);
   if (tab === "urgent") return "red";
   if (tab === "info") return tone === "red" ? "blue" : tone;
