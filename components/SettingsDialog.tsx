@@ -299,13 +299,24 @@ function ProfileSection({
     <section>
       <SectionTitle title="Profiel" hint="Hoe Dashboard jou aanspreekt en hoe het eruitziet." />
       <div className="space-y-5">
-        <Field label="How should I call you?">
-          <input
-            value={settings.displayName}
-            onChange={(event) => updateSettings({ displayName: event.target.value })}
-            className={inputClass}
-          />
-        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Volledige naam (voor e-mail)">
+            <input
+              value={settings.emailName}
+              onChange={(event) => updateSettings({ emailName: event.target.value })}
+              placeholder="John Doe"
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Roepnaam">
+            <input
+              value={settings.displayName}
+              onChange={(event) => updateSettings({ displayName: event.target.value })}
+              placeholder="John"
+              className={inputClass}
+            />
+          </Field>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Weergave">
             <select

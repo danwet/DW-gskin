@@ -109,6 +109,8 @@ export type ThemeChoice = "system" | "light" | "dark";
 export type UnitChoice = "c" | "f";
 export type SidebarMode = "pinned" | "floating";
 export type Settings = {
+  /** Volledige naam die als afzender in e-mails meegaat. */
+  emailName: string;
   displayName: string;
   theme: ThemeChoice;
   units: UnitChoice;

@@ -36,6 +36,8 @@ export async function POST(request: Request) {
     });
   }
 
+  const fromName = typeof form?.get("fromName") === "string" ? (form.get("fromName") as string).trim() : "";
+
   const config = await loadAgentConfig();
   const refreshToken = (await getGmailRefreshToken(user.id)) ?? config.gmailRefreshToken;
   if (!refreshToken) {
@@ -45,6 +47,7 @@ export async function POST(request: Request) {
   const result = await sendGmailMessage({
     refreshToken,
     from: user.email,
+    fromName: fromName || undefined,
     to,
     cc: cc || undefined,
     bcc: bcc || undefined,

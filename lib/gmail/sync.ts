@@ -249,7 +249,19 @@ export async function triageStep(userId: string, ownerEmail?: string | null): Pr
     return { ok: true, step: "idle", processed: filled, progress: await readProgress(userId) };
   }
 
-  const grouped = groupByConversation(untriaged);
+  // Een bericht van jezelf in een gesprek dat al een kaart heeft, is je eigen
+  // antwoord: daar maken we geen tweede kaart van. Een mail aan jezelf in een
+  // nieuw gesprek is wél gewoon mail.
+  const bestaand = new Set((await readAssessments()).map((item) => item.conversationId));
+  const eigen = (ownerEmail ?? "").trim().toLowerCase();
+  const relevant = eigen
+    ? untriaged.filter(
+        (message) =>
+          message.fromEmail.trim().toLowerCase() !== eigen || !bestaand.has(message.threadId ?? ""),
+      )
+    : untriaged;
+
+  const grouped = groupByConversation(relevant);
   const threads = Array.from(grouped.entries())
     .map(([conversationId, list]) => ({ conversationId, latest: list[list.length - 1] }))
     .sort((a, b) => Date.parse(b.latest.receivedAt) - Date.parse(a.latest.receivedAt))

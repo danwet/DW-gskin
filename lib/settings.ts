@@ -9,7 +9,8 @@ export const APPROVED_KEY = "brief-approved-drafts";
 export const DRAFT_EDITS_KEY = "brief-draft-edits";
 
 export const defaultSettings: Settings = {
-  displayName: "Daniel",
+  displayName: "",
+  emailName: "",
   theme: "system",
   units: "c",
   locationMode: "auto",
@@ -27,6 +28,11 @@ export function loadSettings(): Settings {
     for (const key of Object.keys(defaultSettings) as (keyof Settings)[]) {
       if (!(key in parsed)) continue;
       (settings as Record<string, unknown>)[key] = parsed[key];
+    }
+    // Oude standaardwaarden ("Daniel", en de korte tijd "John") vallen terug op
+    // het lege veld met de grijze suggestie.
+    if (settings.displayName === "Daniel" || settings.displayName === "John") {
+      settings.displayName = defaultSettings.displayName;
     }
     const unknownKey = Object.keys(parsed).some((key) => !(key in defaultSettings));
     if (unknownKey) saveSettings(settings);

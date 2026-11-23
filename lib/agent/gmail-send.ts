@@ -39,6 +39,8 @@ function safeFilename(name: string): string {
 
 export function buildRawMessage(options: {
   from: string;
+  /** Naam die vóór het adres in de From-regel komt. */
+  fromName?: string;
   to: string;
   cc?: string;
   bcc?: string;
@@ -52,8 +54,11 @@ export function buildRawMessage(options: {
   const signatureHtml = options.signatureHtml?.trim() ?? "";
   const attachments = options.attachments ?? [];
 
+  const afzender = options.fromName?.trim()
+    ? `"${options.fromName.trim().replace(/"/g, "")}" <${options.from}>`
+    : options.from;
   const headers = [
-    `From: ${options.from}`,
+    `From: ${afzender}`,
     `To: ${options.to}`,
     ...(options.cc ? [`Cc: ${options.cc}`] : []),
     ...(options.bcc ? [`Bcc: ${options.bcc}`] : []),
@@ -127,6 +132,7 @@ export function buildRawMessage(options: {
 export async function sendGmailMessage(options: {
   refreshToken: string;
   from: string;
+  fromName?: string;
   to: string;
   cc?: string;
   bcc?: string;
@@ -170,6 +176,7 @@ export async function sendGmailMessage(options: {
 export async function sendGmailReply(options: {
   refreshToken: string;
   from: string;
+  fromName?: string;
   to: string;
   subject: string;
   body: string;

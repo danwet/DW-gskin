@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/kit/modal";
 import { opschonenHandtekening } from "@/lib/handtekening";
+import { useApp } from "./AppProvider";
 
 const VELD =
   "veld-underline mt-1 px-0 py-2 text-[14px] text-ink placeholder:text-ink-muted";
@@ -29,6 +30,7 @@ export function NewMailSheet({ open, onClose }: { open: boolean; onClose: () => 
   const veld = useRef<HTMLDivElement>(null);
   const [handtekeningKlaar, setHandtekeningKlaar] = useState(false);
   const [spellBezig, setSpellBezig] = useState(false);
+  const { settings } = useApp();
 
   // Bij openen de handtekening ophalen en het vlak leegmaken.
   useEffect(() => {
@@ -136,6 +138,8 @@ export function NewMailSheet({ open, onClose }: { open: boolean; onClose: () => 
       vorm.set("body", tekst);
       vorm.set("html", html || tekst);
       vorm.set("signature", "included");
+      // De volledige naam uit Instellingen gaat als afzender mee.
+      vorm.set("fromName", settings.emailName ?? "");
       for (const bestand of bijlagen) vorm.append("files", bestand);
 
       const response = await fetch("/api/gmail/compose", { method: "POST", body: vorm });

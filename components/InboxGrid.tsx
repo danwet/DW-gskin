@@ -1,5 +1,6 @@
 "use client";
 
+import { useApp } from "./AppProvider";
 import { useEffect, useRef, useState } from "react";
 import { subscribeFocusTab } from "@/lib/focus-tab";
 import { orderNewestFirst, urgencyFor, type UrgencyTone } from "@/lib/agent/urgency";
@@ -682,6 +683,7 @@ export function InboxModal({
   onError?: (message: string) => void;
 }) {
   const urgency = urgencyFor(item, now, timeZone);
+  const { settings } = useApp();
   const [handled, setHandled] = useState(item.handledByUser === true);
   const [declaration, setDeclaration] = useState(item.declaration);
   const [saved, setSaved] = useState(Boolean(item.savedAt));
@@ -835,6 +837,8 @@ export function InboxModal({
       form.set("html", conceptHtml || escapeHtml(draft));
       // De handtekening zit hierboven al in, dus niet nog eens toevoegen.
       form.set("signature", "included");
+      // De volledige naam uit Instellingen gaat als afzender mee.
+      form.set("fromName", settings.emailName ?? "");
       for (const file of attachments) form.append("files", file);
 
       const response = await fetch("/api/agent/send", { method: "POST", body: form });

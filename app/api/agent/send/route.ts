@@ -43,6 +43,8 @@ async function sendReply(request: Request) {
     });
   }
 
+  const fromName = typeof form?.get("fromName") === "string" ? (form.get("fromName") as string).trim() : "";
+
   const config = await loadAgentConfig();
   const refreshToken = (await getGmailRefreshToken(user.id)) ?? config.gmailRefreshToken;
   if (!refreshToken) {
@@ -52,6 +54,7 @@ async function sendReply(request: Request) {
   const result = await sendGmailReply({
     refreshToken,
     from: user.email,
+    fromName: fromName || undefined,
     to: item.fromEmail,
     subject,
     body: draft,

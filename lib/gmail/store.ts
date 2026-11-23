@@ -179,11 +179,11 @@ export async function listUntriagedMessages(
     .is("triaged_at", null)
     .order("received_at", { ascending: false })
     .limit(limit);
-  const owner = (ownerEmail ?? "").trim().toLowerCase();
-  // Onze eigen antwoorden zijn geen mail om te beoordelen.
-  return ((data ?? []) as MessageRow[])
-    .map(rowToMessage)
-    .filter((message) => !owner || message.fromEmail.trim().toLowerCase() !== owner);
+  // Eigen berichten worden hier niet weggefilterd: een mail die je jezelf
+  // stuurt hoort gewoon een kaart te krijgen. Alleen onze eigen antwoorden in
+  // een bestaand gesprek worden verderop overgeslagen.
+  void ownerEmail;
+  return ((data ?? []) as MessageRow[]).map(rowToMessage);
 }
 
 /** Marks a whole conversation as triaged so a resume never redoes it. */
