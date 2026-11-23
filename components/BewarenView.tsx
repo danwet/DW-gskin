@@ -35,7 +35,7 @@ export function BewarenView() {
             {inbox.notice}
           </div>
         ) : null}
-      <PageTitle eyebrow="Bewaren" title="Belangrijke berichten" />
+      <PageTitle eyebrow="Bewaard" title="Belangrijke berichten" />
 
       {inbox.loading ? (
         <p className="text-[14px] text-[var(--muted)]">Laden…</p>

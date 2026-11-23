@@ -13,8 +13,9 @@ import { BrandMark } from "./BrandMark";
 
 const NAV = [
   { href: "/", label: "Focus", icon: "home" as const },
-  { href: "/bewaren", label: "Bewaren", icon: "save" as const },
+  { href: "/bewaren", label: "Bewaard", icon: "save" as const },
   { href: "/scan", label: "Uploaden", icon: "scan" as const },
+  { href: "/afgehandeld", label: "Afgehandeld", icon: "done" as const },
   { href: "/agent", label: "Agent", icon: "agent" as const },
 ];
 
@@ -310,7 +311,7 @@ function SidebarContent({
   );
 }
 
-function NavIcon({ name, active }: { name: "home" | "today" | "inbox" | "agent" | "scan" | "missed" | "save"; active: boolean }) {
+function NavIcon({ name, active }: { name: "home" | "today" | "inbox" | "agent" | "scan" | "missed" | "save" | "done"; active: boolean }) {
   // Het actieve item is glas, geen blauw: het icoon volgt de zwarte tekst.
   const color = active ? "#141915" : "var(--muted)";
   const common = {
@@ -352,6 +353,14 @@ function NavIcon({ name, active }: { name: "home" | "today" | "inbox" | "agent" 
     return (
       <svg {...common} style={{ color }}>
         <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1Z" />
+      </svg>
+    );
+  }
+  if (name === "done") {
+    return (
+      <svg {...common} style={{ color }}>
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="m8.4 12.3 2.4 2.4 4.8-4.9" />
       </svg>
     );
   }
