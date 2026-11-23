@@ -20,8 +20,11 @@ const GROOT_MS = 140;
  * Ruststand: subtiel verticaal verloop van donkerder bovenaan (#DFDDDE) naar
  * #E2E0E1 / #E3E1E2 — de actieve selectiepil.
  */
+// Donker mode: dezelfde glasdichtheid als de actieve menukeuze, zodat de zwarte
+// letters leesbaar blijven. Een te ijle vulling maakt de pil bijna onzichtbaar
+// en dan valt de tekst weg tegen de donkere balk.
 const RUST_VULLING =
-  "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.18) 8%, rgba(190,192,198,0.10) 35%, rgba(199,201,207,0.09) 65%, rgba(255,255,255,0.30) 100%)";
+  "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.48) 12%, rgba(255,255,255,0.26) 55%, rgba(255,255,255,0.44) 100%)";
 
 /**
  * Licht mode: de balk is daar bijna wit, dus een bijna-witte druppel valt weg.
@@ -117,6 +120,9 @@ export function GlasDruppel({
           scaleY: bezig ? 1.24 : 1,
           scaleX: bezig ? 1.12 : 1,
           backgroundImage: bezig ? GLAS_VULLING : rustVulling,
+          // In donker mode een lichte ondergrond onder het verloop, net als de
+          // menukeuze: zo blijft de pil licht en de donkere tekst leesbaar.
+          backgroundColor: donker && !bezig ? "rgba(255,255,255,0.10)" : undefined,
           boxShadow: bezig ? GLAS_SCHADUW : rustSchaduw,
         }}
         style={{
