@@ -490,10 +490,18 @@ function DaySummary({
   let betaald = 0;
   let afgehandeld = 0;
   let gescand = 0;
+  let bestellingen = 0;
 
   for (const item of items) {
     if (item.source === "scan" && isToday(item.receivedAt)) gescand += 1;
     if (item.sentAt && isToday(item.sentAt)) beantwoord += 1;
+    // Alleen bestellingen van vandaag: het moment van binnenkomen telt, niet
+    // wanneer de app hem verwerkte. Een oude mail die vandaag gearchiveerd wordt
+    // is geen bestelling van vandaag. Eén mail met zowel betaling als aankoop
+    // blijft één bestelling.
+    if ((item.purchase || item.payment) && isToday(item.receivedAt)) {
+      bestellingen += 1;
+    }
     if (item.handledByUser && isToday(item.handledAt ?? item.paidAt)) {
       if (item.invoice) {
         betaald += 1;
@@ -513,6 +521,7 @@ function DaySummary({
       <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Weggewerkt</h2>
       {beantwoord === 0 &&
       betaald === 0 &&
+      bestellingen === 0 &&
       afgehandeld === 0 &&
       gescand === 0 &&
       orderChanges === 0 &&
@@ -524,6 +533,14 @@ function DaySummary({
             <li className="flex items-center gap-2.5">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--dot-blue)" }} />
               <span>{beantwoord} {beantwoord === 1 ? "bericht beantwoord" : "berichten beantwoord"}</span>
+            </li>
+          ) : null}
+          {bestellingen > 0 ? (
+            <li className="flex items-center gap-2.5">
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: "var(--dot-green)" }} />
+              <span>
+                {bestellingen} {bestellingen === 1 ? "bestelling verwerkt" : "bestellingen verwerkt"}
+              </span>
             </li>
           ) : null}
           {betaald > 0 ? (
