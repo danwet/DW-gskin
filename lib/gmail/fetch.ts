@@ -276,6 +276,41 @@ export async function fetchGmailMessage(accessToken: string, id: string): Promis
 
 /** One page of the inbox, newest first (Gmail returns newest first by default). */
 /** Onze eigen antwoorden, zodat een thread compleet is in de app. */
+/** Alles van de laatste dagen, ook wat al gearchiveerd is. */
+export async function listGmailRecent(
+  accessToken: string,
+  options: { days?: number; maxResults?: number } = {},
+): Promise<GmailListPage> {
+  const params = new URLSearchParams({
+    maxResults: String(options.maxResults ?? 25),
+    q: `newer_than:${options.days ?? 3}d`,
+  });
+  const response = await fetch(`${GMAIL_API}/messages?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) {
+    return {
+      ok: false,
+      ids: [],
+      nextPageToken: null,
+      resultSizeEstimate: null,
+      status: response.status,
+      error: `Gmail recent-list faalde (${response.status}).`,
+    };
+  }
+  const data = (await response.json().catch(() => null)) as {
+    messages?: { id?: string }[];
+    nextPageToken?: string;
+    resultSizeEstimate?: number;
+  } | null;
+  return {
+    ok: true,
+    ids: (data?.messages ?? []).map((m) => m.id).filter((id): id is string => Boolean(id)),
+    nextPageToken: data?.nextPageToken ?? null,
+    resultSizeEstimate: typeof data?.resultSizeEstimate === "number" ? data.resultSizeEstimate : null,
+  };
+}
+
 export async function listGmailSent(
   accessToken: string,
   options: { maxResults?: number } = {},

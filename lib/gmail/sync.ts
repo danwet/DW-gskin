@@ -13,7 +13,7 @@ import {
 } from "../agent/store";
 import type { InboundMessage } from "../agent/types";
 import { refreshGoogleAccessToken } from "../google-token";
-import { fetchGmailMessage, listGmailInbox, listGmailSent } from "./fetch";
+import { fetchGmailMessage, listGmailInbox, listGmailRecent, listGmailSent } from "./fetch";
 import { reconcileGmailHistory } from "./history";
 import { archiveGmailMessage } from "./actions";
 import {
@@ -336,6 +336,38 @@ async function archiveProcessedOrders(userId: string, refreshToken: string): Pro
  * berichten lijkt een thread af te lopen bij de mail van de ander, terwijl er
  * allang een antwoord van jou tussen zit.
  */
+function normalizeSubject(subject: string): string {
+  return subject
+    .replace(/^((re|fwd|antw|aw|wg|tr)\s*:\s*)+/gi, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Mail die je snel archiveert zou anders nooit beoordeeld worden: de import
+ * keek alleen in de inbox. Deze ronde pakt de laatste dagen mee, ook uit het
+ * archief, met een grens per keer.
+ */
+async function importRecentMail(userId: string, refreshToken: string): Promise<number> {
+  const token = await refreshGoogleAccessToken(refreshToken);
+  if (!token) return 0;
+  const page = await listGmailRecent(token.access_token, { days: 3, maxResults: 25 });
+  if (!page.ok || page.ids.length === 0) return 0;
+
+  const known = new Set((await listStoredMessages(userId)).map((row) => row.message_id));
+  const fresh = page.ids.filter((id) => !known.has(id)).slice(0, 8);
+  if (fresh.length === 0) return 0;
+
+  const messages = [];
+  for (const id of fresh) {
+    const mapped = await fetchGmailMessage(token.access_token, id);
+    if (mapped) messages.push(mapped);
+  }
+  const saved = await saveMessages(userId, messages);
+  return saved.newMessages;
+}
+
 async function importSentReplies(userId: string, refreshToken: string): Promise<number> {
   const token = await refreshGoogleAccessToken(refreshToken);
   if (!token) return 0;
@@ -346,10 +378,22 @@ async function importSentReplies(userId: string, refreshToken: string): Promise<
   const fresh = page.ids.filter((id) => !known.has(id)).slice(0, 10);
   if (fresh.length === 0) return 0;
 
+  // Een antwoord uit een andere mailclient krijgt soms een eigen thread-id.
+  // Dan koppelen we hem op onderwerp aan het gesprek dat we al kennen, anders
+  // blijft het antwoord los staan en lijkt de thread af te lopen.
+  const perOnderwerp = new Map<string, string>();
+  for (const item of await readAssessments()) {
+    const key = normalizeSubject(item.subject ?? "");
+    if (key && !perOnderwerp.has(key)) perOnderwerp.set(key, item.conversationId);
+  }
+
   const messages = [];
   for (const id of fresh) {
     const mapped = await fetchGmailMessage(token.access_token, id);
-    if (mapped) messages.push(mapped);
+    if (!mapped) continue;
+    const doel = perOnderwerp.get(normalizeSubject(mapped.subject ?? ""));
+    if (doel) mapped.threadId = doel;
+    messages.push(mapped);
   }
   const saved = await saveMessages(userId, messages);
   return saved.newMessages;
@@ -438,6 +482,8 @@ export async function syncStep(
 
   // Onze eigen antwoorden ophalen en aan hun thread koppelen: pas dan is een
   // gesprek compleet en weten we dat jij er al op hebt gereageerd.
+  const recentImported = await importRecentMail(userId, refreshToken).catch(() => 0);
+  imported += recentImported;
   const sentImported = await importSentReplies(userId, refreshToken).catch(() => 0);
   imported += sentImported;
   const answered = await applyAnsweredThreads(userId, ownerEmail).catch(() => ({ archived: 0, reopened: 0 }));

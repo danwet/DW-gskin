@@ -5,7 +5,6 @@ import { classifyConversation } from "./classify";
 import { loadAgentConfig, type AgentConfig, type ProviderId } from "./config";
 import { fetchInboxMessages, gmailConfigured, resolveMailSource, storedGmailConnection } from "./mail-source";
 import { hasGmailConnection, readActiveGmailConnection } from "../gmail/connection";
-import { isShipmentRelated } from "./shipment";
 import { appendRun, readAssessments, readMeta, setOrderKeys, updateMeta, upsertAssessments } from "./store";
 import { linkOrders } from "./order-link";
 import type { InboundMessage, MailAssessment } from "./types";

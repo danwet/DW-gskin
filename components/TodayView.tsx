@@ -287,6 +287,15 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
       });
     }
   }
+  // Iets dat gekocht is (licentie, abonnement, trial) hoort bij Bestellingen,
+  // ook als er geen pakket bij komt kijken.
+  const purchaseEntries = items
+    // Het model noemt de mailsoort; een order zonder expliciete aankoopgegevens
+    // hoort hier ook, zodat niets buiten de lijst valt.
+    .filter((item) => (item.purchase || item.category === "order") && !item.archivedAt)
+    .sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt))
+    .slice(0, 6);
+
   const paymentEntries = [...payments.values()].sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
 
   const shipments = [...byKey.values()]
@@ -322,7 +331,7 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
   return (
     <section className="mt-6">
       <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Bestellingen</h2>
-      {shipments.length === 0 && paymentEntries.length === 0 ? (
+      {shipments.length === 0 && paymentEntries.length === 0 && purchaseEntries.length === 0 ? (
         <p className="mt-4 text-[14px] text-[var(--muted)]">Bestel maar</p>
       ) : (
       <ul className="mt-4 space-y-4">
@@ -349,6 +358,44 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
                 {s.orderNumber ? <p className="truncate text-[12px] text-[var(--muted)]">Order {s.orderNumber}</p> : null}
               </div>
               </button>
+            </li>
+          );
+        })}
+        {purchaseEntries.map((item) => {
+          const p = item.purchase ?? { status: "unknown" as const };
+          const label =
+            p.status === "trial"
+              ? `Proefperiode${p.endsAt ? ` t/m ${formatDate(p.endsAt)}` : ""}`
+              : p.status === "paid"
+                ? "Gekocht"
+                : p.status === "renewed"
+                  ? "Verlengd"
+                  : p.status === "refunded"
+                    ? "Terugbetaald"
+                    : p.status === "cancelled"
+                      ? "Opgezegd"
+                      : "Aankoop";
+          const kleur =
+            p.status === "trial"
+              ? "var(--dot-orange)"
+              : p.status === "refunded" || p.status === "cancelled"
+                ? "var(--muted)"
+                : "var(--dot-green)";
+          return (
+            <li key={`aankoop-${item.conversationId}`} className="flex items-start gap-3">
+              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: kleur }} />
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold text-[var(--ink)]">{label}</p>
+                <div className="mt-1 flex items-baseline justify-between gap-3">
+                  <p className="truncate text-[13px] text-[var(--ink)]">
+                    {p.shop ?? item.from}
+                    {p.product && p.product !== p.shop ? <span className="text-[var(--muted)]"> · {p.product}</span> : null}
+                  </p>
+                  {p.amount != null ? (
+                    <p className="shrink-0 text-[12px] text-[var(--muted)]">€ {p.amount.toFixed(2).replace(".", ",")}</p>
+                  ) : null}
+                </div>
+              </div>
             </li>
           );
         })}

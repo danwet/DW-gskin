@@ -1,6 +1,7 @@
 import { invoiceTier } from "./invoice-tier";
 import type { InvoiceAssessment } from "./types";
 import type { AssessmentDraft, ShipmentDraft } from "./classify";
+import type { PurchaseInfo } from "./types";
 import type { InboundMessage, MailAssessment, ShipmentInfo } from "./types";
 import { detectUnsubscribe } from "./unsubscribe";
 import { extractLogoUrl } from "../gmail/logo";
@@ -127,6 +128,30 @@ function addDays(iso: string, days: number): string {
  * "uiterste betaaldatum" komt de datum vaak indirect: een factuurdatum plus een
  * betaaltermijn ("binnen 14 dagen"), zoals bij energiefacturen.
  */
+/**
+ * Een aankoopbewijs noemt vaak de payment provider als afzender (Paddle, Stripe)
+ * en het product in de tekst. Zonder die omkering staat er "Paddle" in je
+ * bestellingen in plaats van wat je gekocht hebt.
+ */
+function purchaseFromDraft(
+  draft: PurchaseInfo | undefined,
+  sender: string | undefined,
+  text: string,
+): PurchaseInfo | undefined {
+  if (!draft) return undefined;
+  const provider = /^(paddle|stripe|mollie|paypal|apple|google|recurly|chargebee|lemonsqueezy)$/i;
+  let shop = draft.shop?.trim();
+  if (shop && provider.test(shop) && draft.product) shop = draft.product;
+  const amount =
+    draft.amount ??
+    (/(?:€|eur)\s*(\d{1,6}(?:[.,]\d{2})?)/i.test(text) ? amountFromInvoiceText(text) ?? undefined : undefined);
+  return {
+    ...draft,
+    shop: shop || draft.product || (sender && !provider.test(sender) ? sender : undefined),
+    amount,
+  };
+}
+
 export function dueDateFromInvoiceText(text: string): string | null {
   const nl = text.match(
     /(?:uiterste\s+betaaldatum|betaal(?:datum|termijn)|vervaldatum|due\s+date|payment\s+due)[^0-9]{0,30}(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/i,
@@ -272,7 +297,9 @@ function mergeShipment(
   if (!draft && !detected) return undefined;
   const status = draft?.status || detected?.status || "Update";
   return {
-    supplier: detected?.supplier ?? "",
+    // Het model leest de winkel uit de mail; de regels vullen alleen aan wat
+    // het model niet noemde. Andersom gooide weg wat de AI wél begreep.
+    supplier: draft?.shop || detected?.supplier || "",
     shop: draft?.shop || detected?.shop || undefined,
     carrier: draft?.carrier || detected?.carrier || undefined,
     orderNumber: draft?.orderNumber || detected?.orderNumber || "",
@@ -345,6 +372,7 @@ export function buildAssessment(
     fromEmail: counterparty.fromEmail,
     link: latest.link,
     classification: draft.classification,
+    category: draft.category,
     viaModel: draft.viaModel ?? false,
     // Een factuur volgt de uiterste betaaldatum, niet het bedrag en niet het
     // model: ver weg is 'mag', dichtbij (of onbekend) is 'moet'.
@@ -384,6 +412,8 @@ export function buildAssessment(
     // The model read the mail and named shop, carrier and numbers; fall back to
     // the rules when it did not.
     shipment: mergeShipment(draft.shipment, detectShipment(latest)),
+    // Iets dat gekocht is hoort bij Bestellingen, niet bij de losse berichten.
+    purchase: purchaseFromDraft(draft.purchase, counterparty.from || latest.from, invoiceText),
     payment: detectPayment(latest) ?? undefined,
     thread: conversation.map((message) => ({
       from: message.from,

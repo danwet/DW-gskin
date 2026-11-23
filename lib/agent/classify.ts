@@ -2,8 +2,10 @@ import "server-only";
 
 import { detectLanguage, type MailLanguage } from "../language";
 import { isShipmentRelated } from "./shipment";
-import type { AgentClassification, InboundMessage, PaymentStatus } from "./types";
+import type { AgentClassification, InboundMessage, PaymentStatus, PurchaseInfo } from "./types";
 import type { ProviderId } from "./config";
+
+export type MailCategory = "order" | "invoice" | "appointment" | "question" | "admin" | "newsletter" | "other";
 
 export type InvoiceDraft = {
   supplier: string;
@@ -33,6 +35,8 @@ export type ShipmentDraft = {
 
 export type AssessmentDraft = {
   classification: AgentClassification;
+  /** De soort mail, door het model benoemd. */
+  category?: MailCategory;
   /** Het oordeel van het model over de urgentie van vandaag. */
   tier?: "moet" | "mag" | "hoeft_niet";
   /** True wanneer het model deze beoordeling heeft gemaakt (i.p.v. de regels). */
@@ -46,6 +50,7 @@ export type AssessmentDraft = {
   preparedAction: string;
   draftReply: string | null;
   invoice: InvoiceDraft | null;
+  purchase?: PurchaseInfo;
   /** Optional: the rule-based path has none, the model fills it. */
   shipment?: ShipmentDraft | null;
 };
@@ -58,6 +63,12 @@ const ASSESSMENT_SCHEMA = {
   additionalProperties: false,
   properties: {
     classification: { type: "string", enum: CLASSIFICATIONS },
+    category: {
+      type: "string",
+      enum: ["order", "invoice", "appointment", "question", "admin", "newsletter", "other"],
+      description:
+        "What kind of mail this is: an order or purchase confirmation, an invoice or payment request, an appointment, a question addressed to the user, administrative paperwork, a newsletter, or something else. Judge from what the mail means, never from keywords.",
+    },
     tier: {
       type: "string",
       enum: ["moet", "mag", "hoeft_niet"],
@@ -96,6 +107,25 @@ const ASSESSMENT_SCHEMA = {
         unreadAttachment: { type: "string", description: "Note when a relevant attachment could not be read, else empty string." },
       },
       required: ["supplier", "invoiceNumber", "amount", "currency", "iban", "dueDate", "paymentStatus", "paymentAdvice", "unreadAttachment"],
+    },
+    purchase: {
+      type: ["object", "null"],
+      description:
+        "Anything the user bought: a licence, subscription, free trial, upgrade or one-off order. Payment providers (Paddle, Stripe, Mollie, Apple, Google Play, PayPal) sell on behalf of a product, so name the product as shop when the mail mentions it. Null when nothing was bought.",
+      additionalProperties: false,
+      properties: {
+        shop: { type: "string", description: "Who sells it: the product or webshop (e.g. 'Bartender Pro'), not the payment provider." },
+        product: { type: "string" },
+        orderNumber: { type: "string" },
+        amount: { type: ["number", "null"] },
+        currency: { type: "string" },
+        status: { type: "string", enum: ["trial", "paid", "renewed", "refunded", "cancelled", "unknown"] },
+        startsAt: { type: ["string", "null"] },
+        endsAt: { type: ["string", "null"], description: "When a trial or subscription ends." },
+        renewsAt: { type: ["string", "null"] },
+        link: { type: "string" },
+      },
+      required: ["shop", "product", "orderNumber", "amount", "currency", "status", "startsAt", "endsAt", "renewsAt", "link"],
     },
     shipment: {
       type: ["object", "null"],
@@ -141,6 +171,10 @@ const INSTRUCTION_LINES = [
   "draftReply: a short, ready-to-send reply in the language of the sender when classification is reply_needed; otherwise null.",
   "Never invent amounts, dates, or consequences. Prefer null or empty over guessing.",
   "If the thread already contains a message from the user (you answered earlier), the latest mail is a reply to you. Such a thread is never info and never a newsletter: use action_needed, reply_needed or waiting, so it never drops into the lowest tier.",
+  "category names the kind of mail as you read it: order (something bought, a purchase confirmation, licence, subscription or trial), invoice (something still to pay), appointment, question (addressed to the user), admin (paperwork, contracts, changes), newsletter, other. Decide it by what the mail means, not by a word in the subject.",
+  "A purchase is an order, not information: a receipt, order confirmation, licence, subscription, upgrade or free trial from a shop or from a payment provider (Paddle, Stripe, Mollie, Apple, Google Play, PayPal) must fill the purchase object. A trial that has started is a purchase too — name the product and when it ends. Such a mail is never info and never a newsletter.",
+  "purchase.shop is the product or shop the user bought (for example 'Bartender Pro'), not the payment provider that sent the receipt. Put the provider in the mail's sender field only.",
+  "Do not put a purchase in the invoice object: an invoice is something the user still has to pay, a purchase is something already bought. A receipt or trial confirmation has purchase filled and invoice null.",
   "tier is how much attention this needs TODAY, and money owed always wins. An invoice, factuur, nota, rekening, payment reminder or any request to pay is 'moet' — also when the amount is only in an attachment, when no due date is stated, when it is a recurring monthly bill, and when the sender offers a portal to pay it. Never put a payment request in 'mag' or 'hoeft_niet'.",
   "'mag' is only for things that cost nothing to postpone: activating a direct debit, changing settings, routine confirmations. 'hoeft_niet' is only for mail with no action at all.",
 ].join("\n");
@@ -203,6 +237,31 @@ function normalizeInvoice(value: unknown): InvoiceDraft | null {
 }
 
 /** Validates a model or fallback result into a clean AssessmentDraft, throwing on unusable output. */
+function normalizePurchase(value: unknown): PurchaseInfo | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const row = value as Record<string, unknown>;
+  const shop = str(row.shop);
+  const product = str(row.product);
+  const amount = typeof row.amount === "number" && Number.isFinite(row.amount) ? row.amount : null;
+  const statuses = ["trial", "paid", "renewed", "refunded", "cancelled", "unknown"] as const;
+  const status = statuses.includes(row.status as (typeof statuses)[number])
+    ? (row.status as (typeof statuses)[number])
+    : "unknown";
+  if (!shop && !product && !amount) return undefined;
+  return {
+    shop: shop || product || undefined,
+    product: product || undefined,
+    orderNumber: str(row.orderNumber) || undefined,
+    amount: amount ?? undefined,
+    currency: str(row.currency) || undefined,
+    status,
+    startsAt: normalizeDate(row.startsAt) ?? undefined,
+    endsAt: normalizeDate(row.endsAt) ?? undefined,
+    renewsAt: normalizeDate(row.renewsAt) ?? undefined,
+    link: str(row.link) || undefined,
+  };
+}
+
 export function normalizeDraft(value: unknown): AssessmentDraft {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Assessment output is not an object");
   const row = value as Record<string, unknown>;
@@ -212,8 +271,13 @@ export function normalizeDraft(value: unknown): AssessmentDraft {
   if (!classification) throw new Error(`Invalid classification: ${String(row.classification)}`);
   const tier =
     row.tier === "moet" || row.tier === "mag" || row.tier === "hoeft_niet" ? row.tier : undefined;
+  const categories = ["order", "invoice", "appointment", "question", "admin", "newsletter", "other"] as const;
+  const category = categories.includes(row.category as (typeof categories)[number])
+    ? (row.category as MailCategory)
+    : undefined;
   return {
     classification,
+    category,
     viaModel: true,
     tier: tier ?? (classification === "info" ? "hoeft_niet" : classification === "waiting" ? "mag" : "mag"),
     nextAction: str(row.nextAction),
@@ -226,6 +290,7 @@ export function normalizeDraft(value: unknown): AssessmentDraft {
     draftReply: nullableStr(row.draftReply),
     invoice: normalizeInvoice(row.invoice),
     shipment: normalizeShipment(row.shipment),
+    purchase: normalizePurchase(row.purchase),
   };
 }
 

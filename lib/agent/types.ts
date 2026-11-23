@@ -14,6 +14,20 @@ export type InvoiceAssessment = {
   unreadAttachment?: string;
 };
 
+/** Iets dat je gekocht hebt: abonnement, licentie, trial of los product. */
+export type PurchaseInfo = {
+  shop?: string;
+  product?: string;
+  orderNumber?: string;
+  amount?: number;
+  currency?: string;
+  status: "trial" | "paid" | "renewed" | "refunded" | "cancelled" | "unknown";
+  startsAt?: string;
+  endsAt?: string;
+  renewsAt?: string;
+  link?: string;
+};
+
 export type Consequence = {
   senderSays?: string;
   possible?: string;
@@ -72,12 +86,18 @@ export type MailAssessment = {
   userReplied?: boolean;
   /** True wanneer het model (niet de regel-fallback) de beoordeling maakte. */
   viaModel?: boolean;
+  /**
+   * Wat voor mail dit is, volgens het model: het leest de mail en benoemt de
+   * soort, in plaats van dat een keyword bepaalt hoe hij behandeld wordt.
+   */
+  category?: "order" | "invoice" | "appointment" | "question" | "admin" | "newsletter" | "other";
   classification: AgentClassification;
   nextAction: string;
   priorityReason: string;
   deadline?: string | null;
   consequence?: Consequence;
   impact?: string;
+  purchase?: PurchaseInfo;
   invoice?: InvoiceAssessment;
   preparedAction?: string;
   draftReply?: string;
