@@ -85,11 +85,13 @@ export function NewMailSheet({ open, onClose }: { open: boolean; onClose: () => 
   const corrigeer = async () => {
     const element = veld.current;
     if (!element || spellBezig) return;
-    // Alles boven de handtekening is de getypte tekst.
-    const handtekeningBlok = element.querySelector("[data-handtekening]");
+    // Alleen de getypte tekst nakijken: de handtekening halen we uit een kloon
+    // van het vel, zodat we zeker weten dat er niets van de signatuur meegaat.
+    const kloon = element.cloneNode(true) as HTMLElement;
+    const handtekeningBlok = kloon.querySelector("[data-handtekening]");
     const ondertekst = handtekeningBlok ? handtekeningBlok.outerHTML : "";
-    const eigenTekst = ondertekst ? element.innerHTML.split(ondertekst)[0] ?? "" : element.innerHTML;
-    const platte = handtekeningBlok ? element.innerText.split(handtekeningBlok.textContent ?? "")[0] ?? "" : element.innerText;
+    handtekeningBlok?.remove();
+    const platte = kloon.innerText;
     if (!platte.trim()) return;
 
     setSpellBezig(true);
