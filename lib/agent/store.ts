@@ -412,6 +412,20 @@ export function upsertAssessments(updates: MailAssessment[]): Promise<MailAssess
           update.needsAttention = true;
           update.attentionReason = update.attentionReason ?? "Nieuw bericht in dit gesprek.";
         }
+
+        // Komt er een nieuw bericht in een gesprek dat jij al had afgehandeld of
+        // gearchiveerd, dan is die afhandeling niet meer geldig: de kaart moet
+        // terug in de lijst staan, anders verdwijnt een nieuwe reactie stil.
+        if (isNewMessage) {
+          const user = (state.userState[update.conversationId] ??= {});
+          if (user.handledByUser || user.archivedAt) {
+            delete user.handledByUser;
+            delete user.handledAt;
+            delete user.archivedAt;
+            update.needsAttention = true;
+            update.attentionReason = update.attentionReason ?? "Nieuw bericht in dit gesprek.";
+          }
+        }
       }
       state.assessments[update.conversationId] = update;
       next.push(update);

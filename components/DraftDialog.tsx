@@ -3,15 +3,22 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Modal } from "@/components/kit/modal";
 import { useApp } from "./AppProvider";
-import { Avatar } from "./ui";
 
 export function DraftDialog() {
   const { draft, setDraft, approved, approveDraft, updateDraftBody } = useApp();
   const [copied, setCopied] = useState(false);
+  const [handtekening, setHandtekening] = useState("");
+  const [bijlagen, setBijlagen] = useState<File[]>([]);
+  const [sleep, setSleep] = useState(false);
+  const [versturen, setVersturen] = useState<"rust" | "bezig" | "klaar" | "fout">("rust");
+  const [fout, setFout] = useState<string | null>(null);
+  const invoer = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!draft) return;
     setCopied(false);
+    setVersturen("rust");
+    setFout(null);
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setDraft(null);
     };
@@ -19,12 +26,56 @@ export function DraftDialog() {
     return () => window.removeEventListener("keydown", onKey);
   }, [draft, setDraft]);
 
+  // De handtekening uit Instellingen, zodat je ziet wat er onder je tekst komt.
+  useEffect(() => {
+    if (!draft || handtekening) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const response = await fetch("/api/settings", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = (await response.json()) as { email?: { signature?: string } };
+        if (alive) setHandtekening(data.email?.signature?.trim() ?? "");
+      } catch {
+        // Zonder handtekening blijft het veld gewoon leeg.
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [draft, handtekening]);
+
   if (!draft) return null;
 
   const isApproved = approved.has(draft.id);
-  const status = isApproved
-    ? "Approved. Copy this reply into your mail app."
-    : "Approve this reply, then copy it into your mail app.";
+
+  const voegToe = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setBijlagen((huidig) => [...huidig, ...Array.from(files)].slice(0, 10));
+  };
+
+  const verstuur = async () => {
+    setVersturen("bezig");
+    setFout(null);
+    try {
+      const vorm = new FormData();
+      vorm.set("conversationId", draft.id);
+      vorm.set("body", draft.draft);
+      for (const bestand of bijlagen) vorm.append("files", bestand);
+      const response = await fetch("/api/agent/send", { method: "POST", body: vorm });
+      const data = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      if (!response.ok || !data?.ok) {
+        setVersturen("fout");
+        setFout(data?.error ?? "Versturen mislukte.");
+        return;
+      }
+      setVersturen("klaar");
+      setBijlagen([]);
+    } catch {
+      setVersturen("fout");
+      setFout("Versturen mislukte: geen verbinding.");
+    }
+  };
 
   return (
     <Modal
@@ -36,8 +87,16 @@ export function DraftDialog() {
       vastHoogte
       voet={
         <div className="flex w-full flex-col items-center gap-2">
-          <p className="text-center text-[13px] leading-5 whitespace-normal text-ink-muted">{status}</p>
-          <div className="flex items-center justify-center gap-2">
+          <p className="text-center text-[13px] leading-5 whitespace-normal text-ink-muted">
+            {versturen === "klaar"
+              ? "Verstuurd. De mail gaat naar je verzonden items."
+              : fout
+                ? fout
+                : isApproved
+                  ? "Goedgekeurd. Je kunt het antwoord ook direct versturen."
+                  : "Lees het concept na, voeg eventueel een bijlage toe en verstuur."}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
             <button type="button" onClick={() => setDraft(null)} className="rounded-full px-3 py-2 text-[14px] text-ink-muted">
               Sluiten
             </button>
@@ -58,31 +117,97 @@ export function DraftDialog() {
             >
               {isApproved ? "Goedgekeurd" : "Goedkeuren"}
             </button>
+            <button
+              type="button"
+              onClick={() => void verstuur()}
+              disabled={versturen === "bezig" || !draft.draft.trim()}
+              className="btn-primary focus-ring rounded-full px-5 py-2 text-[14px] font-medium disabled:opacity-60"
+            >
+              {versturen === "bezig" ? "Versturen…" : "Versturen"}
+            </button>
           </div>
         </div>
       }
     >
-      <div className="flex flex-col gap-4">
-
-          {isApproved ? (
-            <div className="mt-5 space-y-4 text-[15px] leading-7">
-              {draft.draft.split(/\n{2,}/).map((block) => (
-                <p key={block} className="whitespace-pre-wrap">
-                  {block}
-                </p>
-              ))}
+      <div className="grid gap-4 md:grid-cols-[1fr_240px]">
+        {/* Links: het concept op een vel papier, met de handtekening eronder. */}
+        <div className="rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 shadow-[0_1px_2px_rgba(16,24,40,0.05)]">
+          <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">Concept</p>
+          <ReplyField value={draft.draft} onChange={(text) => updateDraftBody(draft.id, text)} />
+          {handtekening ? (
+            <div className="mt-3 border-t border-[var(--line)] pt-3">
+              <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">
+                Handtekening · wordt automatisch toegevoegd
+              </p>
+              {/* Alleen ter controle: de verzendlaag zet hem onder de mail, dus
+                  je hoeft hem niet zelf te typen. */}
+              <p className="mt-1 text-[14px] leading-6 whitespace-pre-line text-[var(--ink)]">{handtekening}</p>
             </div>
-          ) : (
-            <ReplyField
-              value={draft.draft}
-              onChange={(text) => updateDraftBody(draft.id, text)}
-            />
-          )}
+          ) : null}
+        </div>
 
-          <blockquote className="mt-8 border-l-2 border-[var(--faint)] py-0.5 pl-4">
-            <p className="text-[12px] text-[var(--muted)]">{draft.from}</p>
-            <p className="mt-1 text-[14px] leading-6 text-[var(--muted)]">{draft.snippet}</p>
-          </blockquote>
+        {/* Rechts: bijlagen erin slepen. */}
+        <div className="flex flex-col gap-2">
+          <div
+            onDragOver={(event) => {
+              event.preventDefault();
+              setSleep(true);
+            }}
+            onDragLeave={() => setSleep(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setSleep(false);
+              voegToe(event.dataTransfer.files);
+            }}
+            onClick={() => invoer.current?.click()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") invoer.current?.click();
+            }}
+            className={`focus-ring flex min-h-[132px] cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border border-dashed px-3 py-4 text-center transition-colors ${
+              sleep ? "border-[var(--blue)] bg-[var(--blue-soft)]" : "border-[var(--line)] bg-[var(--bg)]"
+            }`}
+          >
+            <p className="text-[13px] font-medium text-[var(--ink)]">Sleep hier je bijlagen</p>
+            <p className="text-[12px] text-[var(--muted)]">of klik om te kiezen</p>
+            <input
+              ref={invoer}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(event) => voegToe(event.target.files)}
+            />
+          </div>
+
+          {bijlagen.length > 0 ? (
+            <ul className="space-y-1.5">
+              {bijlagen.map((bestand, index) => (
+                <li
+                  key={`${bestand.name}-${index}`}
+                  className="flex items-center justify-between gap-2 rounded-xl bg-[var(--bg)] px-2.5 py-1.5"
+                >
+                  <span className="truncate text-[12px] text-[var(--ink)]">{bestand.name}</span>
+                  <button
+                    type="button"
+                    aria-label={`${bestand.name} verwijderen`}
+                    onClick={() =>
+                      setBijlagen((huidig) => huidig.filter((_, i) => i !== index))
+                    }
+                    className="shrink-0 rounded-full px-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--danger)]"
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+
+        <blockquote className="border-l-2 border-[var(--faint)] py-0.5 pl-4 md:col-span-2">
+          <p className="text-[12px] text-[var(--muted)]">{draft.from}</p>
+          <p className="mt-1 text-[14px] leading-6 text-[var(--muted)]">{draft.snippet}</p>
+        </blockquote>
       </div>
     </Modal>
   );
@@ -102,9 +227,9 @@ function ReplyField({ value, onChange }: { value: string; onChange: (text: strin
     <textarea
       ref={field}
       value={value}
-      aria-label="Reply"
+      aria-label="Concept"
       onChange={(event) => onChange(event.target.value)}
-      className="mt-5 w-full resize-none rounded-2xl bg-[var(--bg)] px-4 py-3 text-[15px] leading-7 outline-none"
+      className="mt-2 w-full resize-none bg-transparent text-[15px] leading-7 text-[var(--ink)] outline-none"
     />
   );
 }

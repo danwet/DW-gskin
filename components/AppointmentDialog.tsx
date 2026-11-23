@@ -238,6 +238,7 @@ export function AppointmentDialog({
       open
       onOpenChange={(open) => !open && onClose()}
       title={editing ? "Afspraak" : "Nieuwe afspraak"}
+      vasteHoogte
       voet={
         <div className="flex w-full flex-col items-center gap-2">
           {readOnly ? <p className="t-meta text-center text-ink-muted">Deze agenda is alleen-lezen.</p> : null}

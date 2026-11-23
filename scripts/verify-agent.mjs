@@ -118,7 +118,9 @@ try {
   const reminded = map["thread-inv-100"];
   assert.equal(reminded.invoice.paymentStatus, "open_per_sender");
   assert.ok(reminded.consequence?.senderSays?.toLowerCase().includes("incasso"), "shows what the sender says");
-  assert.equal(reminded.handledByUser, true, "handled state preserved on reminder");
+  // Een nieuw bericht maakt de eerdere afhandeling ongeldig: de kaart moet
+  // terug in de lijst, anders blijft een nieuwe reactie onzichtbaar.
+  assert.notEqual(reminded.handledByUser, true, "a new message reopens the card");
   assert.equal(reminded.needsAttention, true, "new message flags attention again");
 
   // --- Incremental classification: only new mail reaches the model ---

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { motion, useDragControls } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { motion, useDragControls, useMotionValue } from "framer-motion";
 import { X } from "lucide-react";
 import {
   Dialog,
@@ -35,6 +35,7 @@ export function Modal({
   linksboven,
   bottomPadding = 0,
   vastHoogte = false,
+  vasteHoogte = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -66,6 +67,8 @@ export function Modal({
    * later komt: anders groeit de sheet zichtbaar zodra de lijst laadt.
    */
   vastHoogte?: boolean;
+  /** Vaste hoge sheet zonder de 50%-naar-80%-beweging (agenda, leveringen). */
+  vasteHoogte?: boolean;
 }) {
   const gesplitst = kop !== undefined;
   const [lijst, setLijst] = useState<HTMLDivElement | null>(null);
@@ -74,10 +77,83 @@ export function Modal({
   const schaduw = useScrollShadow(gesplitst ? lijst : lijstEenvoudig);
   const dragControls = useDragControls();
 
+  // De sheet begint op de helft van het scherm. Scrollen laat hem meegroeien met
+  // de beweging tot hij past (max 90% van het scherm); pas daarna scrolt de
+  // inhoud. Past de inhoud al bij 60%, dan stopt hij daar en scrolt er niets.
+  const groeiRef = useRef<HTMLDivElement | null>(null);
+  const lijstRef = useRef<HTMLDivElement | null>(null);
+  const [heeftVak, setHeeftVak] = useState(false);
+
+  const scherm = typeof window === "undefined" ? 800 : window.innerHeight;
+  const minHoogte = Math.round(scherm * 0.5);
+  const maxHoogte = Math.round(scherm * 0.9);
+  const hoogte = useMotionValue(minHoogte);
+
+  // Hoe hoog moet de sheet zijn om de inhoud te laten passen? De bovenbalk
+  // (h-14) zit buiten het scrollvak, dus die telt erbij.
+  const pastHoogte = () => {
+    const lijst = lijstRef.current;
+    if (!lijst) return maxHoogte;
+    return Math.min(maxHoogte, Math.max(minHoogte, lijst.scrollHeight + 56));
+  };
+
+  useEffect(() => {
+    const vak = groeiRef.current;
+    if (!vak || vasteHoogte) return;
+
+    const groei = (delta: number, event: Event) => {
+      const doel = pastHoogte();
+      const huidig = hoogte.get();
+      const volgende = Math.max(minHoogte, Math.min(doel, huidig + delta));
+      const lijst = lijstRef.current;
+      const bovenaan = !lijst || lijst.scrollTop <= 0;
+      // Groeien doet de sheet alleen zolang de inhoud bovenaan staat; terug
+      // scrollen gaat eerst door de inhoud en pas bovenaan krimpt de sheet.
+      if (!bovenaan) return;
+      const kanGroeien = delta > 0 ? huidig < doel - 0.5 : huidig > minHoogte + 0.5;
+      if (!kanGroeien) return;
+      event.preventDefault();
+      hoogte.set(volgende);
+    };
+
+    const bijWiel = (event: WheelEvent) => groei(event.deltaY * 1.4, event);
+
+    let startY: number | null = null;
+    let startHoogte = 0;
+    const bijAanraak = (event: TouchEvent) => {
+      startY = event.touches[0]?.clientY ?? null;
+      startHoogte = hoogte.get();
+    };
+    const bijBeweeg = (event: TouchEvent) => {
+      const nu = event.touches[0]?.clientY ?? null;
+      if (startY === null || nu === null) return;
+      const doel = pastHoogte();
+      const volgende = Math.max(minHoogte, Math.min(doel, startHoogte + (startY - nu)));
+      const lijst = lijstRef.current;
+      const bovenaan = !lijst || lijst.scrollTop <= 0;
+      if (!bovenaan) return;
+      const kanGroeien = startY - nu > 0 ? hoogte.get() < doel - 0.5 : hoogte.get() > minHoogte + 0.5;
+      if (!kanGroeien) return;
+      event.preventDefault();
+      hoogte.set(volgende);
+    };
+
+    vak.addEventListener("wheel", bijWiel, { passive: false });
+    vak.addEventListener("touchstart", bijAanraak, { passive: true });
+    vak.addEventListener("touchmove", bijBeweeg, { passive: false });
+    return () => {
+      vak.removeEventListener("wheel", bijWiel);
+      vak.removeEventListener("touchstart", bijAanraak);
+      vak.removeEventListener("touchmove", bijBeweeg);
+    };
+  }, [vasteHoogte, heeftVak, hoogte, minHoogte, maxHoogte]);
+
   function bijVeeg(
     _event: MouseEvent | TouchEvent | PointerEvent,
     info: { offset: { y: number }; velocity: { y: number } },
   ) {
+    // Omlaag trekken sluit de sheet; de hoogte volgt het scrollen.
+
     if (info.offset.y > 120 || info.velocity.y > 700) onOpenChange(false);
   }
 
@@ -100,12 +176,16 @@ export function Modal({
           drag="y"
           dragListener={false}
           dragControls={dragControls}
+          ref={(element) => {
+            groeiRef.current = element;
+            if (element && !heeftVak) setHeeftVak(true);
+          }}
           dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={{ top: 0, bottom: 0.6 }}
+          dragElastic={{ top: 0.5, bottom: 0.6 }}
           onDragEnd={bijVeeg}
+          style={{ height: vasteHoogte ? "85dvh" : hoogte }}
           className={cn(
             "sheet-licht relative flex w-full flex-col overflow-hidden rounded-t-[2.25rem] border border-hairline bg-[var(--card)] text-ink",
-            vastHoogte ? "h-[85dvh]" : "max-h-[85dvh]",
           )}
         >
           {/* Bovenbalk: grabber, actie-pil links en de glazen sluitknop rechts.
@@ -184,7 +264,10 @@ export function Modal({
                 </div>
               </div>
               <div
-                ref={setLijst}
+                ref={(element) => {
+                  setLijst(element);
+                  lijstRef.current = element;
+                }}
                 className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain"
               >
                 {kop !== undefined && (
@@ -202,7 +285,10 @@ export function Modal({
           ) : (
             <>
               <div
-                ref={setLijstEenvoudig}
+                ref={(element) => {
+                  setLijstEenvoudig(element);
+                  lijstRef.current = element;
+                }}
                 className={cn(
                   "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain",
                   gecentreerd ? "gap-6 px-6 pt-16 pb-4 text-center" : "gap-4 px-5 pt-16 pb-4",

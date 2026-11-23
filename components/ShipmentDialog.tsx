@@ -36,7 +36,7 @@ export function ShipmentDialog({
   };
 
   return (
-    <Modal open onOpenChange={(open) => !open && onClose()} title={shipment.supplier}>
+    <Modal open onOpenChange={(open) => !open && onClose()} title={shipment.supplier} vasteHoogte>
       <div className="flex flex-col pb-[45px]">
         {shipment.orderNumber ? (
           <p className="relative -top-[10px] text-center t-meta text-ink-muted">Order {shipment.orderNumber}</p>
