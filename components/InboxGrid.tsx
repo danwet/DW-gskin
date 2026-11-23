@@ -23,6 +23,8 @@ function pillTone(item: MailAssessment, tone: UrgencyTone): UrgencyTone {
   // Een bewaarde mail waar nog actie op wacht is rood, ook al staat hij in
   // Hoeft niet: dat oordeel komt van het model, niet van de tab.
   if (item.savedVerdict && !item.savedVerdict.stopped) return "red";
+  // Bij een factuur met betaaldatum bepaalt het tijdvak de kleur, niet de tab.
+  if (item.invoice && item.invoice.dueDate) return tone === "red" ? "red" : tone;
   const tab = focusTabFor(item);
   if (tab === "urgent") return "red";
   if (tab === "info") return tone === "red" ? "blue" : tone;

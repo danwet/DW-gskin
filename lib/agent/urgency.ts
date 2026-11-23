@@ -99,6 +99,22 @@ export function urgencyFor(
     return { tone: "orange", label: "Wacht op reactie", deadlineValue: deadline?.getTime() ?? null, deadlineText: deadlineText(deadline) };
   }
 
+  // Een factuur met een uiterste betaaldatum zegt zelf hoe lang je nog hebt.
+  // Het tijdvak bepaalt de kleur: rood onder de 3 dagen, oranje tot 10, blauw
+  // daarboven.
+  if (deadline && invoice) {
+    const dagen = daysBetween(deadline, today);
+    const value = deadline.getTime();
+    const text = deadlineText(deadline);
+    if (dagen < 0) {
+      return { tone: "red", label: `Betaaltermijn ${Math.abs(dagen)} ${Math.abs(dagen) === 1 ? "dag" : "dagen"} verlopen`, deadlineValue: value, deadlineText: text };
+    }
+    if (dagen === 0) return { tone: "red", label: "Vandaag betalen", deadlineValue: value, deadlineText: text };
+    if (dagen < 3) return { tone: "red", label: `Betalen in ${dagen} ${dagen === 1 ? "dag" : "dagen"}`, deadlineValue: value, deadlineText: text };
+    if (dagen <= 10) return { tone: "orange", label: `Betalen in ${dagen} dagen`, deadlineValue: value, deadlineText: text };
+    return { tone: "blue", label: `Betalen in ${dagen} dagen`, deadlineValue: value, deadlineText: text };
+  }
+
   if (deadline) {
     const diff = daysBetween(deadline, today);
     if (diff < 0) {

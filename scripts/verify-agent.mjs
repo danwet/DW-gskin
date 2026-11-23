@@ -77,10 +77,24 @@ try {
   assert.equal(map["thread-nl-invalid"].unsubscribe, undefined, "invalid destination is dropped");
   assert.equal(map["thread-inv-100"].unsubscribe, undefined, "invoice has no unsubscribe action");
 
-  // --- Urgency: orange today, red tomorrow, no new mail needed ---
+  // --- Urgency: de uiterste betaaldatum bepaalt de band ---
+  // < 3 dagen rood, 3 t/m 10 dagen oranje, daarboven blauw.
   const inv100 = map["thread-inv-100"];
-  assert.equal(urgencyFor(inv100, now, "Europe/Amsterdam").tone, "orange");
+  assert.equal(urgencyFor(inv100, now, "Europe/Amsterdam").tone, "red", "factuur die morgen moet is rood");
   assert.equal(urgencyFor(inv100, nowPlus1, "Europe/Amsterdam").tone, "red");
+  const overDagen = (dagen) => {
+    const d = new Date(now.getTime() + dagen * 24 * 3600 * 1000);
+    return d.toLocaleDateString("sv-SE");
+  };
+  // De losse deadline uit de mail moet leeg, anders wint die van de factuurdatum.
+  const metVervaldatum = (dagen) => ({
+    ...inv100,
+    deadline: null,
+    invoice: { ...inv100.invoice, dueDate: overDagen(dagen) },
+  });
+  assert.equal(urgencyFor(metVervaldatum(5), now, "Europe/Amsterdam").tone, "orange", "5 dagen is oranje");
+  assert.equal(urgencyFor(metVervaldatum(20), now, "Europe/Amsterdam").tone, "blue", "20 dagen is blauw");
+  assert.match(urgencyFor(metVervaldatum(20), now, "Europe/Amsterdam").label, /Betalen in \d+ dagen/);
   assert.equal(urgencyFor(map["thread-info-1"], now, "Europe/Amsterdam").tone, "blue", "info mail reads as information");
   assert.equal(urgencyFor(map["thread-inv-030"], now, "Europe/Amsterdam").tone, "red", "overdue invoice is red");
 
