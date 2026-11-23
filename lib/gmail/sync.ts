@@ -15,7 +15,7 @@ import type { InboundMessage } from "../agent/types";
 import { refreshGoogleAccessToken } from "../google-token";
 import { fetchGmailMessage, listGmailInbox, listGmailRecent, listGmailSent } from "./fetch";
 import { reconcileGmailHistory } from "./history";
-import { archiveGmailMessage } from "./actions";
+import { archiveGmailMessage, markGmailMessageRead } from "./actions";
 import {
   countUntriaged,
   listStoredMessages,
@@ -319,8 +319,11 @@ async function archiveProcessedOrders(userId: string, refreshToken: string): Pro
     const targets = ids.length > 0 ? ids : item.sourceMessageId ? [item.sourceMessageId] : [];
     if (targets.length === 0) continue;
 
+    // Een verwerkte order is gelezen en afgehandeld: eerst als gelezen
+    // markeren, dan pas archiveren, zodat er geen ongelezen mail achterblijft.
     let ok = true;
     for (const id of targets) {
+      await markGmailMessageRead(refreshToken, id).catch(() => null);
       const result = await archiveGmailMessage(refreshToken, id);
       if (!result.ok) {
         ok = false;

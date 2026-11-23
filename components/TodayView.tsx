@@ -300,6 +300,9 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
   for (const item of items) {
     // Een betaalbevestiging staat al bij "Betaald"; hier zou hij dubbel tellen.
     if (item.payment) continue;
+    // Bestellingen horen bij de dag: ze verdwijnen pas bij de wissel om 05:00,
+    // niet zodra de mail gearchiveerd wordt.
+    if (Date.parse(item.receivedAt) < startOfToday.getTime()) continue;
     const p = item.purchase;
     if (!p) continue;
     const bedrag = Number(p.amount ?? 0);
