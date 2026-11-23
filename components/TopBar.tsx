@@ -38,7 +38,7 @@ export function TopBar() {
           onInboxError={topBar.onError}
         />
       ) : (
-        <span className="glass-chip grid h-8 w-8 place-items-center rounded-full text-[var(--muted)]" aria-hidden="true">
+        <span className="glass-chip grid h-8 w-8 place-items-center rounded-full text-[var(--ink)]" aria-hidden="true">
           <BellIconMuted />
         </span>
       )}
@@ -90,8 +90,10 @@ function BellIconMuted() {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6" />
-      <path d="M10.5 20a2 2 0 0 0 3 0" />
+      {/* Zelfde bel als in de klikbare knop, anders valt het icoon net
+          kleiner uit dan op de pagina's waar hij wel klikbaar is. */}
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.7 21a2 2 0 0 1-3.4 0" />
     </svg>
   );
 }
