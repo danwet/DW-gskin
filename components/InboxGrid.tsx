@@ -952,7 +952,11 @@ export function InboxModal({
 
         {canPreview ? (
           <section className="mt-5">
-            <p className="ml-[5%] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">Nieuwsbrief</p>
+            {/* Bij een nieuwsbrief is het de mail zelf; bij al het andere de
+                aanleiding van dit gesprek. */}
+            <p className="ml-[5%] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">
+              {isNewsletter ? "Nieuwsbrief" : "Aanleiding"}
+            </p>
             {previewHtml ? (
               // Eerst bewust klikken: anders scrolt de nieuwsbrief mee met de
               // sheet in plaats van de sheet zelf.
