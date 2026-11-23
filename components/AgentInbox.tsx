@@ -290,8 +290,22 @@ export function useInbox() {
   }));
   const [notifLoaded, setNotifLoaded] = useState(false);
 
-  // Bewaar de stand op de server; de browser is alleen een spiegel.
+  // De stand staat op de server, maar de browser houdt een spiegel bij. Zo blijft
+  // het bolletje kloppen ook als het ophalen een keer misgaat.
   const saveNotif = useCallback((next: { since?: string | null; read?: string[]; markAllRead?: boolean }) => {
+    if (!next.markAllRead) {
+      try {
+        const raw = window.localStorage.getItem("dw-notifications-v1");
+        const current = raw ? (JSON.parse(raw) as { since?: string | null; read?: string[] }) : {};
+        const merged = {
+          since: next.since !== undefined ? next.since : (current.since ?? null),
+          read: next.read !== undefined ? next.read : (current.read ?? []),
+        };
+        window.localStorage.setItem("dw-notifications-v1", JSON.stringify(merged));
+      } catch {
+        // Zonder opslag werkt de server nog steeds.
+      }
+    }
     void fetch("/api/notifications", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -304,30 +318,50 @@ export function useInbox() {
     void (async () => {
       try {
         const response = await fetch("/api/notifications", { cache: "no-store" });
-        if (!response.ok) return; // niets overschrijven bij een fout
+        // Bij een fout niets overschrijven; de spiegel hieronder vult het gat.
+        if (!response.ok) throw new Error(String(response.status));
         const data = (await response.json()) as { since?: string | null; read?: string[] };
         if (!alive) return;
-        if (data.since || (data.read ?? []).length > 0) {
-          setNotif({ since: data.since ?? null, read: Array.isArray(data.read) ? data.read : [] });
-        } else {
-          // Eerste keer op de server: neem de stand van dit apparaat over.
+        // De server is leidend: die stand is op elk apparaat hetzelfde. Alleen
+        // als er nog niets staat, of als het ophalen mislukt, gebruiken we de
+        // spiegel in deze browser.
+        const leesLokaal = (): { since: string | null; read: string[] } => {
           try {
             const raw = window.localStorage.getItem("dw-notifications-v1");
-            if (raw) {
-              const parsed = JSON.parse(raw) as { since?: string | null; read?: string[] };
-              const migrated = {
-                since: parsed.since ?? null,
-                read: Array.isArray(parsed.read) ? parsed.read : [],
-              };
-              setNotif(migrated);
-              saveNotif(migrated);
-            }
+            if (!raw) return { since: null, read: [] };
+            const parsed = JSON.parse(raw) as { since?: string | null; read?: string[] };
+            return { since: parsed.since ?? null, read: Array.isArray(parsed.read) ? parsed.read : [] };
           } catch {
-            // Geen lokale stand: de basislijn wordt hieronder gezet.
+            return { since: null, read: [] };
+          }
+        };
+        if (data.since || (data.read ?? []).length > 0) {
+          const vanServer = { since: data.since ?? null, read: Array.isArray(data.read) ? data.read : [] };
+          setNotif(vanServer);
+          try {
+            window.localStorage.setItem("dw-notifications-v1", JSON.stringify(vanServer));
+          } catch {
+            // Spiegelen is optioneel.
+          }
+        } else {
+          // Eerste keer op de server: neem de stand van dit apparaat over.
+          const lokaal = leesLokaal();
+          if (lokaal.since || lokaal.read.length > 0) {
+            setNotif(lokaal);
+            saveNotif(lokaal);
           }
         }
       } catch {
-        // Zonder server: de lijst begint gewoon leeg.
+        // Server onbereikbaar: val terug op de spiegel in deze browser.
+        try {
+          const raw = window.localStorage.getItem("dw-notifications-v1");
+          if (raw && alive) {
+            const parsed = JSON.parse(raw) as { since?: string | null; read?: string[] };
+            setNotif({ since: parsed.since ?? null, read: Array.isArray(parsed.read) ? parsed.read : [] });
+          }
+        } catch {
+          // Dan begint de lijst gewoon leeg.
+        }
       } finally {
         if (alive) setNotifLoaded(true);
       }

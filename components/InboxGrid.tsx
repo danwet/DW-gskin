@@ -287,12 +287,32 @@ export function focusTabFor(item: MailAssessment, nowMs = Date.now()): "urgent" 
   return cardTier(item, nowMs);
 }
 
+/** Drie dagen: dichterbij dan dat is het echt iets voor vandaag. */
+const URGENT_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+
 function cardTier(item: MailAssessment, nowMs: number): "urgent" | "later" | "info" {
   if (item.snoozedUntil && Date.parse(item.snoozedUntil) > nowMs) {
     return item.snoozedTier ?? "later";
   }
+  // Het model beoordeelt de urgentie; dat is het hele punt van deze app.
+  if (item.tier) {
+    if (item.tier === "moet") return "urgent";
+    if (item.tier === "hoeft_niet") return "info";
+    return "later";
+  }
   if (item.classification === "info" || item.classification === "unclassified") return "info";
-  if (item.classification === "action_needed" || item.classification === "reply_needed") return "urgent";
+  // Iemand wacht op antwoord: dat is nu.
+  if (item.classification === "reply_needed") return "urgent";
+  if (item.classification === "action_needed") {
+    // Een factuur of betaalverzoek vraagt om geld en blijft dus staan.
+    if (item.invoice) return "urgent";
+    // Alleen "Moet" als er tijdsdruk is. Een verzoek zonder deadline — zoals een
+    // incasso-machtiging activeren — mag ook later, dus die hoort in "Mag".
+    if (!item.deadline) return "later";
+    const deadline = Date.parse(`${item.deadline}T23:59:59`);
+    if (!Number.isFinite(deadline)) return "later";
+    return deadline - nowMs <= URGENT_WINDOW_MS ? "urgent" : "later";
+  }
   return "later";
 }
 

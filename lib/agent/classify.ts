@@ -33,6 +33,8 @@ export type ShipmentDraft = {
 
 export type AssessmentDraft = {
   classification: AgentClassification;
+  /** Het oordeel van het model over de urgentie van vandaag. */
+  tier?: "moet" | "mag" | "hoeft_niet";
   nextAction: string;
   priorityReason: string;
   deadline: string | null;
@@ -54,6 +56,12 @@ const ASSESSMENT_SCHEMA = {
   additionalProperties: false,
   properties: {
     classification: { type: "string", enum: CLASSIFICATIONS },
+    tier: {
+      type: "string",
+      enum: ["moet", "mag", "hoeft_niet"],
+      description:
+        "How much attention this needs TODAY. 'moet' = money or a commitment is due now, a deadline within days, or someone is blocked without you. 'mag' = worth doing, but it can wait (activating a mandate, confirming settings, routine admin). 'hoeft_niet' = purely informational.",
+    },
     nextAction: { type: "string" },
     priorityReason: { type: "string" },
     deadline: { type: ["string", "null"], description: "Date in YYYY-MM-DD, or null when no deadline was found." },
@@ -188,8 +196,11 @@ export function normalizeDraft(value: unknown): AssessmentDraft {
     ? (row.classification as AgentClassification)
     : null;
   if (!classification) throw new Error(`Invalid classification: ${String(row.classification)}`);
+  const tier =
+    row.tier === "moet" || row.tier === "mag" || row.tier === "hoeft_niet" ? row.tier : undefined;
   return {
     classification,
+    tier: tier ?? (classification === "info" ? "hoeft_niet" : classification === "waiting" ? "mag" : "mag"),
     nextAction: str(row.nextAction),
     priorityReason: str(row.priorityReason),
     deadline: normalizeDate(row.deadline),

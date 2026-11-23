@@ -561,6 +561,17 @@ export function updateMeta(patch: Partial<AgentMeta>): Promise<void> {
   });
 }
 
+/** Zet alleen het urgentie-oordeel van het model op een bestaande kaart. */
+export function setAssessmentTier(conversationId: string, tier: "moet" | "mag" | "hoeft_niet"): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    const item = state.assessments[conversationId];
+    if (!item || item.tier === tier) return;
+    item.tier = tier;
+    await writeState(state);
+  });
+}
+
 /** Leest de gelezen-status van de notificaties (server-side, per account). */
 export async function readNotificationState(): Promise<{ since: string | null; read: string[] }> {
   const state = await readState();

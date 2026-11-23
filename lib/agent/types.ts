@@ -60,6 +60,11 @@ export type MailAssessment = {
   from: string;
   fromEmail: string;
   link?: string;
+  /**
+   * Hoeveel aandacht dit vandaag vraagt, bepaald door het model: "moet" is nu,
+   * "mag" kan wachten, "hoeft_niet" is alleen informatie.
+   */
+  tier?: "moet" | "mag" | "hoeft_niet";
   classification: AgentClassification;
   nextAction: string;
   priorityReason: string;

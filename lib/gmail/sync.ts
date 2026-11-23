@@ -3,7 +3,7 @@ import "server-only";
 import { buildAssessment, groupByConversation } from "../agent/build";
 import { classifyConversation } from "../agent/classify";
 import { loadAgentConfig, type ProviderId } from "../agent/config";
-import { markArchivedByAgent, readAssessments, upsertAssessments } from "../agent/store";
+import { markArchivedByAgent, readAssessments, setAssessmentTier, upsertAssessments } from "../agent/store";
 import type { InboundMessage } from "../agent/types";
 import { refreshGoogleAccessToken } from "../google-token";
 import { fetchGmailMessage, listGmailInbox } from "./fetch";
@@ -193,6 +193,33 @@ export async function importStep(userId: string, refreshToken: string): Promise<
  * the existing model config. Messages are marked triaged so a resume neither
  * repeats work nor creates duplicate cards.
  */
+/**
+ * Kaarten van vóór het urgentie-oordeel krijgen het alsnog van het model. Twee
+ * per ronde, zodat een sync niet opeens tien modelvragen doet.
+ */
+async function backfillTiers(
+  userId: string,
+  opts: { provider: ProviderId; apiKey?: string; model?: string },
+): Promise<number> {
+  const items = await readAssessments();
+  const zonder = items.filter((item) => !item.tier && item.mailbox === "gmail").slice(0, 2);
+  let done = 0;
+  for (const item of zonder) {
+    const conversation = await listThreadMessages(userId, item.conversationId);
+    if (conversation.length === 0) continue;
+    try {
+      const draft = await classifyConversation(conversation, opts);
+      if (draft.tier) {
+        await setAssessmentTier(item.conversationId, draft.tier);
+        done += 1;
+      }
+    } catch {
+      // Volgende ronde opnieuw.
+    }
+  }
+  return done;
+}
+
 export async function triageStep(userId: string, ownerEmail?: string | null): Promise<StepResult> {
   const config = await loadAgentConfig().catch(() => null);
   const provider: ProviderId = config?.defaultProvider ?? "openai";
@@ -229,6 +256,9 @@ export async function triageStep(userId: string, ownerEmail?: string | null): Pr
   }
 
   if (updates.length > 0) await upsertAssessments(updates);
+
+  // Oudere kaarten krijgen alsnog het urgentie-oordeel van het model.
+  if (updates.length === 0) await backfillTiers(userId, { provider, apiKey, model });
 
   const state = await getImportState(userId);
   const currentPhase = state?.phase ?? "idle";
