@@ -117,8 +117,8 @@ export function SelectorPill<T extends string>({
                         // In licht mode is --muted donker en --ink licht; het cijfer moet dus per
                         // thema omklappen om leesbaar te blijven.
                         actief
-                          ? "bg-black text-[#c9ccd3] dark:text-[var(--muted)]"
-                          : "bg-[var(--muted)] text-white dark:text-black",
+                          ? "bg-black text-white dark:text-[var(--muted)]"
+                          : "bg-[var(--muted)] text-[#eef0f3] dark:text-black",
                       )}
                     >
                       {optie.badge}
