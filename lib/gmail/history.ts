@@ -98,18 +98,44 @@ async function archivedThreads(): Promise<Set<string>> {
 }
 
 /** Drops stored messages that are no longer in the inbox and their empty cards. */
+/**
+ * Kaarten die de gebruiker zelf heeft afgehandeld (gearchiveerd, bewaard of
+ * afgevinkt) zijn administratie: die mogen nooit worden opgeruimd omdat de mail
+ * uit de inbox verdwijnt. Anders is iets ariveren hetzelfde als het wissen.
+ */
+async function keepRecords(): Promise<{ threads: Set<string>; purchases: Set<string> }> {
+  // readAssessments voegt de gebruikerslaag (archivedAt, handledAt) al samen.
+  const items = await readAssessments();
+  const threads = new Set<string>();
+  const purchases = new Set<string>();
+  for (const item of items) {
+    if (item.archivedAt || item.handledByUser || item.savedAt) threads.add(item.conversationId);
+    if (item.purchase) purchases.add(item.conversationId);
+  }
+  return { threads, purchases };
+}
+
 async function pruneMissing(userId: string, accessToken: string): Promise<number> {
   const inbox = await listAllInboxIds(accessToken);
   if (inbox.size === 0) return 0;
   const stored = await listStoredMessages(userId);
   // Cards the agent archived itself keep their data for the shipments panel.
   const archived = await archivedThreads();
+  const bewaard = await keepRecords();
   const gone = stored
-    .filter((row) => !inbox.has(row.message_id) && !archived.has(row.thread_id))
+    .filter(
+      (row) =>
+        !inbox.has(row.message_id) &&
+        !archived.has(row.thread_id) &&
+        !bewaard.threads.has(row.thread_id) &&
+        !bewaard.purchases.has(row.thread_id),
+    )
     .map((row) => row.message_id);
   if (gone.length === 0) return 0;
   const emptied = await purgeMessages(userId, gone);
-  await removeAssessments(emptied.filter((id) => !archived.has(id)));
+  await removeAssessments(
+    emptied.filter((id) => !archived.has(id) && !bewaard.threads.has(id) && !bewaard.purchases.has(id)),
+  );
   return gone.length;
 }
 
@@ -155,19 +181,20 @@ export async function reconcileGmailHistory(
         // Een aankoop is een feit, geen inbox-item: die bewaren we ook als de
         // mail in Gmail gearchiveerd is. Anders verdwijnt je aankoopgeschiedenis
         // zodra je de bevestiging opruimt.
-        const purchases = new Set(
-          (await readAssessments()).filter((item) => item.purchase).map((item) => item.conversationId),
-        );
+        const bewaard = await keepRecords();
+        const purchases = bewaard.purchases;
         const stored = await listStoredMessages(userId);
         const keep = new Set(
           stored.filter((row) => purchases.has(row.thread_id)).map((row) => row.message_id),
         );
-        const targets = [...gone].filter((id) => !keep.has(id));
+        const targets = [...gone].filter((id) => !keep.has(id) && !bewaard.threads.has(id));
         // Onthoud wat je zelf uit de inbox haalde, zodat de recente-import het
         // niet elke ronde opnieuw binnenhaalt.
         await rememberHiddenMessages(targets);
         const emptied = await purgeMessages(userId, targets);
-        await removeAssessments(emptied.filter((id) => !archived.has(id) && !purchases.has(id)));
+        await removeAssessments(
+          emptied.filter((id) => !archived.has(id) && !purchases.has(id) && !bewaard.threads.has(id)),
+        );
         if (purchases.size > 0) await markArchivedByAgent([...purchases]);
         removed += targets.length;
       }

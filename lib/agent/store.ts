@@ -313,7 +313,21 @@ export function applyArchiveCleanup(opts: {
     for (const [key, item] of Object.entries(state.assessments)) {
       if (item.sourceMessageId && opts.messageIds.includes(item.sourceMessageId)) targets.add(key);
     }
-    for (const key of targets) delete state.assessments[key];
+    const now = new Date().toISOString();
+    for (const key of targets) {
+      if (opts.action === "trash") {
+        // Verwijderd is verwijderd: de kaart verdwijnt uit de administratie.
+        delete state.assessments[key];
+        delete state.userState[key];
+        continue;
+      }
+      // Archiveren is afhandelen: de kaart blijft bestaan zodat hij onder
+      // Afgehandeld zichtbaar is, maar valt uit het Focus-overzicht.
+      const user = (state.userState[key] ??= {});
+      user.archivedAt = user.archivedAt ?? now;
+      user.handledByUser = true;
+      user.handledAt = user.handledAt ?? now;
+    }
 
     await writeState(state);
   });

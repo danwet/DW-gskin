@@ -4,10 +4,9 @@ import { runGmailAction, type MailAction } from "@/lib/gmail/actions";
 import { listStoredMessages, purgeMessages } from "@/lib/gmail/store";
 import {
   applyArchiveCleanup,
-  clearMailAction,
   readAssessments,
   recordMailAction,
-  removeAssessments,
+  rememberHiddenMessages,
 } from "@/lib/agent/store";
 
 export const dynamic = "force-dynamic";
@@ -67,15 +66,25 @@ export async function POST(request: Request) {
     at: new Date().toISOString(),
   }).catch(() => null);
 
+  // Lukt het verplaatsen in Gmail niet (bijvoorbeeld omdat de sleutel hier niet
+  // past), dan behandelen we de mail als afgehandeld in de app zelf: de kaart
+  // gaat naar Afgehandeld en komt niet elke ronde terug. Dat is eerlijker dan
+  // hem laten terugspringen naar de lijst.
+  let gmailFout: string | null = null;
   for (const id of ids) {
     const result = await runGmailAction(refreshToken, id, action);
     if (!result.ok) {
-      await clearMailAction().catch(() => null);
-      return Response.json(
-        { error: result.message ?? "Actie mislukt." },
-        { status: result.reason === "scope" ? 403 : 502 },
-      );
+      gmailFout = result.message ?? "Verplaatsen in Gmail mislukte.";
+      break;
     }
+  }
+
+  if (gmailFout) {
+    await rememberHiddenMessages(ids).catch(() => null);
+    await applyArchiveCleanup({ conversationId, action, messageIds: ids, assessment, keepSnapshot: true }).catch(
+      () => null,
+    );
+    return Response.json({ ok: true, action, messages: ids.length, gmailError: gmailFout });
   }
 
   // Gmail is now changed. Everything below is bookkeeping: if that fails the
@@ -84,8 +93,8 @@ export async function POST(request: Request) {
   try {
     // One write: store the undo snapshot and drop the card(s).
     await applyArchiveCleanup({ conversationId, action, messageIds: ids, assessment, keepSnapshot: true });
-    if (!assessment) await removeAssessments([conversationId]);
-    // Drop the message rows so a later reconcile does not resurrect the card.
+    // Bij archiveren blijft de kaart bestaan (voor Afgehandeld); de berichtrijen
+    // mogen weg, want de kaart zelf houdt de inhoud.
     await purgeMessages(user.id, ids);
   } catch (error) {
     cleanupError = error instanceof Error ? error.message : "Opruimen mislukt.";

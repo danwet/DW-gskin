@@ -105,7 +105,9 @@ export async function importStep(userId: string, refreshToken: string): Promise<
     }
     // Only fetch what we do not have yet: a quiet inbox then costs one call.
     const known = new Set((await listStoredMessages(userId)).map((row) => row.message_id));
-    const fresh = page.ids.filter((id) => !known.has(id));
+    // Wat in de app is afgehandeld mag niet via de inbox terugkomen.
+    const verborgen = new Set((await readMeta()).hiddenMessageIds ?? []);
+    const fresh = page.ids.filter((id) => !known.has(id) && !verborgen.has(id));
 
     const messages: InboundMessage[] = [];
     for (const id of fresh) {
