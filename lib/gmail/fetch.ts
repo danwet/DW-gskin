@@ -97,7 +97,11 @@ function decodeBody(value: string): string {
 function findPlainText(payload: unknown): string {
   if (!payload || typeof payload !== "object") return "";
   const part = payload as { mimeType?: string; body?: { data?: string }; parts?: unknown[] };
-  if (part.mimeType === "text/plain" && part.body?.data) return decodeBody(part.body.data);
+  // Het mime-type komt soms met parameters ("text/plain; charset=UTF-8"), dus
+  // alleen op de exacte string vergelijken laat delen ongemerkt liggen.
+  if (part.mimeType?.toLowerCase().startsWith("text/plain") && part.body?.data) {
+    return decodeBody(part.body.data);
+  }
   for (const child of part.parts ?? []) {
     const text = findPlainText(child);
     if (text) return text;
@@ -127,7 +131,9 @@ export function htmlToText(html: string): string {
 function findHtml(payload: unknown): string {
   if (!payload || typeof payload !== "object") return "";
   const part = payload as { mimeType?: string; body?: { data?: string }; parts?: unknown[] };
-  if (part.mimeType === "text/html" && part.body?.data) return decodeBody(part.body.data);
+  if (part.mimeType?.toLowerCase().startsWith("text/html") && part.body?.data) {
+    return decodeBody(part.body.data);
+  }
   for (const child of part.parts ?? []) {
     const html = findHtml(child);
     if (html) return html;
@@ -250,12 +256,48 @@ async function pdfTextFromPayload(part: PdfPart, accessToken: string, messageId:
   }
 }
 
+/** Zoekt een deel dat alleen als bijlage-id is meegeleverd (grote delen). */
+function findHtmlAttachmentId(payload: unknown): string {
+  if (!payload || typeof payload !== "object") return "";
+  const part = payload as { mimeType?: string; body?: { attachmentId?: string }; parts?: unknown[] };
+  if (part.mimeType?.toLowerCase().startsWith("text/html") && part.body?.attachmentId) {
+    return part.body.attachmentId;
+  }
+  for (const child of part.parts ?? []) {
+    const gevonden = findHtmlAttachmentId(child);
+    if (gevonden) return gevonden;
+  }
+  return "";
+}
+
+/** Haalt een deel op dat niet inline in het bericht zat. */
+async function fetchAttachmentData(accessToken: string, messageId: string, attachmentId: string): Promise<string> {
+  const url = `${GMAIL_API}/messages/${messageId}/attachments/${attachmentId}`;
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!response.ok) return "";
+  const data = (await response.json().catch(() => null)) as { data?: string } | null;
+  return data?.data ? decodeBody(data.data) : "";
+}
+
 export async function fetchGmailMessage(accessToken: string, id: string): Promise<InboundMessage | null> {
   const response = await fetch(`${GMAIL_API}/messages/${id}?format=full`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!response.ok) return null;
-  const mapped = mapGmailMessage(await response.json().catch(() => null));
+  const raw = (await response.json().catch(() => null)) as unknown;
+  const mapped = mapGmailMessage(raw);
+  // Grote HTML-delen komen alleen als attachmentId terug; die halen we er dan
+  // apart bij, anders lijkt een mail zonder opmaak binnen te komen.
+  if (mapped && !mapped.bodyHtml) {
+    const attachmentId = findHtmlAttachmentId((raw as { payload?: unknown } | null)?.payload);
+    if (attachmentId) {
+      const html = await fetchAttachmentData(accessToken, id, attachmentId).catch(() => "");
+      if (html) {
+        mapped.bodyHtml = html;
+        if (!mapped.body) mapped.body = htmlToText(html);
+      }
+    }
+  }
   if (!mapped) return null;
 
   // Invoice details live in the PDF, not in the mail text. A failing download
