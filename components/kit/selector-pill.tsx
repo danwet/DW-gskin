@@ -117,11 +117,15 @@ export function SelectorPill<T extends string>({
                         "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border px-1.5 text-[10px] leading-none font-medium transition-colors",
                         optie.badgeAlert
                           ? "border-[var(--dot-red)] text-[var(--dot-red)]"
+                          // Inactief: bij hover licht de cirkel mee op met het
+                          // label, anders blijft hij achter.
+                          : !actief
+                            ? "border-[var(--muted)]/60 text-[var(--muted)] group-hover:border-[var(--ink)] group-hover:text-[var(--ink)]"
                           : actief
                             // Zelfde kleur als het label: de cirkel en het
                             // cijfer erven de tekstkleur van de actieve pil.
                             ? "border-current text-current"
-                            : "border-[var(--muted)]/60 text-[var(--muted)]",
+                            : "",
                       )}
                     >
                       {optie.badge}
