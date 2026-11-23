@@ -67,12 +67,17 @@ export function buildRawMessage(options: {
   ];
 
   let contentPart: string;
-  if (signatureHtml) {
+  // Ook zonder losse handtekening kan er HTML zijn (de handtekening zit dan al
+  // in de HTML). Zonder deze controle ging zo'n mail als platte tekst de deur
+  // uit en verdween de opmaak.
+  const heeftHtml = Boolean(options.bodyHtml?.trim() || signatureHtml);
+  if (heeftHtml) {
     const boundary = `dw-alt-${Date.now()}`;
     const tekstDeel = options.bodyHtml?.trim()
       ? options.bodyHtml
       : `<div style="white-space:pre-wrap">${escapeHtml(options.body)}</div>`;
-    const html = tekstDeel + `<div style="margin-top:16px">${signatureHtml}</div>`;
+    const html =
+      tekstDeel + (signatureHtml ? `<div style="margin-top:16px">${signatureHtml}</div>` : "");
     const plainPart = [
       "Content-Type: text/plain; charset=UTF-8",
       "Content-Transfer-Encoding: base64",
