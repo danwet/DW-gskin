@@ -521,15 +521,7 @@ export function InboxCard({
         />
       ) : null}
 
-      {item.needsAttention ? (
-        <span
-          className={`absolute left-3 rounded-full bg-[var(--orange-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--orange)] ${
-            item.logoUrl && !isNewsletter ? "top-11" : "top-3"
-          }`}
-        >
-          Opnieuw
-        </span>
-      ) : isScan ? (
+      {isScan ? (
         <span
           className={`absolute left-3 rounded-full bg-[var(--blue-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--blue)] ${
             item.logoUrl && !isNewsletter ? "top-11" : "top-3"
@@ -745,6 +737,7 @@ export function InboxModal({
   // and fall back to the plain text when there is nothing to render.
   const canPreview = Boolean(item.hasHtml && item.sourceMessageId && item.source !== "scan");
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewActief, setPreviewActief] = useState(false);
   const [previewFailed, setPreviewFailed] = useState(false);
 
   useEffect(() => {
@@ -911,13 +904,28 @@ export function InboxModal({
           <section className="mt-5">
             <p className="ml-[5%] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">Nieuwsbrief</p>
             {previewHtml ? (
-              // Rendered as sent, so the layout and images survive.
-              <iframe
-                title={`Nieuwsbrief: ${item.subject}`}
-                srcDoc={previewHtml}
-                sandbox=""
-                className="mt-2 mx-auto h-[440px] w-[90%] rounded-2xl border border-[var(--line)] bg-white"
-              />
+              // Eerst bewust klikken: anders scrolt de nieuwsbrief mee met de
+              // sheet in plaats van de sheet zelf.
+              <div className="relative mx-auto mt-2 h-[440px] w-[90%]">
+                <iframe
+                  title={`Nieuwsbrief: ${item.subject}`}
+                  srcDoc={previewHtml}
+                  sandbox=""
+                  style={{ pointerEvents: previewActief ? "auto" : "none" }}
+                  className="h-full w-full rounded-2xl border border-[var(--line)] bg-white"
+                />
+                {!previewActief ? (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewActief(true)}
+                    className="focus-ring absolute inset-0 z-10 grid place-items-center rounded-2xl bg-[var(--card)]/45 backdrop-blur-[1px]"
+                  >
+                    <span className="rounded-full bg-[var(--card)] px-3.5 py-2 text-[12px] font-medium text-[var(--ink)] shadow-[var(--shadow)]">
+                      Klik eerst om de inhoud te scrollen
+                    </span>
+                  </button>
+                ) : null}
+              </div>
             ) : (
               <div className="mt-2 mx-auto grid h-[440px] w-[90%] place-items-center rounded-2xl border border-[var(--line)] bg-[var(--bg)]">
                 {previewFailed ? (

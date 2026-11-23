@@ -123,8 +123,16 @@ export function urgencyFor(
     if (diff === 0) {
       return { tone: "red", label: "Vandaag", deadlineValue: deadline.getTime(), deadlineText: deadlineText(deadline) };
     }
-    if (diff <= 3) {
-      return { tone: "orange", label: "Binnen 3 dagen", deadlineValue: deadline.getTime(), deadlineText: deadlineText(deadline) };
+    if (diff === 1) {
+      return { tone: "orange", label: "Morgen", deadlineValue: deadline.getTime(), deadlineText: deadlineText(deadline) };
+    }
+    if (diff === 2) {
+      return { tone: "orange", label: "Overmorgen", deadlineValue: deadline.getTime(), deadlineText: deadlineText(deadline) };
+    }
+    if (diff === 3) {
+      // Dezelfde datum als in de sheet, geen ruimer tijdvak: anders lijkt de
+      // pil iets anders te zeggen dan de uiterste datum eronder.
+      return { tone: "orange", label: "Over 3 dagen", deadlineValue: deadline.getTime(), deadlineText: deadlineText(deadline) };
     }
     return { tone: "blue", label: "Geen directe tijdsdruk", deadlineValue: deadline.getTime(), deadlineText: deadlineText(deadline) };
   }
