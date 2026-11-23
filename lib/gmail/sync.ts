@@ -3,10 +3,17 @@ import "server-only";
 import { buildAssessment, groupByConversation } from "../agent/build";
 import { classifyConversation } from "../agent/classify";
 import { loadAgentConfig, type ProviderId } from "../agent/config";
-import { markArchivedByAgent, readAssessments, setAssessmentTier, upsertAssessments } from "../agent/store";
+import {
+  markArchivedByAgent,
+  readAssessments,
+  setAssessmentTier,
+  setUserReplied,
+  unarchiveConversation,
+  upsertAssessments,
+} from "../agent/store";
 import type { InboundMessage } from "../agent/types";
 import { refreshGoogleAccessToken } from "../google-token";
-import { fetchGmailMessage, listGmailInbox } from "./fetch";
+import { fetchGmailMessage, listGmailInbox, listGmailSent } from "./fetch";
 import { reconcileGmailHistory } from "./history";
 import { archiveGmailMessage } from "./actions";
 import {
@@ -227,7 +234,7 @@ export async function triageStep(userId: string, ownerEmail?: string | null): Pr
   const apiKey = entry?.apiKey || undefined;
   const model = entry?.model || undefined;
 
-  const untriaged = await listUntriagedMessages(userId, 200);
+  const untriaged = await listUntriagedMessages(userId, 200, ownerEmail);
   if (untriaged.length === 0) {
     const state = await getImportState(userId);
     if (state && state.phase !== "done") await updateImportState(userId, { phase: "done" });
@@ -324,6 +331,81 @@ async function archiveProcessedOrders(userId: string, refreshToken: string): Pro
   return archived.length;
 }
 
+/**
+ * Onze eigen antwoorden horen bij de thread waarin we ze schreven. Zonder die
+ * berichten lijkt een thread af te lopen bij de mail van de ander, terwijl er
+ * allang een antwoord van jou tussen zit.
+ */
+async function importSentReplies(userId: string, refreshToken: string): Promise<number> {
+  const token = await refreshGoogleAccessToken(refreshToken);
+  if (!token) return 0;
+  const page = await listGmailSent(token.access_token, { maxResults: 25 });
+  if (!page.ok || page.ids.length === 0) return 0;
+
+  const known = new Set((await listStoredMessages(userId)).map((row) => row.message_id));
+  const fresh = page.ids.filter((id) => !known.has(id)).slice(0, 10);
+  if (fresh.length === 0) return 0;
+
+  const messages = [];
+  for (const id of fresh) {
+    const mapped = await fetchGmailMessage(token.access_token, id);
+    if (mapped) messages.push(mapped);
+  }
+  const saved = await saveMessages(userId, messages);
+  return saved.newMessages;
+}
+
+/**
+ * Een thread waarin jouw antwoord het laatste bericht is, is afgehandeld: die
+ * gaat naar het archief en komt pas terug als er weer iemand reageert. Reageert
+ * er iemand op jouw antwoord, dan komt de thread terug en telt hij mee als iets
+ * waar jij zelf naar hebt gehandeld.
+ */
+async function applyAnsweredThreads(
+  userId: string,
+  ownerEmail?: string | null,
+): Promise<{ archived: number; reopened: number }> {
+  const owner = (ownerEmail ?? "").trim().toLowerCase();
+  if (!owner) return { archived: 0, reopened: 0 };
+
+  // Alleen de recente gesprekken: een thread van maanden terug hoeft niet elke
+  // vijf minuten opnieuw bekeken te worden.
+  const items = await readAssessments();
+  const recent = [...items]
+    .sort((a, b) => (b.receivedAt ?? "").localeCompare(a.receivedAt ?? ""))
+    .slice(0, 40);
+  const answered: string[] = [];
+  const reopened: string[] = [];
+
+  for (const item of recent) {
+    let thread;
+    try {
+      thread = await listThreadMessages(userId, item.conversationId);
+    } catch {
+      continue;
+    }
+    if (thread.length < 2) continue;
+
+    const last = thread[thread.length - 1];
+    const hasOutbound = thread.some((message) => message.fromEmail.trim().toLowerCase() === owner);
+    if (!hasOutbound) continue;
+
+    if (last.fromEmail.trim().toLowerCase() === owner) answered.push(item.conversationId);
+    else reopened.push(item.conversationId);
+  }
+
+  if (answered.length > 0) {
+    await setUserReplied(answered, true);
+    await markArchivedByAgent(answered);
+  }
+  if (reopened.length > 0) {
+    await setUserReplied(reopened, true);
+    // Er is weer iemand aan het woord: de thread hoort terug in de lijst.
+    for (const id of reopened) await unarchiveConversation(id).catch(() => undefined);
+  }
+  return { archived: answered.length, reopened: reopened.length };
+}
+
 export async function syncStep(
   userId: string,
   refreshToken: string,
@@ -354,6 +436,12 @@ export async function syncStep(
     if (!step.ok) error = step.error;
   }
 
+  // Onze eigen antwoorden ophalen en aan hun thread koppelen: pas dan is een
+  // gesprek compleet en weten we dat jij er al op hebt gereageerd.
+  const sentImported = await importSentReplies(userId, refreshToken).catch(() => 0);
+  imported += sentImported;
+  const answered = await applyAnsweredThreads(userId, ownerEmail).catch(() => ({ archived: 0, reopened: 0 }));
+
   const triage = await triageStep(userId, ownerEmail);
   if (!triage.ok && !error) error = triage.error;
 
@@ -365,7 +453,7 @@ export async function syncStep(
     imported,
     triaged: triage.processed,
     removed: reconcile?.removed ?? 0,
-    autoArchived,
+    autoArchived: autoArchived + answered.archived,
     progress: await readProgress(userId),
     error,
   };

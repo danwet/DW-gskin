@@ -233,6 +233,23 @@ export function unarchiveConversation(conversationId: string): Promise<void> {
   });
 }
 
+/** Onthoudt dat er een antwoord van jou in deze threads staat. */
+export function setUserReplied(conversationIds: string[], value: boolean): Promise<void> {
+  if (conversationIds.length === 0) return Promise.resolve();
+  return withLock(async () => {
+    const state = await readState();
+    let changed = false;
+    for (const id of conversationIds) {
+      const item = state.assessments[id];
+      if (!item || Boolean(item.userReplied) === value) continue;
+      if (value) item.userReplied = true;
+      else delete item.userReplied;
+      changed = true;
+    }
+    if (changed) await writeState(state);
+  });
+}
+
 export function markArchivedByAgent(conversationIds: string[]): Promise<void> {
   if (conversationIds.length === 0) return Promise.resolve();
   return withLock(async () => {

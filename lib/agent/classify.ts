@@ -140,6 +140,7 @@ const INSTRUCTION_LINES = [
   "preparedAction: a short label of what you prepared, e.g. 'Concept gemaakt', 'QR-code aangemaakt', 'Gefilterd', 'Actie voorbereid'.",
   "draftReply: a short, ready-to-send reply in the language of the sender when classification is reply_needed; otherwise null.",
   "Never invent amounts, dates, or consequences. Prefer null or empty over guessing.",
+  "If the thread already contains a message from the user (you answered earlier), the latest mail is a reply to you. Such a thread is never info and never a newsletter: use action_needed, reply_needed or waiting, so it never drops into the lowest tier.",
   "tier is how much attention this needs TODAY, and money owed always wins. An invoice, factuur, nota, rekening, payment reminder or any request to pay is 'moet' — also when the amount is only in an attachment, when no due date is stated, when it is a recurring monthly bill, and when the sender offers a portal to pay it. Never put a payment request in 'mag' or 'hoeft_niet'.",
   "'mag' is only for things that cost nothing to postpone: activating a direct debit, changing settings, routine confirmations. 'hoeft_niet' is only for mail with no action at all.",
 ].join("\n");

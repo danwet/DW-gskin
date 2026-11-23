@@ -65,6 +65,11 @@ export type MailAssessment = {
    * "mag" kan wachten, "hoeft_niet" is alleen informatie.
    */
   tier?: "moet" | "mag" | "hoeft_niet";
+  /**
+   * True zodra er een bericht van jou in de thread staat. Zo'n thread is nooit
+   * "hoeft niet": je hebt er zelf naar gehandeld.
+   */
+  userReplied?: boolean;
   /** True wanneer het model (niet de regel-fallback) de beoordeling maakte. */
   viaModel?: boolean;
   classification: AgentClassification;

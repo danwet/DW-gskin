@@ -275,6 +275,41 @@ export async function fetchGmailMessage(accessToken: string, id: string): Promis
 }
 
 /** One page of the inbox, newest first (Gmail returns newest first by default). */
+/** Onze eigen antwoorden, zodat een thread compleet is in de app. */
+export async function listGmailSent(
+  accessToken: string,
+  options: { maxResults?: number } = {},
+): Promise<GmailListPage> {
+  const params = new URLSearchParams({
+    maxResults: String(options.maxResults ?? 25),
+    q: "in:sent newer_than:30d",
+  });
+  const response = await fetch(`${GMAIL_API}/messages?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) {
+    return {
+      ok: false,
+      ids: [],
+      nextPageToken: null,
+      resultSizeEstimate: null,
+      status: response.status,
+      error: `Gmail sent-list faalde (${response.status}).`,
+    };
+  }
+  const data = (await response.json().catch(() => null)) as {
+    messages?: { id?: string }[];
+    nextPageToken?: string;
+    resultSizeEstimate?: number;
+  } | null;
+  return {
+    ok: true,
+    ids: (data?.messages ?? []).map((m) => m.id).filter((id): id is string => Boolean(id)),
+    nextPageToken: data?.nextPageToken ?? null,
+    resultSizeEstimate: typeof data?.resultSizeEstimate === "number" ? data.resultSizeEstimate : null,
+  };
+}
+
 export async function listGmailInbox(
   accessToken: string,
   options: { pageToken?: string | null; maxResults?: number } = {},

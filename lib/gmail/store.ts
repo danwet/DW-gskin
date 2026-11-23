@@ -166,7 +166,11 @@ export async function saveMessages(
 }
 
 /** Untriaged messages, newest first. Drives the resumable triage. */
-export async function listUntriagedMessages(userId: string, limit = 200): Promise<InboundMessage[]> {
+export async function listUntriagedMessages(
+  userId: string,
+  limit = 200,
+  ownerEmail?: string | null,
+): Promise<InboundMessage[]> {
   const supabase = await dbClient();
   const { data } = await supabase
     .from("dw_gmail_messages")
@@ -175,7 +179,11 @@ export async function listUntriagedMessages(userId: string, limit = 200): Promis
     .is("triaged_at", null)
     .order("received_at", { ascending: false })
     .limit(limit);
-  return ((data ?? []) as MessageRow[]).map(rowToMessage);
+  const owner = (ownerEmail ?? "").trim().toLowerCase();
+  // Onze eigen antwoorden zijn geen mail om te beoordelen.
+  return ((data ?? []) as MessageRow[])
+    .map(rowToMessage)
+    .filter((message) => !owner || message.fromEmail.trim().toLowerCase() !== owner);
 }
 
 /** Marks a whole conversation as triaged so a resume never redoes it. */

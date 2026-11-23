@@ -306,6 +306,9 @@ function cardTier(item: MailAssessment, nowMs: number): "urgent" | "later" | "in
   // Een openstaande factuur volgt zijn uiterste betaaldatum: dichtbij is nu,
   // ver weg mag wachten. Zo werkt het ook voor kaarten van vóór deze regel.
   if (invoiceTier(item.invoice, nowMs)) return invoiceTier(item.invoice, nowMs) === "moet" ? "urgent" : "later";
+  // Heb je zelf al geantwoord, dan is dit nooit "hoeft niet": je hebt er naar
+  // gehandeld, dus het verdient op z'n minst een plek in Mag.
+  if (item.userReplied && (item.tier === "hoeft_niet" || item.classification === "info")) return "later";
   // Het model beoordeelt de urgentie; dat is het hele punt van deze app.
   if (item.tier) {
     if (item.tier === "moet") return "urgent";
@@ -683,6 +686,29 @@ export function InboxModal({
 
   // The newsletter HTML is fetched when the popup opens: keep the inbox light,
   // and fall back to the plain text when there is nothing to render.
+  // Het hele gesprek, inclusief onze eigen antwoorden.
+  type ThreadMessage = { id: string; from: string; fromMe: boolean; receivedAt: string; text: string };
+  const [thread, setThread] = useState<ThreadMessage[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const response = await fetch(
+          `/api/inbox/thread?conversationId=${encodeURIComponent(item.conversationId)}`,
+          { cache: "no-store" },
+        );
+        if (!response.ok) return;
+        const data = (await response.json()) as { messages?: ThreadMessage[] };
+        if (alive) setThread(Array.isArray(data.messages) ? data.messages : []);
+      } catch {
+        // Zonder gesprek blijft de samenvatting staan.
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [item.conversationId]);
+
   const canPreview = Boolean(item.hasHtml && item.sourceMessageId && item.source !== "scan");
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
@@ -887,6 +913,36 @@ export function InboxModal({
                 </a>
               </div>
             ) : null}
+          </section>
+        ) : null}
+
+        {thread && thread.length > 1 ? (
+          <section className="mt-5">
+            <p className="ml-[5%] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">
+              Gesprek ({thread.length})
+            </p>
+            <ul className="mx-[5%] mt-2 space-y-2">
+              {thread.map((message) => (
+                <li
+                  key={message.id}
+                  className={`rounded-2xl border border-[var(--line)] px-3.5 py-2.5 ${
+                    message.fromMe ? "bg-[var(--blue-soft)]" : "bg-[var(--bg)]"
+                  }`}
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="truncate text-[12px] font-semibold text-[var(--ink)]">
+                      {message.fromMe ? "Jij" : message.from}
+                    </p>
+                    <p className="shrink-0 text-[11px] text-[var(--muted)]">
+                      {new Date(message.receivedAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })}
+                    </p>
+                  </div>
+                  <p className="mt-1 line-clamp-4 text-[13px] leading-5 whitespace-pre-line text-[var(--muted)]">
+                    {message.text || "(geen tekst)"}
+                  </p>
+                </li>
+              ))}
+            </ul>
           </section>
         ) : null}
 
