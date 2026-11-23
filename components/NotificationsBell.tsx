@@ -170,7 +170,7 @@ export function NotificationsBell({
                     style={{ fontSize: "10px", lineHeight: "14px" }}
                   >
                     {desktop === "denied"
-                      ? "Geblokkeerd voor deze site — zet het aan via het slotje"
+                      ? "Meldingen geblokkeerd in de browser"
                       : "Notificaties aanzetten"}
                   </button>
                 ) : null}
