@@ -281,7 +281,7 @@ function SidebarContent({
                   // Actief staat op de volle tekstkleur, de rest is gedempt;
                   // bij hover wisselen ze van rol, net als in de focus-selectie.
                   ? "btn-primary menu-actief !text-[var(--ink)] rounded-full"
-                  : "rounded-[14px] text-[var(--muted)] hover:text-[var(--ink)]/85"
+                  : "segment-hover rounded-[14px] text-[var(--muted)] hover:text-[var(--ink)]/85"
               }`}
             >
               <NavIcon name={link.icon} active={active} />

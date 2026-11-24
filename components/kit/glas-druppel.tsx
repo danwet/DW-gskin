@@ -26,17 +26,16 @@ const GROOT_MS = 140;
 const RUST_VULLING =
   "linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.35) 14%, rgba(255,255,255,0.16) 55%, rgba(255,255,255,0.35) 100%)";
 
-// Light variant van de donkere pil: exact dezelfde opbouw (fel wit bovenin,
-// doorzichtige buik, lichte onderrand) maar met een iets koelere tint in de
-// buik, zodat hij op een bijna-witte balk toch als glas leest.
+// Licht mode volgt het macOS-segment: geen verloop, geen glans, één egale
+// grijstint die iets donkerder is dan het eiland eronder.
 const RUST_VULLING_LICHT =
-  "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.42) 14%, rgba(226,232,241,0.30) 55%, rgba(255,255,255,0.46) 100%)";
+  "linear-gradient(180deg, #e4e4e4 0%, #e6e6e6 55%, #e9e9e9 100%)";
 
 /** Licht mode: dezelfde schaduw als .btn-primary in licht mode. */
 // Zelfde vier lagen als donker mode, met de rollen omgedraaid: heldere rand
 // boven, donkere rand onder, rim en een schaduw die hem optilt.
 const RUST_SCHADUW_LICHT =
-  "inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(120,132,152,0.35), inset 0 0 0 1px rgba(255,255,255,0.85), 0 1px 1px rgba(16,24,40,0.05), 0 3px 8px rgba(16,24,40,0.04)";
+  "inset 0 1px 0 rgba(255,255,255,0.65), inset 0 -1px 0 rgba(255,255,255,0.5), 0 0.5px 1px rgba(0,0,0,0.05)";
 
 /** Tijdens de overgang: doorschijnend wit glas, met dezelfde stopstructuur. */
 const GLAS_VULLING =
@@ -128,9 +127,9 @@ export function GlasDruppel({
             ? undefined
             : donker
               ? "rgba(255,255,255,0.08)"
-              : // Een heel lichte grijze tint: daardoor leest de pil als glas op
-                // een witte balk in plaats van als een wit vlak.
-                "rgba(148,163,184,0.14)",
+              : // Het gevulde segment, net als in macOS: egaal en net iets
+                // donkerder dan het eiland eronder.
+                "#e8e8e8",
           boxShadow: bezig ? GLAS_SCHADUW : rustSchaduw,
         }}
         style={{

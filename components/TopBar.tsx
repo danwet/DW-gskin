@@ -14,44 +14,47 @@ export function TopBar() {
 
   return (
     <div className="flex flex-wrap items-center gap-5">
-      <button
-        type="button"
-        onClick={() => void topBar?.undo()}
-        disabled={!undoable}
-        aria-label="Laatste actie terugzetten"
-        title={undoable ? "Laatste actie terugzetten" : "Nog niets om terug te zetten"}
-        className="btn-primary focus-ring grid h-8 w-8 place-items-center rounded-full text-[var(--ink)] disabled:opacity-40"
-      >
-        <UndoIcon />
-      </button>
+      {/* Eén glas-eiland voor de drie bedieningen, zoals in macOS. */}
+      <div className="glas-balk mx-auto flex items-center gap-1 rounded-full p-1">
+        <button
+          type="button"
+          onClick={() => void topBar?.undo()}
+          disabled={!undoable}
+          aria-label="Laatste actie terugzetten"
+          title={undoable ? "Laatste actie terugzetten" : "Nog niets om terug te zetten"}
+          className="focus-ring grid h-7 w-7 place-items-center rounded-full text-[var(--ink)] hover:bg-black/[0.06] disabled:opacity-40"
+        >
+          <UndoIcon />
+        </button>
 
-      <button
-        type="button"
-        onClick={() => void refresh()}
-        disabled={refreshing || !ready}
-        aria-label="Bijwerken"
-        className="btn-primary focus-ring grid h-8 w-8 place-items-center rounded-full text-[var(--ink)] disabled:opacity-60"
-      >
-        <RefreshIcon spinning={refreshing} />
-      </button>
+        <button
+          type="button"
+          onClick={() => void refresh()}
+          disabled={refreshing || !ready}
+          aria-label="Bijwerken"
+          className="focus-ring grid h-7 w-7 place-items-center rounded-full text-[var(--ink)] hover:bg-black/[0.06] disabled:opacity-60"
+        >
+          <RefreshIcon spinning={refreshing} />
+        </button>
 
-      {topBar ? (
-        <NotificationsBell
-          items={topBar.missedItems}
-          newItems={topBar.newItems}
-          onToggleHandled={topBar.onToggleHandled}
-          onDeclare={topBar.onDeclare}
-          onOpenNewItem={topBar.onOpenNewItem}
-          onMarkAllNewRead={topBar.onMarkAllNewRead}
-          onRemoveItem={topBar.onRemoveItem}
-          onReloadInbox={topBar.onReloadInbox}
-          onInboxError={topBar.onError}
-        />
-      ) : (
-        <span className="glass-chip grid h-8 w-8 place-items-center rounded-full text-[var(--ink)]" aria-hidden="true">
-          <BellIconMuted />
-        </span>
-      )}
+        {topBar ? (
+          <NotificationsBell
+            items={topBar.missedItems}
+            newItems={topBar.newItems}
+            onToggleHandled={topBar.onToggleHandled}
+            onDeclare={topBar.onDeclare}
+            onOpenNewItem={topBar.onOpenNewItem}
+            onMarkAllNewRead={topBar.onMarkAllNewRead}
+            onRemoveItem={topBar.onRemoveItem}
+            onReloadInbox={topBar.onReloadInbox}
+            onInboxError={topBar.onError}
+          />
+        ) : (
+          <span className="grid h-7 w-7 place-items-center rounded-full text-[var(--ink)]" aria-hidden="true">
+            <BellIconMuted />
+          </span>
+        )}
+      </div>
 
       <WeatherChip />
     </div>

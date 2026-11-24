@@ -126,7 +126,7 @@ export function NotificationsBell({
         aria-expanded={open}
         // !overflow-visible: de teller hangt boven de knop en mag niet afgeknipt
         // worden door de overflow van de glasstijl.
-        className="btn-primary focus-ring relative grid h-8 w-8 !overflow-visible place-items-center rounded-full text-[var(--ink)]"
+        className="focus-ring relative grid h-7 w-7 !overflow-visible place-items-center rounded-full text-[var(--ink)] hover:bg-black/[0.06]"
       >
         <BellIcon />
         {count > 0 ? (

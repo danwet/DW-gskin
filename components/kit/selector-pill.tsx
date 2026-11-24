@@ -99,7 +99,7 @@ export function SelectorPill<T extends string>({
                 title={optie.titel ?? optie.label}
                 onClick={() => onChange(optie.waarde)}
                 className={cn(
-                  "group relative t-meta h-8 min-w-0 whitespace-nowrap rounded-full transition-colors",
+                  "segment-hover group relative t-meta h-8 min-w-0 whitespace-nowrap rounded-full transition-colors",
                   !vullend && zes && "cat-dicht",
                   // Alle labels even zwaar. De kleuren zijn omgedraaid ten
                   // opzichte van de eerste opzet: het actieve label staat op de

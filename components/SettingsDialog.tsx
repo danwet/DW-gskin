@@ -208,7 +208,7 @@ export function SettingsDialog() {
                     // Zelfde glas én dezelfde gedempte tint als het actieve
                     // menu-item en het actieve label in de focus-selectie.
                     ? "btn-primary menu-actief !text-[var(--ink)] rounded-full"
-                    : "rounded-full text-[var(--muted-app)] hover:text-[var(--ink)]/85"
+                    : "segment-hover rounded-full text-[var(--muted-app)] hover:text-[var(--ink)]/85"
                 }`}
               >
                 {item.label}
