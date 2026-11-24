@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useApp } from "./AppProvider";
 import { NotificationsBell } from "./NotificationsBell";
+import { useNotificaties } from "./use-notificaties";
 import { WeatherChip } from "./WeatherChip";
 
 /**
@@ -10,6 +12,10 @@ import { WeatherChip } from "./WeatherChip";
  */
 export function TopBar() {
   const { topBar, ready, refreshing, refresh } = useApp();
+  const router = useRouter();
+  // Op schermen zonder inbox (zoals Uploaden) haalt de bel zelf de berichten op,
+  // zodat de knop overal hetzelfde werkt.
+  const eigen = useNotificaties(!topBar);
   const undoable = Boolean(topBar?.undoable);
 
   return (
@@ -18,10 +24,19 @@ export function TopBar() {
       <div className="glas-balk mx-auto flex items-center gap-1 rounded-full p-1">
         <button
           type="button"
-          onClick={() => void topBar?.undo()}
-          disabled={!undoable}
+          onClick={() => {
+            if (topBar) {
+              void topBar.undo();
+              return;
+            }
+            // Geen inbox op dit scherm: vraag het de server en werk daarna bij.
+            void fetch("/api/gmail/undo", { method: "POST" })
+              .then(() => refresh())
+              .catch(() => undefined);
+          }}
+          disabled={topBar ? !undoable : !ready}
           aria-label="Laatste actie terugzetten"
-          title={undoable ? "Laatste actie terugzetten" : "Nog niets om terug te zetten"}
+          title={undoable || !topBar ? "Laatste actie terugzetten" : "Nog niets om terug te zetten"}
           className="focus-ring grid h-7 w-7 place-items-center rounded-full text-[var(--ink)] hover:bg-black/[0.06] disabled:opacity-40"
         >
           <UndoIcon />
@@ -37,23 +52,54 @@ export function TopBar() {
           <RefreshIcon spinning={refreshing} />
         </button>
 
-        {topBar ? (
-          <NotificationsBell
-            items={topBar.missedItems}
-            newItems={topBar.newItems}
-            onToggleHandled={topBar.onToggleHandled}
-            onDeclare={topBar.onDeclare}
-            onOpenNewItem={topBar.onOpenNewItem}
-            onMarkAllNewRead={topBar.onMarkAllNewRead}
-            onRemoveItem={topBar.onRemoveItem}
-            onReloadInbox={topBar.onReloadInbox}
-            onInboxError={topBar.onError}
-          />
-        ) : (
-          <span className="grid h-7 w-7 place-items-center rounded-full text-[var(--ink)]" aria-hidden="true">
-            <BellIconMuted />
-          </span>
-        )}
+        <NotificationsBell
+          items={topBar ? topBar.missedItems : eigen.gemist}
+          newItems={topBar ? topBar.newItems : eigen.nieuw}
+          onToggleHandled={
+            topBar
+              ? topBar.onToggleHandled
+              : (item) => {
+                  void fetch("/api/inbox", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ conversationId: item.conversationId, handled: true }),
+                  }).then(() => eigen.laad());
+                }
+          }
+          onDeclare={
+            topBar
+              ? topBar.onDeclare
+              : (item, declaration) => {
+                  void fetch("/api/inbox", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ conversationId: item.conversationId, declaration }),
+                  }).then(() => eigen.laad());
+                }
+          }
+          onOpenNewItem={
+            topBar
+              ? topBar.onOpenNewItem
+              : (item) => {
+                  eigen.markeerGelezen(item.conversationId);
+                  router.push("/");
+                }
+          }
+          onMarkAllNewRead={topBar ? topBar.onMarkAllNewRead : eigen.markeerAllesGelezen}
+          onRemoveItem={
+            topBar
+              ? topBar.onRemoveItem
+              : (conversationId) => {
+                  void fetch("/api/gmail/action", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ conversationId, action: "trash" }),
+                  }).then(() => eigen.laad());
+                }
+          }
+          onReloadInbox={topBar ? topBar.onReloadInbox : () => void eigen.laad()}
+          onInboxError={() => undefined}
+        />
       </div>
 
       <WeatherChip />
@@ -80,26 +126,6 @@ function UndoIcon() {
   );
 }
 
-function BellIconMuted() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {/* Zelfde bel als in de klikbare knop, anders valt het icoon net
-          kleiner uit dan op de pagina's waar hij wel klikbaar is. */}
-      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.7 21a2 2 0 0 1-3.4 0" />
-    </svg>
-  );
-}
 
 function RefreshIcon({ spinning }: { spinning: boolean }) {
   return (

@@ -616,34 +616,29 @@ html:not(.dark) .segment-hover:hover {
 .glas-paneel {
   /* Iets dichter dan het knoppenglas: een uitklap met tekst moet leesbaar
      blijven, dus meer vulling en minder doorzicht. */
-  background-color: rgba(148, 163, 184, 0.30);
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.97) 0%,
-    rgba(255, 255, 255, 0.62) 14%,
-    rgba(232, 237, 244, 0.55) 55%,
-    rgba(255, 255, 255, 0.64) 100%
-  );
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
-  backdrop-filter: blur(14px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  /* Neutraal: hetzelfde oppervlak als de eilanden, iets dichter omdat er tekst
+     in staat. Geen blauw- of grijsblauwe zweem meer. */
+  background-color: rgba(255, 255, 255, 0.86);
+  background-image: linear-gradient(180deg, #ffffff 0%, #f7f7f7 55%, #f4f4f4 100%);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  backdrop-filter: blur(14px) saturate(1.1);
+  border: 1px solid #e7e7e7;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 1),
-    0 10px 28px rgba(16, 24, 40, 0.12);
+    inset 0 1px 0 #ffffff,
+    inset 0 -1px 0 rgba(255, 255, 255, 0.6),
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 12px 28px -8px rgba(0, 0, 0, 0.18);
 }
 
 .dark .glas-paneel {
-  background-color: rgba(32, 38, 48, 0.72);
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.10) 0%,
-    rgba(255, 255, 255, 0.03) 60%,
-    rgba(255, 255, 255, 0.06) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background-color: rgba(37, 39, 40, 0.90);
+  background-image: linear-gradient(180deg, #2b2d2e 0%, #252728 55%, #222426 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 12px 30px rgba(0, 0, 0, 0.45);
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 14px 30px -10px rgba(0, 0, 0, 0.6);
 }
 
 /* Het puntje boven het paneel, zodat je ziet dat het uit het icoon komt. */
@@ -654,16 +649,16 @@ html:not(.dark) .segment-hover:hover {
   height: 12px;
   transform: translateX(-50%) rotate(45deg);
   border-top-left-radius: 3px;
-  border-top: 1px solid rgba(255, 255, 255, 0.85);
-  border-left: 1px solid rgba(255, 255, 255, 0.85);
-  background-color: rgba(255, 255, 255, 0.9);
+  border-top: 1px solid #e7e7e7;
+  border-left: 1px solid #e7e7e7;
+  background-color: #ffffff;
   pointer-events: none;
 }
 
 .dark .glas-paneel-pijl {
-  border-top-color: rgba(255, 255, 255, 0.18);
-  border-left-color: rgba(255, 255, 255, 0.18);
-  background-color: rgba(40, 47, 59, 0.95);
+  border-top-color: rgba(255, 255, 255, 0.12);
+  border-left-color: rgba(255, 255, 255, 0.12);
+  background-color: #2b2d2e;
 }
 
 /* Secundaire actie: transparant wit Liquid Glass met neutrale contour. */
@@ -811,22 +806,24 @@ html:not(.dark) .segment-hover:hover {
 
 /* De sheet volgt het thema; in licht is hij wit met donkere inkt. */
 .sheet-licht {
-  --bg: #f6f4ef;
+  /* Neutraal, net als de rest van de app: geen warme of groene zweem. */
+  --bg: #ffffff;
   --card: #ffffff;
-  --ink: #141915;
-  --muted: #3e463c;
-  --faint: #5c635a;
-  --line: rgb(28 35 29 / 0.12);
+  --ink: #1b1e21;
+  --muted: #5c6267;
+  --faint: #8b9095;
+  --line: #e7e7e7;
 }
 
 /* Donker: dezelfde palette als de rest van de app, geen wit vlak meer. */
 .dark .sheet-licht {
-  --bg: #1b1e24;
-  --card: #242830;
-  --ink: #f3f5f8;
-  --muted: #b6beca;
-  --faint: #7e8795;
-  --line: rgba(224, 232, 245, 0.14);
+  /* Dezelfde grijstinten als het donkere thema: #1F1F21 met #252728. */
+  --bg: #1f1f21;
+  --card: #252728;
+  --ink: #f2f2f3;
+  --muted: #a9a9ae;
+  --faint: #7d7d83;
+  --line: rgba(255, 255, 255, 0.10);
 }
 
 .t-title {
