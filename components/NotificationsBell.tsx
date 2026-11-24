@@ -13,7 +13,11 @@ import { focusTabFor, InboxModal } from "./InboxGrid";
 import { setFocusTab } from "@/lib/focus-tab";
 import type { MailAssessment } from "@/lib/agent/types";
 
-const PANEEL_BREEDTE = 241;
+/**
+ * Eén breedte voor alle schermen; het dashboard is daarin leidend. Zo ziet het
+ * paneel er overal hetzelfde uit, ook op pagina's zonder rechterkolom.
+ */
+const PANEEL_BREEDTE = 326;
 
 export function NotificationsBell({
   items,
@@ -74,12 +78,9 @@ export function NotificationsBell({
       if (!knop || !rij) return;
       const k = knop.getBoundingClientRect();
 
-      // Het paneel blijft tegen de rechterkantlijn staan. De rechterkolom geeft
-      // alleen de breedte: zo is het paneel even ruim als die kolom.
-      const kolom = document.querySelector('[data-kolom="rechts"]')?.getBoundingClientRect();
-      const breedte = kolom && kolom.width > 220
-        ? Math.round(Math.min(kolom.width - 25, 480))
-        : PANEEL_BREEDTE;
+      // Vaste breedte, op elk scherm gelijk. Alleen op een smal venster krimpt
+      // hij mee met de pagina.
+      const breedte = Math.min(PANEEL_BREEDTE, Math.max(220, Math.round(window.innerWidth - 48)));
       // Rechts uitlijnen tegen de kantlijn van de pagina. Die halen we uit de
       // rij van de topbalk zelf: dat is op elk scherm dezelfde rand, ook op
       // pagina's zonder rechterkolom.
@@ -87,7 +88,7 @@ export function NotificationsBell({
       const kantlijn = Math.round(rijVak?.right ?? rij.getBoundingClientRect().right);
       const links = kantlijn - breedte;
       // clientWidth in plaats van innerWidth: zo valt de rand van het paneel
-      // precies op de rand van het eiland, ook als er een scrollbar staat.
+      // precies op de kantlijn, ook als er een scrollbar staat.
       const rechts = Math.max(12, Math.round(document.documentElement.clientWidth - kantlijn));
       const pijl = Math.min(breedte - 20, Math.max(20, Math.round(k.left + k.width / 2 - links)));
       setPlaat({ top: Math.round(k.bottom + 15), right: rechts, pijl, breedte });
