@@ -17,7 +17,7 @@ import type { MailAssessment } from "@/lib/agent/types";
  * Eén breedte voor alle schermen; het dashboard is daarin leidend. Zo ziet het
  * paneel er overal hetzelfde uit, ook op pagina's zonder rechterkolom.
  */
-const PANEEL_BREEDTE = 326;
+const PANEEL_BREEDTE = 316;
 
 export function NotificationsBell({
   items,
