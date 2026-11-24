@@ -122,6 +122,9 @@ export function GlasDruppel({
       onLayoutAnimationComplete={() => setBezig(false)}
     >
       <motion.div
+        // Het thema wordt meteen uit de DOM gelezen (geen witte flits in donker
+        // mode); de server kent dat thema niet, dus dit ene verschil negeren we.
+        suppressHydrationWarning
         className="h-full w-full rounded-full"
         initial={false}
         transition={{

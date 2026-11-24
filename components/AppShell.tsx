@@ -1,5 +1,7 @@
 "use client";
 
+import { ontgrendelGeluid } from "@/lib/geluid";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -21,6 +23,17 @@ const NAV = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  // Eerste gebruikersactie ontgrendelt audio, zodat een later meldingsgeluid
+  // niet stil blijft.
+  useEffect(() => {
+    const ontgrendel = () => ontgrendelGeluid();
+    window.addEventListener("pointerdown", ontgrendel, { once: true });
+    window.addEventListener("keydown", ontgrendel, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", ontgrendel);
+      window.removeEventListener("keydown", ontgrendel);
+    };
+  }, []);
   const pathname = usePathname();
   const { setSettingsOpen, account, settings, updateSettings, syncProgress } = useApp();
 
