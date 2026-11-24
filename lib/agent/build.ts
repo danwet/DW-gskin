@@ -212,8 +212,14 @@ export function ibanFromInvoiceText(text: string): string | null {
  * A payment action names the amount, so the card reads "Betaal € 42,84"
  * instead of a bare command.
  */
-export function withInvoiceAmount(nextAction: string, amount?: number | null, currency?: string): string {
-  if (amount == null) return nextAction;
+export function withInvoiceAmount(
+  nextAction: string,
+  amount?: number | null,
+  currency?: string,
+  /** Alleen bij werk dat bij jou ligt; een incasso of info wordt niet "Betaal". */
+  betaalbaar = true,
+): string {
+  if (amount == null || !betaalbaar) return nextAction;
   const code = (currency ?? "").toUpperCase();
   const symbol = code === "USD" ? "$" : code === "GBP" ? "£" : "€";
   const formatted = amount.toFixed(2).replace(".", ",");
@@ -406,6 +412,7 @@ export function buildAssessment(
       ),
       invoice?.amount,
       invoice?.currency,
+      draft.classification === "action_needed",
     ),
     priorityReason: draft.priorityReason || "",
     // Geen datum in de mail? Dan hanteren we een normale reactietermijn van

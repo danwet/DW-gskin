@@ -717,7 +717,22 @@ export async function corrigeerTegenstrijdigheden(): Promise<number> {
   return withLock(async () => {
     const state = await readState();
     let aangepast = 0;
+    const INCASSO =
+      /automatische incasso|sepa[\s-]?incasso|incassomachtiging|schrijven (het bedrag|wij) .{0,40}af|wordt automatisch afgeschreven|je hoeft niets te doen/i;
+
     for (const item of Object.values(state.assessments)) {
+      // Geld dat automatisch wordt afgeschreven is geen betaling die jij moet
+      // doen: geen betaalactie, geen deadline, en niet in "moet".
+      if (INCASSO.test(`${item.subject ?? ""} ${item.body ?? ""}`) && item.invoice) {
+        if (item.classification === "action_needed" || item.classification === "reply_needed") {
+          item.classification = "waiting";
+          item.tier = "mag";
+          delete item.deadline;
+          if (/betaal/i.test(item.nextAction ?? "")) item.nextAction = "Controleer afschrijving";
+          aangepast += 1;
+        }
+        continue;
+      }
       if (item.classification !== "action_needed" && item.classification !== "reply_needed") continue;
       const leeg = /^\s*(geen actie|no action|niets te doen|niets|none)\s*[.!]?\s*$/i.test(item.nextAction ?? "");
       const verkeerdeTier = item.tier === "hoeft_niet";

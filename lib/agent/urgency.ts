@@ -68,7 +68,14 @@ export function urgencyFor(
   const invoice = assessment.invoice;
   // Een factuur heeft vaak geen losse deadline in de mail; de uiterste
   // betaaldatum uit de factuur zelf telt dan als de deadline.
-  const deadline = parseDeadline(assessment.deadline) ?? parseDeadline(invoice?.dueDate ?? null);
+  // De betaaldatum van een factuur is alleen een deadline als de mail ook van
+  // jou vraagt te betalen. Bij een automatische incasso of informatieve mail is
+  // die datum niets om op te jagen.
+  const vraagtBetaling =
+    assessment.classification !== "waiting" && assessment.classification !== "info";
+  const deadline =
+    parseDeadline(assessment.deadline) ??
+    (vraagtBetaling ? parseDeadline(invoice?.dueDate ?? null) : null);
   const today = startOfDayInZone(timeZone, now);
 
   // Bij bewaren heeft het model gezegd of het gesprek klaar is of dat er nog
@@ -103,7 +110,7 @@ export function urgencyFor(
   // Een factuur met een uiterste betaaldatum zegt zelf hoe lang je nog hebt.
   // Het tijdvak bepaalt de kleur: rood onder de 3 dagen, oranje tot 10, blauw
   // daarboven.
-  if (deadline && invoice) {
+  if (deadline && invoice && vraagtBetaling) {
     const dagen = daysBetween(deadline, today);
     const value = deadline.getTime();
     const text = deadlineText(deadline);
