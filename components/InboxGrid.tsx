@@ -594,6 +594,19 @@ export function InboxCard({
             {/* Actie en prullenbak naast elkaar, onderaan, met een beetje
                 ruimte ertussen. Geen pixelgegoochel: gewoon een flex-rij. */}
             <div className={`flex items-center justify-center gap-3 ${isNewsletter ? "" : "mt-3"}`}>
+              {item.declaration === "pending" ? (
+                // Links van de declareer-knop: de factuur ophalen.
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    window.location.href = `/api/gmail/bijlage?conversationId=${encodeURIComponent(item.conversationId)}`;
+                  }}
+                  className="btn-secondary focus-ring rounded-full px-4 py-2 text-[13px]"
+                >
+                  Download
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={(event) => {
@@ -1227,6 +1240,18 @@ export function InboxModal({
         ) : null}
 
         <div className="mx-[5%] mt-5 flex flex-wrap items-center justify-center gap-2">
+          {declaration === "pending" || item.invoice ? (
+            // Links van de declareer-knop: de onderliggende factuur ophalen.
+            <button
+              type="button"
+              onClick={() => {
+                window.location.href = `/api/gmail/bijlage?conversationId=${encodeURIComponent(item.conversationId)}`;
+              }}
+              className="btn-secondary focus-ring rounded-full px-3 py-1.5 text-[13px]"
+            >
+              Download
+            </button>
+          ) : null}
           {declaration === "pending" ? (
             <button
               type="button"
