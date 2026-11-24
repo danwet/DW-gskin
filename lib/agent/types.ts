@@ -166,6 +166,9 @@ export type MailAssessment = {
   archivedAt?: string;
   /** Declaration state for a paid invoice: none / pending (in "Declareren") / declared. */
   declaration?: "none" | "pending" | "declared";
+  /** Laatste bericht van de andere partij: dit toont de sheet als "De mail". */
+  counterpartyMessageId?: string;
+
   /** Full conversation thread, retained for the collapsible context view. */
   thread?: ThreadMessage[];
   /** When the user saved ("bewaard") this email via the popup. */

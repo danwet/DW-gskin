@@ -57,7 +57,7 @@ export function HandledView() {
     let alive = true;
     setGesprek(null);
     // De kaart bewaart de mailtekst niet meer; die halen we hier op.
-    const tekstVoor = gekozen.sourceMessageId;
+    const tekstVoor = gekozen.counterpartyMessageId ?? gekozen.sourceMessageId;
     setMailTekst("");
     if (tekstVoor) {
       void fetch(`/api/inbox/preview?tekst=1&id=${encodeURIComponent(tekstVoor)}`)

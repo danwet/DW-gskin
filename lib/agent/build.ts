@@ -349,6 +349,11 @@ export function buildAssessment(
     (owner ? conversation.find((message) => message.fromEmail && message.fromEmail.toLowerCase() !== owner) : undefined) ??
     conversation[0] ??
     latest;
+  const laatsteVanAnder =
+    (owner
+      ? [...conversation].reverse().find((message) => message.fromEmail && message.fromEmail.toLowerCase() !== owner)
+      : undefined) ?? counterparty;
+
   // The attachment text is authoritative for the amount: models routinely miss
   // it when the PDF splits the currency symbol from the number.
   const attachmentText = extractAttachmentText(latest.body);
@@ -430,6 +435,9 @@ export function buildAssessment(
     preparedAction: draft.preparedAction || undefined,
     draftReply: draft.draftReply || undefined,
     sourceMessageId: latest.id,
+    // Voor weergave: het laatste bericht van de andere partij, zodat je niet je
+    // eigen antwoord te zien krijgt als je de mail opent.
+    counterpartyMessageId: laatsteVanAnder.id,
     receivedAt: latest.receivedAt,
     updatedAt: now.toISOString(),
     unsubscribe: unsubscribeInfo ?? undefined,

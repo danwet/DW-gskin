@@ -775,7 +775,8 @@ export function InboxModal({
   // and fall back to the plain text when there is nothing to render.
   // Altijd proberen: ook een ouder bericht kan zijn HTML-inhoud nog krijgen via
   // de aanvulling, en dan moet de handtekening gewoon zichtbaar zijn.
-  const canPreview = Boolean(item.sourceMessageId && item.source !== "scan");
+  const berichtVoorWeergave = item.counterpartyMessageId ?? item.sourceMessageId;
+  const canPreview = Boolean(berichtVoorWeergave && item.source !== "scan");
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   /** Tekstversie, alleen gebruikt als de opmaak ontbreekt. */
   const [previewTekst, setPreviewTekst] = useState<string>("");
@@ -831,7 +832,7 @@ export function InboxModal({
     let alive = true;
     void (async () => {
       try {
-        const response = await fetch(`/api/inbox/preview?id=${encodeURIComponent(item.sourceMessageId ?? "")}`);
+        const response = await fetch(`/api/inbox/preview?id=${encodeURIComponent(berichtVoorWeergave ?? "")}`);
         if (!response.ok) throw new Error("geen inhoud");
         const html = await response.text();
         if (alive && html.trim()) {
@@ -840,7 +841,7 @@ export function InboxModal({
         }
         // Geen opmaak: haal de tekstversie op, zodat er toch iets te lezen is.
         const tekstResponse = await fetch(
-          `/api/inbox/preview?tekst=1&id=${encodeURIComponent(item.sourceMessageId ?? "")}`,
+          `/api/inbox/preview?tekst=1&id=${encodeURIComponent(berichtVoorWeergave ?? "")}`,
         );
         const tekst = tekstResponse.ok ? await tekstResponse.text() : "";
         if (!alive) return;
@@ -853,7 +854,7 @@ export function InboxModal({
     return () => {
       alive = false;
     };
-  }, [canPreview, item.sourceMessageId]);
+  }, [canPreview, berichtVoorWeergave]);
 
   // Snoozing drops the card exactly one tier for a day.
   const tier = cardTier(item, Date.now());
