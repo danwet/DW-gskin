@@ -43,7 +43,7 @@
   --dot-green: #12a150;
 
   /* Liquid Glass: neutraal, transparant wit */
-  --glass-fallback: #fbfbfb;
+  --glass-fallback: #ffffff;
   --glass-bg: rgba(255, 255, 255, 0.72);
   --glass-bg-strong: rgba(255, 255, 255, 0.5);
   --glass-bg-soft: rgba(255, 255, 255, 0.34);
@@ -97,18 +97,21 @@
 .dark {
   color-scheme: dark;
 
-  --page: #1b1e24;
-  --bg: #1b1e24;
-  --surface: #242830;
-  --sidebar: rgba(53, 60, 72, 0.62);
-  --card: #242830;
+  /* Overgenomen uit de donkere Activity Monitor: het vensterlichaam is #1F1F21,
+     verhoogde vlakken (kopregel, werkbalk, kaarten) #252728, en de lichtere
+     banden #29282B. Geen blauwzweem. */
+  --page: #1f1f21;
+  --bg: #1f1f21;
+  --surface: #252728;
+  --sidebar: #252728;
+  --card: #252728;
 
-  --ink: #f3f5f8;
-  --muted: #b6beca;
-  --muted-app: #b6beca;
-  --faint: #7e8795;
+  --ink: #f2f2f3;
+  --muted: #a9a9ae;
+  --muted-app: #a9a9ae;
+  --faint: #7d7d83;
 
-  --line: rgba(224, 232, 245, 0.14);
+  --line: rgba(255, 255, 255, 0.10);
 
   --accent: #70adff;
   --blue: #70adff;
@@ -126,10 +129,12 @@
   --dot-blue: #70adff;
   --dot-green: #4ade80;
 
-  --glass-fallback: #272c36;
-  --glass-bg: rgba(53, 60, 72, 0.62);
-  --glass-bg-strong: rgba(46, 52, 64, 0.88);
-  --glass-bg-soft: rgba(53, 60, 72, 0.44);
+  /* Kaarten en panelen: het verhoogde vlak uit de screenshot. */
+  --glass-fallback: #252728;
+  --glass-border: 1px solid rgba(255, 255, 255, 0.07);
+  --glass-bg: rgba(66, 68, 70, 0.62);
+  --glass-bg-strong: rgba(58, 60, 62, 0.88);
+  --glass-bg-soft: rgba(66, 68, 70, 0.44);
   --glass-hl: rgba(255, 255, 255, 0.14);
   --glass-hl2: rgba(255, 255, 255, 0.08);
   --glass-edge: rgba(255, 255, 255, 0.12);
@@ -144,30 +149,29 @@
   --active-body: rgb(63 92 140 / 0.72);
   --active-line: transparent;
 
-  --float-shadow: 0 20px 48px rgba(16, 20, 30, 0.28);
+  --float-shadow: 0 20px 48px rgba(0, 0, 0, 0.42);
 
   --shadow: none;
 
-  /* Dark behoudt de glas-look voor kaarten */
-  --card-surface-bg: var(--glass-bg);
-  --card-surface-border: none;
-  --card-surface-shadow: var(--glass-shadow);
+  /* Kaarten: het verhoogde vlak, met een fijne rand zoals in de screenshot. */
+  --card-surface-bg: #252728;
+  --card-surface-border: 1px solid rgba(255, 255, 255, 0.07);
+  --card-surface-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 
-  /* Dark houdt de bestaande glas-look: geen extra randen, glazen knoppen */
-  --glass-border: none;
-  --chip-border: none;
-  --btn-primary-bg: rgba(41, 88, 163, 0.55);
-  --btn-primary-hover: rgba(41, 88, 163, 0.65);
-  --btn-primary-active: rgba(32, 74, 142, 0.7);
-  --btn-primary-ink: #f3f5f8;
-  --btn-primary-hl: rgba(255, 255, 255, 0.18);
-  --btn-secondary-bg: rgba(46, 52, 64, 0.88);
-  --btn-secondary-hover: rgba(53, 60, 72, 0.92);
-  --btn-secondary-active: rgba(46, 52, 64, 0.95);
-  --btn-secondary-line: rgba(255, 255, 255, 0.12);
-  --btn-secondary-line-strong: rgba(255, 255, 255, 0.18);
-  --btn-secondary-ink: #f3f5f8;
-  --btn-secondary-hl: rgba(255, 255, 255, 0.14);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.07);
+  --chip-border: 1px solid rgba(255, 255, 255, 0.09);
+  --btn-primary-bg: #424446;
+  --btn-primary-hover: #575958;
+  --btn-primary-active: #6e7071;
+  --btn-primary-ink: #f2f2f3;
+  --btn-primary-hl: rgba(255, 255, 255, 0.10);
+  --btn-secondary-bg: #424446;
+  --btn-secondary-hover: #575958;
+  --btn-secondary-active: #6e7071;
+  --btn-secondary-line: rgba(255, 255, 255, 0.09);
+  --btn-secondary-line-strong: rgba(255, 255, 255, 0.14);
+  --btn-secondary-ink: #f2f2f3;
+  --btn-secondary-hl: rgba(255, 255, 255, 0.10);
 }
 
 * {
@@ -186,9 +190,10 @@ body {
 body {
   margin: 0;
   color: var(--ink);
+  /* Dezelfde zachte gloed als eerst, maar neutraal: geen blauw- of paarszweem. */
   background:
-    radial-gradient(1200px 600px at 82% -10%, var(--glow, rgba(120, 160, 255, 0.16)), transparent 60%),
-    radial-gradient(1000px 520px at -10% 110%, var(--glow2, rgba(140, 120, 255, 0.1)), transparent 55%),
+    radial-gradient(1200px 600px at 82% -10%, var(--glow, rgba(255, 255, 255, 0.85)), transparent 60%),
+    radial-gradient(1000px 520px at -10% 110%, var(--glow2, rgba(255, 255, 255, 0.45)), transparent 55%),
     var(--page);
   background-attachment: fixed;
   font-family: var(--font-geist), "Avenir Next", "Segoe UI", sans-serif;
@@ -196,8 +201,8 @@ body {
 
 .dark body,
 body.dark {
-  --glow: rgba(70, 110, 200, 0.14);
-  --glow2: rgba(90, 80, 180, 0.1);
+  --glow: rgba(255, 255, 255, 0.05);
+  --glow2: rgba(255, 255, 255, 0.03);
 }
 
 button,
@@ -235,7 +240,7 @@ button {
 
 @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .glass-panel {
-    background: var(--glass-bg);
+    background: var(--card-surface-bg, var(--glass-fallback));
     -webkit-backdrop-filter: blur(20px) saturate(135%);
     backdrop-filter: blur(20px) saturate(135%);
     box-shadow:
@@ -440,7 +445,7 @@ button {
   -webkit-backdrop-filter: blur(22px) saturate(1.9);
   backdrop-filter: blur(22px) saturate(1.9);
   border: 1px solid rgba(0, 0, 0, 0.14);
-  color: #141915;
+  color: var(--ink);
   /* Zelfde gewicht als de menu- en instellingenitems: niet vet. */
   font-weight: 400;
   box-shadow:
@@ -518,23 +523,53 @@ html:not(.dark) .menu-actief:hover {
   filter: none;
 }
 
-/* Donker mode: de rand wordt daar wit in plaats van donker. */
-.dark .btn-primary {
-  background-color: rgba(255, 255, 255, 0.08);
-  background-image: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.9) 0%,
-    rgba(255, 255, 255, 0.35) 14%,
-    rgba(255, 255, 255, 0.16) 55%,
-    rgba(255, 255, 255, 0.35) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.22);
+/* Donker mode, gemeten van dezelfde macOS-werkbalk: het oppervlak ligt boven
+   de achtergrond (#29282B). */
+.dark .btn-primary,
+.dark .btn-secondary,
+.dark .glass-chip,
+.dark .glas-selectie {
+  background-color: transparent;
+  background-image: linear-gradient(180deg, #47494b 0%, #424446 55%, #3f4143 100%);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
+  backdrop-filter: blur(12px) saturate(1.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.75),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
-    0 1px 2px rgba(0, 0, 0, 0.35),
-    0 8px 20px rgba(0, 0, 0, 0.3);
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.18),
+    0 1px 1px rgba(0, 0, 0, 0.35),
+    0 8px 16px -6px rgba(0, 0, 0, 0.55);
+}
+
+.dark .btn-primary:hover,
+.dark .btn-secondary:hover,
+.dark .glass-chip:hover,
+.dark .glas-selectie:hover {
+  background-image: linear-gradient(180deg, #5c5e60 0%, #575958 55%, #545658 100%);
+  filter: none;
+}
+
+.dark .btn-primary:active,
+.dark .btn-secondary:active,
+.dark .glass-chip:active,
+.dark .glas-selectie:active {
+  background-image: linear-gradient(180deg, #6e7071 0%, #696b6d 55%, #656769 100%);
+  filter: none;
+}
+
+.dark .menu-actief,
+.dark .menu-actief:hover {
+  background-color: transparent;
+  background-image: linear-gradient(180deg, #747678 0%, #6e7071 55%, #6a6c6e 100%);
+  border-color: transparent;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.20),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.22);
+  filter: none;
+}
+
+.dark .segment-hover:hover {
+  background-image: linear-gradient(180deg, #5c5e60 0%, #575958 55%, #545658 100%);
 }
 
 /* Uitgangspunt voor al het glas in licht mode: de glans die je eerst alleen bij
@@ -924,13 +959,14 @@ html.glas-safari .glas-balk {
 
 /* Donkere modus van deze app werkt met een klasse, niet met de media query. */
 .dark .glas-balk {
-  background-color: var(--sidebar);
-  background-image: none;
-  border-color: var(--line);
+  background-color: transparent;
+  background-image: linear-gradient(180deg, #47494b 0%, #424446 55%, #3f4143 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   box-shadow:
-    inset 0 1.5px 3px rgb(255 255 255 / 0.18),
-    inset 0 0 0 1px rgb(255 255 255 / 0.14),
-    0 8px 24px rgb(0 0 0 / 0.45);
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.18),
+    0 1px 1px rgba(0, 0, 0, 0.35),
+    0 8px 16px -6px rgba(0, 0, 0, 0.55);
 }
 
 /* Het geselecteerde menu-item: exact dezelfde waarden als de ruststand van de
@@ -950,7 +986,7 @@ html.glas-safari .glas-balk {
   -webkit-backdrop-filter: blur(22px) saturate(1.9);
   backdrop-filter: blur(22px) saturate(1.9);
   border: 1px solid rgba(0, 0, 0, 0.12);
-  color: #141915;
+  color: var(--ink);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 1),
     inset 0 -1px 0 rgba(255, 255, 255, 0.6),
