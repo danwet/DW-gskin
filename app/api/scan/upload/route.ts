@@ -1,5 +1,6 @@
 import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { extractTextFromBuffer, parseInvoiceText } from "@/lib/scan/extract";
+import { leesFactuurMetModel } from "@/lib/scan/ai-factuur";
 import { saveScanFile } from "@/lib/scan/files";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +37,25 @@ export async function POST(request: Request) {
     text = "";
   }
 
-  const extracted = parseInvoiceText(text);
+  // Eerst het model laten lezen: dat begrijpt een factuurlayout met een totaal
+  // onderaan beter dan patronen. De regelgebaseerde lezer vult aan wat het model
+  // leeg laat, en is de enige bron als er geen model is geconfigureerd.
+  const basis = parseInvoiceText(text);
+  const vanModel = await leesFactuurMetModel(text).catch(() => null);
+  const extracted = vanModel
+    ? {
+        supplier: vanModel.supplier || basis.supplier,
+        invoiceNumber: vanModel.invoiceNumber || basis.invoiceNumber,
+        invoiceDate: vanModel.invoiceDate || basis.invoiceDate,
+        dueDate: vanModel.dueDate || basis.dueDate,
+        dueDateSource: vanModel.dueDate ? "Staat op de factuur" : basis.dueDateSource,
+        amount: vanModel.amount ?? basis.amount,
+        currency: vanModel.currency || basis.currency,
+        iban: vanModel.iban || basis.iban,
+        reference: vanModel.reference || basis.reference,
+        senderSays: vanModel.senderSays || basis.senderSays,
+      }
+    : basis;
 
   return Response.json({
     ok: true,
