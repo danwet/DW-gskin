@@ -139,7 +139,7 @@ function parseSupplier(text: string): string {
 
 function parseInvoiceNumber(text: string): string {
   const match =
-    text.match(/(?:factuur(?:nummer)?|invoice(?:\s*(?:number|no\.?))?)\s*[:#]?\s*([A-Za-z0-9][A-Za-z0-9./-]{1,30})/i) ??
+    text.match(/(?:factuur(?:nummer)?|declaratie(?:nummer|nr\.?)?|nota(?:nummer|nr\.?)?|invoice(?:\s*(?:number|no\.?))?|rekening(?:nummer)?)\s*[:#]?\s*([A-Za-z0-9][A-Za-z0-9./-]{1,30})/i) ??
     text.match(/\b(?:inv|factuur)[-:\s#]*([A-Za-z0-9][A-Za-z0-9./-]{1,30})\b/i);
   return match?.[1]?.trim() ?? "";
 }

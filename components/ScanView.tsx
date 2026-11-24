@@ -57,7 +57,9 @@ export function ScanView() {
   const [file, setFile] = useState<File | null>(null);
   const [data, setData] = useState<UploadResult | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
-  const [paid, setPaid] = useState(false);
+  // Een ingescande factuur is per definitie nog niet betaald: die gaat de
+  // workflow in. Geen statuskeuze meer in het formulier.
+  const [paid] = useState(false);
   const [mobileTab, setMobileTab] = useState<"scan" | "gegevens">("scan");
   const [error, setError] = useState<string | null>(null);
   const [duplicate, setDuplicate] = useState<ExistingInvoice | null>(null);
@@ -89,10 +91,11 @@ export function ScanView() {
         amount: ext.amount != null ? String(ext.amount) : "",
         currency: ext.currency || "EUR",
         iban: ext.iban,
-        reference: ext.reference,
+        // Het declaratie-/factuurnummer is het betalingskenmerk; staat er een
+        // eigen kenmerk in de factuur, dan gaat dat voor.
+        reference: ext.reference || ext.invoiceNumber,
         senderSays: ext.senderSays,
       });
-      setPaid(false);
       setStage("review");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Uploaden is mislukt.");
@@ -177,7 +180,6 @@ export function ScanView() {
     setError(null);
     setDuplicate(null);
     setSavedMessage(null);
-    setPaid(false);
     if (inputRef.current) inputRef.current.value = "";
   }, []);
 
@@ -350,8 +352,14 @@ export function ScanView() {
                     <input id="scan-supplier" className={inputClass} value={form.supplier} onChange={(e) => field("supplier", e.target.value)} placeholder="Naam leverancier" />
                   </div>
                   <div>
-                    <label className={labelClass} htmlFor="scan-number">Factuurnummer</label>
-                    <input id="scan-number" className={inputClass} value={form.invoiceNumber} onChange={(e) => field("invoiceNumber", e.target.value)} placeholder="Factuurnummer" />
+                    <label className={labelClass} htmlFor="scan-number">Factuurnummer / declaratienummer</label>
+                    <input
+                      id="scan-number"
+                      className={inputClass}
+                      value={form.invoiceNumber}
+                      onChange={(e) => field("invoiceNumber", e.target.value)}
+                      placeholder="Bijv. 18312"
+                    />
                   </div>
                   <div>
                     <label className={labelClass} htmlFor="scan-invoiceDate">Factuurdatum</label>
@@ -388,23 +396,6 @@ export function ScanView() {
                   </div>
                 </div>
 
-                <div className="mt-5 flex flex-wrap items-center gap-2">
-                  <span className="text-[13px] font-medium text-[var(--ink)]">Status:</span>
-                  <button
-                    type="button"
-                    onClick={() => setPaid(false)}
-                    className={`focus-ring rounded-full px-4 py-1.5 text-[13px] font-medium ${!paid ? "glass-active" : "glass-chip text-[var(--ink)]"}`}
-                  >
-                    Nog opvolgen
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaid(true)}
-                    className={`focus-ring rounded-full px-4 py-1.5 text-[13px] font-medium ${paid ? "glass-active" : "glass-chip text-[var(--ink)]"}`}
-                  >
-                    Al betaald
-                  </button>
-                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -431,7 +422,7 @@ export function ScanView() {
         <section className="glass-panel rounded-[24px] px-6 py-14 text-center">
           <p className="text-[17px] font-semibold text-[var(--ink)]">{savedMessage ?? "Factuur opgeslagen."}</p>
           <p className="mt-1 text-[13px] text-[var(--muted)]">
-            {paid ? "De factuur is als betaald gemarkeerd en blijft vindbaar bij je scans." : "De factuur staat nu in je aandachtsoverzicht."}
+            De factuur staat nu in je aandachtsoverzicht.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link href="/" className="btn-primary focus-ring rounded-full px-5 py-2.5 text-[14px]">

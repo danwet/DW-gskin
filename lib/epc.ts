@@ -76,10 +76,24 @@ export function generateEPCQRString(data: InvoiceData): string {
   // rejects anything that is not a valid RF reference, so an invoice number
   // belongs in the free-text field instead.
   const reference = isValidCreditorReference(rawReference) ? rawReference.replace(/\s+/g, "").toUpperCase() : "";
-  const text =
-    reference.length > 0
-      ? ""
-      : (data.text || (rawReference ? `Factuur ${rawReference}` : "")).trim().substring(0, 140);
+
+  // Het order- of factuurnummer hoort altijd in het betalingskenmerk te staan:
+  // daaraan herkent de leverancier de betaling. Is er een gestructureerde
+  // referentie, dan zit het nummer daar al in; anders gaat het als vrije tekst
+  // mee, aangevuld met wat er verder nog aan kenmerk bekend is.
+  let text = "";
+  if (reference.length === 0) {
+    const nummer = rawReference;
+    const extra = (data.text || "").trim();
+    const delen = [nummer ? `Factuur ${nummer}` : "", extra].filter(Boolean);
+    // Nooit hetzelfde nummer twee keer achter elkaar.
+    if (extra && nummer && extra.toLowerCase().includes(nummer.toLowerCase())) {
+      text = extra;
+    } else {
+      text = delen.join(" · ");
+    }
+    text = text.trim().substring(0, 140);
+  }
 
   return [
     "BCD",

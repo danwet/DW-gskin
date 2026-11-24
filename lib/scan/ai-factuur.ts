@@ -10,7 +10,9 @@ Regels:
 - Kijk naar het hele document, niet alleen naar de eerste regels. Het totaalbedrag staat vaak onderaan bij "Totaal", "Te betalen", "Factuurtotaal" of "Subtotaal + BTW".
 - Neem het BEDRAG DAT BETAALD MOET WORDEN, inclusief btw. Niet een subtotaal, niet een los tarief, niet een bedrag uit een eerdere factuur.
 - Een bedrag met een punt als decimaalteken ("151.38") is ook gewoon een bedrag; geef het als getal terug (151.38).
-- factuurnummer is het nummer dat de leverancier aan deze factuur gaf. Staat het er niet, laat het leeg.
+- factuurnummer is het nummer dat de leverancier aan deze factuur gaf. Het heet niet altijd zo: ook "declaratienummer", "declaratienr", "notanummer", "nota nr", "factuurnr", "rekeningnummer", "dossiernummer", "referentie nr" of gewoon "Nr." is dit nummer. Neem het over zoals het er staat, met letters en streepjes.
+- Kijk ook naar kop- en voetteksten, stempels en kleine lettertjes: daar staat het nummer vaak.
+- Staat er echt geen nummer, laat het dan leeg. Verzin niets.
 - Datums als YYYY-MM-DD. Verzin geen datum: staat er geen vervaldatum en geen termijn, laat vervaldatum leeg.
 - iban alleen als er echt een IBAN staat, zonder spaties.
 - kenmerk is het betalingskenmerk of de referentie als dat er staat.
