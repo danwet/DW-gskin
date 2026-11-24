@@ -39,7 +39,7 @@ export function NotificationsBell({
   const [open, setOpen] = useState(false);
   const knopRef = useRef<HTMLButtonElement | null>(null);
   /** Positie van het paneel: rechts tegen de kantlijn, pijl onder het icoon. */
-  const [plaats, setPlaat] = useState<{ top: number; right: number; pijl: number } | null>(null);
+  const [plaats, setPlaat] = useState<{ top: number; right: number; pijl: number; breedte: number } | null>(null);
   const [selected, setSelected] = useState<MailAssessment | null>(null);
   const [desktop, setDesktop] = useState<NotificationPermission | "unsupported">("default");
   const [desktopWanted, setDesktopWanted] = useState(false);
@@ -73,11 +73,20 @@ export function NotificationsBell({
       const rij = knop?.parentElement?.parentElement;
       if (!knop || !rij) return;
       const k = knop.getBoundingClientRect();
-      const r = rij.getBoundingClientRect();
-      const rechts = Math.max(12, Math.round(window.innerWidth - r.right));
-      const links = window.innerWidth - rechts - PANEEL_BREEDTE;
-      const pijl = Math.min(PANEEL_BREEDTE - 20, Math.max(20, Math.round(k.left + k.width / 2 - links)));
-      setPlaat({ top: Math.round(k.bottom + 10), right: rechts, pijl });
+
+      // Staat er een rechterkolom, dan hangt het paneel daar gecentreerd boven
+      // en mag het breder zijn; anders valt het terug op rechts uitlijnen.
+      const kolom = document.querySelector('[data-kolom="rechts"]')?.getBoundingClientRect();
+      // Iets breder dan de kolom zelf, zodat het paneel niet benauwd staat.
+      const breedte = kolom && kolom.width > 220
+        ? Math.round(Math.min(kolom.width - 20, 480))
+        : PANEEL_BREEDTE;
+      const links = kolom && kolom.width > 220
+        ? Math.round(kolom.left + (kolom.width - breedte) / 2)
+        : Math.round(rij.getBoundingClientRect().right - breedte);
+      const rechts = Math.max(12, Math.round(window.innerWidth - (links + breedte)));
+      const pijl = Math.min(breedte - 20, Math.max(20, Math.round(k.left + k.width / 2 - links)));
+      setPlaat({ top: Math.round(k.bottom + 10), right: rechts, pijl, breedte });
     };
     bereken();
     window.addEventListener("resize", bereken);
@@ -134,7 +143,7 @@ export function NotificationsBell({
             className="glas-paneel fixed z-50 rounded-3xl p-2"
             style={
               plaats
-                ? { top: plaats.top, right: plaats.right, width: PANEEL_BREEDTE }
+                ? { top: plaats.top, right: plaats.right, width: plaats.breedte }
                 : { top: 64, right: 24, width: PANEEL_BREEDTE }
             }
           >

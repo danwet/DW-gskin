@@ -212,7 +212,11 @@ export function TodayView() {
             <LegacyLoopsCard />
           </div>
         </div>
-        <div className="mt-8 border-t border-[var(--line)] pt-6 lg:mt-0 lg:flex lg:flex-col lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
+        {/* De rechterkolom: de notificatie-uitklap centreert hierboven. */}
+        <div
+          data-kolom="rechts"
+          className="mt-8 border-t border-[var(--line)] pt-6 lg:mt-0 lg:flex lg:flex-col lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8"
+        >
           <AgendaPanel />
           <ShipmentsPanel items={inbox.items} />
           <DaySummary
