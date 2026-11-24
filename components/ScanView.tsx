@@ -54,12 +54,50 @@ type ExistingInvoice = {
 const inputClass = "veld-underline mt-1 h-9 px-0 py-0 text-[14px] text-ink";
 const labelClass = "text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]";
 
+/** ISO (YYYY-MM-DD) naar wat je ziet: dd / mm / jjjj. */
+function isoNaarBeeld(iso: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  return match ? `${match[3]} / ${match[2]} / ${match[1]}` : "";
+}
+
+/** Wat je typt terug naar ISO; ook "6-12-2026" en "06122026" werken. */
+function beeldNaarIso(text: string): string | null {
+  const delen = /^(\d{1,2})\s*[-/.\s]\s*(\d{1,2})\s*[-/.\s]\s*(\d{2,4})$/.exec(text.trim());
+  let dag: number; let maand: number; let jaar: number;
+  if (delen) {
+    dag = Number(delen[1]); maand = Number(delen[2]); jaar = Number(delen[3]);
+  } else {
+    const cijfers = text.replace(/\D/g, "");
+    if (cijfers.length !== 8) return null;
+    dag = Number(cijfers.slice(0, 2)); maand = Number(cijfers.slice(2, 4)); jaar = Number(cijfers.slice(4));
+  }
+  if (jaar < 100) jaar += 2000;
+  if (jaar < 1900 || jaar > 2200 || maand < 1 || maand > 12 || dag < 1 || dag > 31) return null;
+  const proef = new Date(jaar, maand - 1, dag, 12);
+  if (proef.getFullYear() !== jaar || proef.getMonth() !== maand - 1 || proef.getDate() !== dag) return null;
+  const twee = (waarde: number, lengte = 2) => String(waarde).padStart(lengte, "0");
+  return `${twee(jaar, 4)}-${twee(maand)}-${twee(dag)}`;
+}
+
+/** Schuift een ISO-datum een aantal dagen op of terug. */
+function schuifIso(iso: string, dagen: number): string {
+  const [jaar, maand, dag] = iso.split("-").map(Number);
+  return new Date(jaar, maand - 1, dag + dagen, 12).toLocaleDateString("sv-SE");
+}
+
+function vandaagIso(): string {
+  return new Date().toLocaleDateString("sv-SE");
+}
+
 export function ScanView() {
   const [stage, setStage] = useState<"idle" | "uploading" | "review" | "saving" | "saved" | "error">("idle");
   const [dragging, setDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [data, setData] = useState<UploadResult | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
+  // Factuurdatum staat standaard op vandaag (de dag van uploaden) en is met de
+  // pijltjestoetsen te verschuiven, net als in de agenda.
+  const [datumTekst, setDatumTekst] = useState(() => isoNaarBeeld(vandaagIso()));
   // Een ingescande factuur is per definitie nog niet betaald: die gaat de
   // workflow in. Geen statuskeuze meer in het formulier.
   const [paid] = useState(false);
@@ -77,6 +115,7 @@ export function ScanView() {
     setError(null);
     setDuplicate(null);
     setSavedMessage(null);
+    setDatumTekst(isoNaarBeeld(vandaagIso()));
     const body = new FormData();
     body.append("file", uploaded);
     try {
@@ -88,7 +127,9 @@ export function ScanView() {
       setForm({
         supplier: ext.supplier,
         invoiceNumber: ext.invoiceNumber,
-        invoiceDate: ext.invoiceDate,
+        // Vandaag alleen als de factuur zelf geen enkele datum noemt. Staat er
+        // wel een uiterste betaaldatum op, dan verzinnen we geen factuurdatum.
+        invoiceDate: ext.invoiceDate || (ext.dueDate ? "" : vandaagIso()),
         dueDate: ext.dueDate,
         dueDateSource: ext.dueDateSource,
         amount: ext.amount != null ? String(ext.amount) : "",
@@ -96,9 +137,12 @@ export function ScanView() {
         iban: ext.iban,
         // Het declaratie-/factuurnummer is het betalingskenmerk; staat er een
         // eigen kenmerk in de factuur, dan gaat dat voor.
-        reference: ext.reference || ext.invoiceNumber,
+        // Het factuurnummer zit in het betalingskenmerk; daar herkent de
+        // leverancier de betaling aan.
+        reference: ext.reference || (ext.invoiceNumber ? `Factuur: ${ext.invoiceNumber}` : ""),
         senderSays: ext.senderSays,
       });
+      setDatumTekst(isoNaarBeeld(ext.invoiceDate || (ext.dueDate ? "" : vandaagIso())));
       setStage("review");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Uploaden is mislukt.");
@@ -352,23 +396,64 @@ export function ScanView() {
 
               <div className="glass-panel rounded-[24px] p-5">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
+                  <div>
                     <label className={labelClass} htmlFor="scan-supplier">Leverancier</label>
                     <input id="scan-supplier" className={inputClass} value={form.supplier} onChange={(e) => field("supplier", e.target.value)} placeholder="Naam leverancier" />
                   </div>
                   <div>
-                    <label className={labelClass} htmlFor="scan-number">Factuurnummer / declaratienummer</label>
-                    <input
-                      id="scan-number"
-                      className={inputClass}
-                      value={form.invoiceNumber}
-                      onChange={(e) => field("invoiceNumber", e.target.value)}
-                      placeholder="Bijv. 18312"
-                    />
+                    <label className={labelClass} htmlFor="scan-amount">Totaalbedrag</label>
+                    {/* Het euroteken staat in het veld, zoals het ook op de
+                        factuur staat; de lijn loopt door onder allebei. */}
+                    <div className="veld-underline mt-1 flex h-9 items-center gap-1 text-[14px] text-ink">
+                      <span aria-hidden="true">€</span>
+                      <input
+                        id="scan-amount"
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        min="0"
+                        className="w-full min-w-0 bg-transparent px-0 py-0 text-[14px] text-ink outline-none"
+                        value={form.amount}
+                        onChange={(e) => field("amount", e.target.value)}
+                        placeholder="0,00"
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className={labelClass} htmlFor="scan-invoiceDate">Factuurdatum</label>
-                    <input id="scan-invoiceDate" type="date" className={inputClass} value={form.invoiceDate} onChange={(e) => field("invoiceDate", e.target.value)} />
+                    <input
+                      id="scan-invoiceDate"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="dd / mm / jjjj"
+                      className={inputClass}
+                      value={datumTekst}
+                      onKeyDown={(event) => {
+                        if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+                        // Pijltje omhoog is een dag terug, omlaag een dag verder —
+                        // net als in de agenda.
+                        event.preventDefault();
+                        const iso = beeldNaarIso(datumTekst) ?? form.invoiceDate ?? vandaagIso();
+                        const volgende = schuifIso(iso, event.key === "ArrowUp" ? -1 : 1);
+                        field("invoiceDate", volgende);
+                        setDatumTekst(isoNaarBeeld(volgende));
+                      }}
+                      onChange={(event) => {
+                        setDatumTekst(event.target.value);
+                        const iso = beeldNaarIso(event.target.value);
+                        if (iso) field("invoiceDate", iso);
+                      }}
+                      onBlur={() => {
+                        const iso = beeldNaarIso(datumTekst);
+                        if (!iso) {
+                          // Ongeldige invoer: terug naar de geldige datum.
+                          setDatumTekst(isoNaarBeeld(form.invoiceDate || vandaagIso()));
+                          return;
+                        }
+                        field("invoiceDate", iso);
+                        setDatumTekst(isoNaarBeeld(iso));
+                      }}
+                    />
                   </div>
                   <div>
                     <label className={labelClass} htmlFor="scan-due">Uiterste betaaldatum *</label>
@@ -376,16 +461,18 @@ export function ScanView() {
                     <p className="mt-1 text-[12px] text-[var(--muted)]">{form.dueDateSource || "Vul de vervaldatum in."}</p>
                   </div>
                   <div>
-                    <label className={labelClass} htmlFor="scan-amount">Totaalbedrag</label>
-                    <input id="scan-amount" type="number" inputMode="decimal" step="0.01" min="0" className={inputClass} value={form.amount} onChange={(e) => field("amount", e.target.value)} placeholder="0,00" />
-                  </div>
-                  <div>
                     <label className={labelClass} htmlFor="scan-iban">IBAN</label>
                     <input id="scan-iban" className={inputClass} value={form.iban} onChange={(e) => field("iban", e.target.value)} placeholder="NL00 BANK 0000 0000 00" />
                   </div>
                   <div>
                     <label className={labelClass} htmlFor="scan-reference">Betalingskenmerk</label>
-                    <input id="scan-reference" className={inputClass} value={form.reference} onChange={(e) => field("reference", e.target.value)} placeholder="Kenmerk / referentie" />
+                    <input
+                      id="scan-reference"
+                      className={inputClass}
+                      value={form.reference}
+                      onChange={(e) => field("reference", e.target.value)}
+                      placeholder="Factuur: 18312"
+                    />
                   </div>
                   <div className="sm:col-span-2">
                     <label className={labelClass} htmlFor="scan-consequence">Aangekondigd gevolg bij uitstel</label>
