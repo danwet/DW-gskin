@@ -38,7 +38,8 @@ export function useNotificaties(actief: boolean) {
 
   const laad = useCallback(async () => {
     try {
-      const response = await fetch("/api/inbox", { cache: "no-store" });
+      // Licht endpoint: alleen de velden die de bel gebruikt.
+      const response = await fetch("/api/inbox/lijst", { cache: "no-store" });
       if (!response.ok) return;
       const data = (await response.json()) as { items?: MailAssessment[] };
       setItems(data.items ?? []);
