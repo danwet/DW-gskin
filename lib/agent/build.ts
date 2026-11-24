@@ -444,7 +444,8 @@ export function buildAssessment(
           ),
         })
       : undefined,
-    body: latest.body || undefined,
+    // De mailtekst blijft in dw_gmail_messages staan: hier zou hij elke keer
+    // meegelezen en -geschreven worden met het hele statusdocument.
     hasHtml: Boolean(latest.bodyHtml),
     // The model read the mail and named shop, carrier and numbers; fall back to
     // the rules when it did not.
@@ -452,12 +453,7 @@ export function buildAssessment(
     // Iets dat gekocht is hoort bij Bestellingen, niet bij de losse berichten.
     purchase: purchaseFromDraft(draft.purchase, counterparty.from || latest.from, invoiceText),
     payment: detectPayment(latest) ?? undefined,
-    thread: conversation.map((message) => ({
-      from: message.from,
-      fromEmail: message.fromEmail,
-      subject: message.subject,
-      body: message.body || undefined,
-      receivedAt: message.receivedAt,
-    })),
+    // Geen gesprekskopie in de kaart: die werd nergens gelezen en kostte 230 KB
+    // in het statusdocument. De berichten staan in dw_gmail_messages.
   };
 }

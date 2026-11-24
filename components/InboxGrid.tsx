@@ -771,14 +771,14 @@ export function InboxModal({
     return "Afmelden";
   };
 
-  const newsletterImages = item.bodyHtml ? extractImages(item.bodyHtml) : [];
-
   // The newsletter HTML is fetched when the popup opens: keep the inbox light,
   // and fall back to the plain text when there is nothing to render.
   // Altijd proberen: ook een ouder bericht kan zijn HTML-inhoud nog krijgen via
   // de aanvulling, en dan moet de handtekening gewoon zichtbaar zijn.
   const canPreview = Boolean(item.sourceMessageId && item.source !== "scan");
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  /** Tekstversie, alleen gebruikt als de opmaak ontbreekt. */
+  const [previewTekst, setPreviewTekst] = useState<string>("");
   const [previewActief, setPreviewActief] = useState(false);
   // Eerste versie van de handtekening, één keer vastgelegd voor het bewerkbare
   // vlak; daarna bepaalt de browser de inhoud.
@@ -790,6 +790,8 @@ export function InboxModal({
   // met rust, anders springt de cursor of verdwijnt de tekst.
   const [beginConcept] = useState(() => escapeHtml(item.draftReply ?? ""));
   const [previewFailed, setPreviewFailed] = useState(false);
+  // Afbeeldingen komen uit de opgehaalde opmaak, niet meer uit de kaart.
+  const newsletterImages = previewHtml ? extractImages(previewHtml) : [];
 
   // De handtekening uit Instellingen, zodat je onder het concept ziet wat er
   // automatisch onder de mail komt.
@@ -829,13 +831,21 @@ export function InboxModal({
     let alive = true;
     void (async () => {
       try {
-        const response = await fetch(`/api/inbox/preview?id=${encodeURIComponent(item.sourceMessageId ?? "")}`, {
-          cache: "no-store",
-        });
+        const response = await fetch(`/api/inbox/preview?id=${encodeURIComponent(item.sourceMessageId ?? "")}`);
         if (!response.ok) throw new Error("geen inhoud");
         const html = await response.text();
-        if (alive && html.trim()) setPreviewHtml(html);
-        else if (alive) setPreviewFailed(true);
+        if (alive && html.trim()) {
+          setPreviewHtml(html);
+          return;
+        }
+        // Geen opmaak: haal de tekstversie op, zodat er toch iets te lezen is.
+        const tekstResponse = await fetch(
+          `/api/inbox/preview?tekst=1&id=${encodeURIComponent(item.sourceMessageId ?? "")}`,
+        );
+        const tekst = tekstResponse.ok ? await tekstResponse.text() : "";
+        if (!alive) return;
+        if (tekst.trim()) setPreviewTekst(tekst);
+        else setPreviewFailed(true);
       } catch {
         if (alive) setPreviewFailed(true);
       }
@@ -1058,7 +1068,7 @@ export function InboxModal({
 
         {/* Geen tweede venster: de mail zelf staat al hierboven. Alleen als de
             opmaak ontbreekt, tonen we de tekstversie zodat er niets wegvalt. */}
-        {!previewHtml && item.body ? (
+        {!previewHtml && previewTekst ? (
           <section className="mt-5">
             <p className="mx-[5%] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">
               Bericht
@@ -1068,7 +1078,7 @@ export function InboxModal({
                 item.draftReply ? "max-h-[220px] overflow-y-auto rounded-2xl bg-[var(--bg)] px-4 py-3" : ""
               }`}
             >
-              {(item.body ?? "").split(/\n{2,}/).map((paragraph, index) => (
+              {previewTekst.split(/\n{2,}/).map((paragraph, index) => (
                 <p key={index} className="whitespace-pre-line">{paragraph.trim()}</p>
               ))}
             </div>

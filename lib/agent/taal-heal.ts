@@ -2,7 +2,7 @@ import "server-only";
 
 import { askModel } from "./classify";
 import { loadAgentConfig } from "./config";
-import { readAssessments, setAssessmentTaal } from "./store";
+import { readAssessments, setAssessmentTalen, type TaalWijziging } from "./store";
 
 /** Bewijsversie: bij een nieuwe regel doen bestaande kaarten opnieuw mee. */
 export const TAAL_VERSION = 1;
@@ -35,6 +35,7 @@ export async function healLanguage(limit = 3): Promise<number> {
     .slice(0, limit);
 
   let hersteld = 0;
+  const wijzigingen: TaalWijziging[] = [];
   for (const item of kandidaten) {
     try {
       const antwoord = await askModel({
@@ -53,7 +54,8 @@ export async function healLanguage(limit = 3): Promise<number> {
       const actie = typeof parsed.actie === "string" ? parsed.actie.trim() : "";
       const reden = typeof parsed.reden === "string" ? parsed.reden.trim() : "";
       const gevolg = typeof parsed.gevolg === "string" ? parsed.gevolg.trim() : "";
-      await setAssessmentTaal(item.conversationId, {
+      wijzigingen.push({
+        conversationId: item.conversationId,
         nextAction: actie || item.nextAction,
         priorityReason: reden || item.priorityReason || "",
         impact: gevolg || item.impact || undefined,
@@ -64,6 +66,7 @@ export async function healLanguage(limit = 3): Promise<number> {
       // Volgende ronde opnieuw.
     }
   }
+  await setAssessmentTalen(wijzigingen);
   return hersteld;
 }
 

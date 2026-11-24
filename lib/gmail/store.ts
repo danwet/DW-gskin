@@ -264,6 +264,19 @@ export async function storedMessageHtml(userId: string, messageId: string): Prom
   return row?.body_html ?? null;
 }
 
+/** De tekstversie van een opgeslagen bericht. */
+export async function storedMessageText(userId: string, messageId: string): Promise<string | null> {
+  const supabase = await dbClient();
+  const { data } = await supabase
+    .from("dw_gmail_messages")
+    .select("body")
+    .eq("user_id", userId)
+    .eq("message_id", messageId)
+    .maybeSingle();
+  const row = data as { body?: string | null } | null;
+  return row?.body ?? null;
+}
+
 export type StoredMessageKey = { message_id: string; thread_id: string };
 
 export async function listStoredMessages(userId: string): Promise<StoredMessageKey[]> {

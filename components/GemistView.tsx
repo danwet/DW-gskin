@@ -26,7 +26,6 @@ export function GemistView() {
                 <p className="shrink-0 text-[12px] text-[var(--muted)]">{item.fromEmail}</p>
               </div>
               <p className="mt-0.5 text-[13px] text-[var(--ink)]">{item.subject}</p>
-              {item.body ? <p className="mt-1 text-[12px] text-[var(--muted)]">{item.body.slice(0, 200)}</p> : null}
             </li>
           ))}
         </ul>

@@ -43,6 +43,7 @@ export function HandledView() {
   const inbox = useInbox();
   const [gekozen, setGekozen] = useState<MailAssessment | null>(null);
   const [gesprek, setGesprek] = useState<GesprekBericht[] | null>(null);
+  const [mailTekst, setMailTekst] = useState("");
   const [pagina, setPagina] = useState(0);
 
   // Alles wat de app als afgehandeld beschouwt: zelf afgevinkt, gearchiveerd of
@@ -55,6 +56,17 @@ export function HandledView() {
     if (!gekozen) return;
     let alive = true;
     setGesprek(null);
+    // De kaart bewaart de mailtekst niet meer; die halen we hier op.
+    const tekstVoor = gekozen.sourceMessageId;
+    setMailTekst("");
+    if (tekstVoor) {
+      void fetch(`/api/inbox/preview?tekst=1&id=${encodeURIComponent(tekstVoor)}`)
+        .then((r) => (r.ok ? r.text() : ""))
+        .then((tekst) => {
+          if (alive) setMailTekst(tekst);
+        })
+        .catch(() => undefined);
+    }
     void (async () => {
       try {
         const response = await fetch(
@@ -196,7 +208,7 @@ export function HandledView() {
             <section>
               <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">De mail</p>
               <p className="mt-2 line-clamp-6 text-[13px] leading-5 whitespace-pre-line text-[var(--ink)]">
-                {gekozen.body || "(geen tekst)"}
+                {mailTekst || "(geen tekst)"}
               </p>
             </section>
 

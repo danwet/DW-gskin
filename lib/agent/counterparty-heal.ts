@@ -1,6 +1,6 @@
 import "server-only";
 
-import { markCounterpartyChecked, readAssessments, setAssessmentCounterparty } from "./store";
+import { readAssessments, setAssessmentTegenpartijen, type TegenpartijWijziging } from "./store";
 import type { MailAssessment } from "./types";
 import { fetchGmailMessage } from "../gmail/fetch";
 import type { InboundMessage } from "./types";
@@ -75,11 +75,12 @@ export async function herstelTegenpartijen(
     .slice(0, limit);
 
   let hersteld = 0;
+  const wijzigingen: TegenpartijWijziging[] = [];
   for (const item of kandidaten) {
     const afzenders = await threadAfzenders(accessToken, item.conversationId);
     const ander = afzenders.find((entry) => entry.fromEmail !== owner);
     if (!ander) {
-      await markCounterpartyChecked(item.conversationId).catch(() => undefined);
+      wijzigingen.push({ conversationId: item.conversationId, gecontroleerd: true });
       continue;
     }
 
@@ -92,8 +93,14 @@ export async function herstelTegenpartijen(
     }
     if (berichten.length > 0) await saveMessages(userId, berichten).catch(() => undefined);
 
-    await setAssessmentCounterparty(item.conversationId, ander.from, ander.fromEmail);
+    wijzigingen.push({
+      conversationId: item.conversationId,
+      from: ander.from,
+      fromEmail: ander.fromEmail,
+      gecontroleerd: true,
+    });
     hersteld += 1;
   }
+  await setAssessmentTegenpartijen(wijzigingen);
   return hersteld;
 }

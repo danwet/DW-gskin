@@ -2,7 +2,7 @@ import "server-only";
 
 import { askModel } from "./classify";
 import { loadAgentConfig } from "./config";
-import { readAssessments, setAssessmentDeadline } from "./store";
+import { readAssessments, setAssessmentDeadlines, type DeadlineWijziging } from "./store";
 
 /** Bewijsversie: bij een nieuwe regel doen bestaande kaarten opnieuw mee. */
 export const DEADLINE_VERSION = 2;
@@ -38,6 +38,7 @@ export async function healDeadlines(limit = 3): Promise<number> {
     .slice(0, limit);
 
   let hersteld = 0;
+  const wijzigingen: DeadlineWijziging[] = [];
   for (const item of kandidaten) {
     try {
       const antwoord = await askModel({
@@ -62,11 +63,12 @@ export async function healDeadlines(limit = 3): Promise<number> {
         basis.setDate(basis.getDate() + 3);
         volgende = basis.toLocaleDateString("sv-SE");
       }
-      await setAssessmentDeadline(item.conversationId, volgende, DEADLINE_VERSION);
+      wijzigingen.push({ conversationId: item.conversationId, deadline: volgende, version: DEADLINE_VERSION });
       hersteld += 1;
     } catch {
       // Volgende ronde opnieuw.
     }
   }
+  await setAssessmentDeadlines(wijzigingen);
   return hersteld;
 }

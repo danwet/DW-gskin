@@ -687,17 +687,87 @@ export function setShortSubject(conversationId: string, shortSubject: string, ve
 
 /** Vult de uiterste betaaldatum aan op een bestaande factuurkaart. */
 /** Zet een andere uiterste datum op een kaart. */
-export function setAssessmentDeadline(conversationId: string, deadline: string, version: number): Promise<void> {
+/**
+ * Meerdere kaarten in één keer bijwerken: één keer lezen, één keer schrijven.
+ * De herstelrondes deden dit per kaart, en elke kaart betekende een volledige
+ * lees- en schrijfactie van het hele statusdocument.
+ */
+export type DeadlineWijziging = { conversationId: string; deadline: string; version: number };
+
+export function setAssessmentDeadlines(wijzigingen: DeadlineWijziging[]): Promise<void> {
+  if (wijzigingen.length === 0) return Promise.resolve();
   return withLock(async () => {
     const state = await readState();
-    const item = state.assessments[conversationId];
-    if (!item) return;
-    if (item.deadline === deadline && item.deadlineVersion === version) return;
-    item.deadline = deadline;
-    item.deadlineVersion = version;
-    await writeState(state);
+    let changed = false;
+    for (const { conversationId, deadline, version } of wijzigingen) {
+      const item = state.assessments[conversationId];
+      if (!item) continue;
+      if (item.deadline === deadline && item.deadlineVersion === version) continue;
+      item.deadline = deadline;
+      item.deadlineVersion = version;
+      changed = true;
+    }
+    if (changed) await writeState(state);
   });
 }
+
+export type TaalWijziging = {
+  conversationId: string;
+  nextAction: string;
+  priorityReason: string;
+  impact?: string;
+  version: number;
+};
+
+export function setAssessmentTalen(wijzigingen: TaalWijziging[]): Promise<void> {
+  if (wijzigingen.length === 0) return Promise.resolve();
+  return withLock(async () => {
+    const state = await readState();
+    let changed = false;
+    for (const w of wijzigingen) {
+      const item = state.assessments[w.conversationId];
+      if (!item) continue;
+      item.nextAction = w.nextAction;
+      item.priorityReason = w.priorityReason;
+      item.impact = w.impact;
+      item.languageVersion = w.version;
+      changed = true;
+    }
+    if (changed) await writeState(state);
+  });
+}
+
+export type TegenpartijWijziging = {
+  conversationId: string;
+  /** Alleen gezet als er echt een andere partij gevonden is. */
+  from?: string;
+  fromEmail?: string;
+  gecontroleerd: boolean;
+};
+
+export function setAssessmentTegenpartijen(wijzigingen: TegenpartijWijziging[]): Promise<void> {
+  if (wijzigingen.length === 0) return Promise.resolve();
+  return withLock(async () => {
+    const state = await readState();
+    let changed = false;
+    const nu = new Date().toISOString();
+    for (const w of wijzigingen) {
+      const item = state.assessments[w.conversationId];
+      if (!item) continue;
+      if (w.from && w.fromEmail) {
+        item.from = w.from;
+        item.fromEmail = w.fromEmail;
+        changed = true;
+      }
+      if (w.gecontroleerd) {
+        item.counterpartyCheckedAt = nu;
+        changed = true;
+      }
+    }
+    if (changed) await writeState(state);
+  });
+}
+
 
 /**
  * Iemand heeft na jouw antwoord weer geschreven: dan wacht er een persoon op
@@ -721,50 +791,8 @@ export function markReplyNeeded(conversationIds: string[]): Promise<void> {
   });
 }
 
-/** Naam van de andere partij op de kaart zetten (herstel na een lege thread). */
-export function setAssessmentCounterparty(
-  conversationId: string,
-  from: string,
-  fromEmail: string,
-): Promise<void> {
-  return withLock(async () => {
-    const state = await readState();
-    const item = state.assessments[conversationId];
-    if (!item) return;
-    if (item.from === from && item.fromEmail === fromEmail) return;
-    item.from = from;
-    item.fromEmail = fromEmail;
-    await writeState(state);
-  });
-}
 
-/** Onthoud dat we de tegenpartij al eens zochten, ook als het niets opleverde. */
-export function markCounterpartyChecked(conversationId: string): Promise<void> {
-  return withLock(async () => {
-    const state = await readState();
-    const item = state.assessments[conversationId];
-    if (!item) return;
-    item.counterpartyCheckedAt = new Date().toISOString();
-    await writeState(state);
-  });
-}
 
-/** Zet de Nederlandse labels van een kaart (taalherstel). */
-export function setAssessmentTaal(
-  conversationId: string,
-  next: { nextAction: string; priorityReason: string; impact?: string; version: number },
-): Promise<void> {
-  return withLock(async () => {
-    const state = await readState();
-    const item = state.assessments[conversationId];
-    if (!item) return;
-    item.nextAction = next.nextAction;
-    item.priorityReason = next.priorityReason;
-    item.impact = next.impact;
-    item.languageVersion = next.version;
-    await writeState(state);
-  });
-}
 
 /**
  * Kaarten waar de beoordeling en de indeling elkaar tegenspreken: werk dat bij
