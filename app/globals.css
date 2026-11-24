@@ -806,8 +806,9 @@ html:not(.dark) .segment-hover:hover {
 
 /* De sheet volgt het thema; in licht is hij wit met donkere inkt. */
 .sheet-licht {
-  /* Neutraal, net als de rest van de app: geen warme of groene zweem. */
-  --bg: #ffffff;
+  /* Het vlak van de sheet is de achtergrondkleur van de app; kaarten erin
+     blijven wit. */
+  --bg: #f7f7f7;
   --card: #ffffff;
   --ink: #1b1e21;
   --muted: #5c6267;

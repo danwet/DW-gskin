@@ -188,7 +188,7 @@ export function Modal({
           onDragEnd={bijVeeg}
           style={{ height: vasteHoogte ? "85dvh" : hoogte }}
           className={cn(
-            "sheet-licht relative flex w-full flex-col overflow-hidden rounded-t-[2.25rem] border border-hairline bg-[var(--card)] text-ink",
+            "sheet-licht relative flex w-full flex-col overflow-hidden rounded-t-[2.25rem] border border-hairline bg-[var(--bg)] text-ink",
           )}
         >
           {/* Bovenbalk: grabber, actie-pil links en de glazen sluitknop rechts.
