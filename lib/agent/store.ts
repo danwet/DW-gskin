@@ -422,6 +422,11 @@ export function upsertAssessments(updates: MailAssessment[]): Promise<MailAssess
           touched = true;
         }
         if (touched) state.meta.dailyChanges = changes;
+        // Een factuur die er al was mag een herbeoordeling niet wissen: dan
+        // verdwijnt de kaart uit Declareren terwijl er niets betaald is.
+        if (!update.invoice && existing.invoice) {
+          update.invoice = existing.invoice;
+        }
         // User decisions live in their own layer, so nothing to copy here.
         if (!isNewMessage) {
           update.needsAttention = existing.needsAttention;

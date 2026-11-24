@@ -176,7 +176,9 @@ export function TodayView() {
   );
   // A paid invoice that still has to be declared keeps its card, even though the
   // mail itself is already archived.
-  const declareItems = inbox.items.filter((item) => item.invoice && item.declaration === "pending");
+  // Alles wat op declareren staat hoort in dat tabblad, ook als de factuur-
+  // gegevens (nog) niet compleet zijn. Anders kan een kaart stil verdwijnen.
+  const declareItems = inbox.items.filter((item) => item.declaration === "pending");
   const missedItems = visibleItems.filter((item) => item.classification === "unclassified");
 
   return (

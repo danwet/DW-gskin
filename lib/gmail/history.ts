@@ -109,7 +109,11 @@ async function keepRecords(): Promise<{ threads: Set<string>; purchases: Set<str
   const threads = new Set<string>();
   const purchases = new Set<string>();
   for (const item of items) {
-    if (item.archivedAt || item.handledByUser || item.savedAt) threads.add(item.conversationId);
+    // Ook een declaratie is administratie: die kaart mag nooit verdwijnen
+    // omdat de mail uit de inbox is.
+    if (item.archivedAt || item.handledByUser || item.savedAt || item.declaration === "pending") {
+      threads.add(item.conversationId);
+    }
     if (item.purchase) purchases.add(item.conversationId);
   }
   return { threads, purchases };
