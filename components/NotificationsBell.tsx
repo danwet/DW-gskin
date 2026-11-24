@@ -13,6 +13,8 @@ import { focusTabFor, InboxModal } from "./InboxGrid";
 import { setFocusTab } from "@/lib/focus-tab";
 import type { MailAssessment } from "@/lib/agent/types";
 
+const PANEEL_BREEDTE = 256;
+
 export function NotificationsBell({
   items,
   newItems = [],
@@ -35,6 +37,9 @@ export function NotificationsBell({
   onInboxError?: (message: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const knopRef = useRef<HTMLButtonElement | null>(null);
+  /** Positie van het paneel: rechts tegen de kantlijn, pijl onder het icoon. */
+  const [plaats, setPlaat] = useState<{ top: number; right: number; pijl: number } | null>(null);
   const [selected, setSelected] = useState<MailAssessment | null>(null);
   const [desktop, setDesktop] = useState<NotificationPermission | "unsupported">("default");
   const [desktopWanted, setDesktopWanted] = useState(false);
@@ -58,6 +63,30 @@ export function NotificationsBell({
     window.addEventListener("focus", syncPermission);
     return () => window.removeEventListener("focus", syncPermission);
   }, [syncPermission]);
+
+  // Het paneel hangt vast aan het scherm: rechts tegen dezelfde kantlijn als de
+  // topbalk, met de pijl precies onder het icoon. Bij een maatwijziging opnieuw.
+  useEffect(() => {
+    if (!open) return;
+    const bereken = () => {
+      const knop = knopRef.current;
+      const rij = knop?.parentElement?.parentElement;
+      if (!knop || !rij) return;
+      const k = knop.getBoundingClientRect();
+      const r = rij.getBoundingClientRect();
+      const rechts = Math.max(12, Math.round(window.innerWidth - r.right));
+      const links = window.innerWidth - rechts - PANEEL_BREEDTE;
+      const pijl = Math.min(PANEEL_BREEDTE - 20, Math.max(20, Math.round(k.left + k.width / 2 - links)));
+      setPlaat({ top: Math.round(k.bottom + 10), right: rechts, pijl });
+    };
+    bereken();
+    window.addEventListener("resize", bereken);
+    window.addEventListener("scroll", bereken, { passive: true });
+    return () => {
+      window.removeEventListener("resize", bereken);
+      window.removeEventListener("scroll", bereken);
+    };
+  }, [open]);
 
   // Klik buiten de popup (en buiten de bel zelf) sluit hem.
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -83,6 +112,7 @@ export function NotificationsBell({
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
+        ref={knopRef}
         aria-label={`Notificaties (${count})`}
         aria-expanded={open}
         // !overflow-visible: de teller hangt boven de knop en mag niet afgeknipt
@@ -100,7 +130,17 @@ export function NotificationsBell({
       {open ? (
         <>
           <button type="button" aria-label="Sluiten" className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute top-10 right-0 z-50 w-[320px] rounded-2xl border border-[var(--line)] bg-[var(--card)] p-2 shadow-[var(--shadow)]">
+          <div
+            className="glas-paneel fixed z-50 rounded-3xl p-2"
+            style={
+              plaats
+                ? { top: plaats.top, right: plaats.right, width: PANEEL_BREEDTE }
+                : { top: 64, right: 24, width: PANEEL_BREEDTE }
+            }
+          >
+            {plaats ? (
+              <span className="glas-paneel-pijl" style={{ left: plaats.pijl }} aria-hidden />
+            ) : null}
             {items.length === 0 && !showNew ? (
               <p className="px-3 py-4 text-center text-[13px] text-[var(--muted)]">Geen notificaties.</p>
             ) : null}
@@ -112,7 +152,7 @@ export function NotificationsBell({
                 </p>
                 <ul className="max-h-[240px] overflow-y-auto">
                   {newItems.map((item) => (
-                    <li key={item.conversationId} className="border-t border-[var(--line)]">
+                    <li key={item.conversationId} className="border-t border-black/25 dark:border-[var(--line)]">
                       <button
                         type="button"
                         onClick={() => {
@@ -122,7 +162,7 @@ export function NotificationsBell({
                           setSelected(item);
                           onOpenNewItem?.(item);
                         }}
-                        className="focus-ring w-full rounded-lg px-3 py-2 text-left hover:bg-[var(--card)]"
+                        className="focus-ring w-full rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/[0.045] dark:hover:bg-white/10"
                       >
                         <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{item.from}</p>
                         <p className="truncate text-[12px] text-[var(--muted)]">{item.subject}</p>
@@ -138,14 +178,14 @@ export function NotificationsBell({
                 <p className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-[0.08em] text-[var(--muted)]">Gemiste berichten</p>
                 <ul className="max-h-[240px] overflow-y-auto">
                   {items.map((item) => (
-                    <li key={item.conversationId} className="border-t border-[var(--line)]">
+                    <li key={item.conversationId} className="border-t border-black/55 dark:border-[var(--line)]">
                       <button
                         type="button"
                         onClick={() => {
                           setSelected(item);
                           setOpen(false);
                         }}
-                        className="focus-ring w-full rounded-lg px-3 py-2 text-left hover:bg-[var(--card)]"
+                        className="focus-ring w-full rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/[0.045] dark:hover:bg-white/10"
                       >
                         <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{item.from}</p>
                         <p className="truncate text-[12px] text-[var(--muted)]">{item.subject}</p>
@@ -156,27 +196,10 @@ export function NotificationsBell({
               </>
             ) : null}
 
-            {(notificationsSupported() && !desktopActive) || showNew ? (
-              <div className="mt-2 rounded-xl border border-[var(--line)] bg-[var(--bg)] p-1">
-                {notificationsSupported() && !desktopActive ? (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      // Alleen een apparaatinstelling: nooit iets als gelezen
-                      // wegzetten en nooit de lijst of het bolletje verbergen.
-                      const result = await enableNotifications();
-                      setDesktop(result);
-                      setDesktopWanted(result === "granted");
-                    }}
-                    className="focus-ring flex w-full items-center justify-center rounded-lg px-3 py-1.5 text-center font-medium whitespace-nowrap text-[var(--muted)]"
-                    style={{ fontSize: "10px", lineHeight: "14px" }}
-                  >
-                    {desktop === "denied"
-                      ? "Meldingen geblokkeerd in de browser"
-                      : "Notificaties aanzetten"}
-                  </button>
-                ) : null}
-
+            {/* Eén regel onderaan: links "gelezen" afvinken, rechts het
+                belletje dat laat zien of meldingen aan staan. */}
+            {notificationsSupported() || showNew ? (
+              <div className="mt-2 flex items-center justify-between gap-2 border-t border-black/10 px-1 pt-2 dark:border-[var(--line)]">
                 {showNew ? (
                   <button
                     type="button"
@@ -184,10 +207,46 @@ export function NotificationsBell({
                       onMarkAllNewRead?.();
                       setOpen(false);
                     }}
-                    className="focus-ring flex w-full items-center justify-center rounded-lg px-3 py-1.5 text-center font-medium whitespace-nowrap text-[var(--muted)]"
-                    style={{ fontSize: "10px", lineHeight: "14px" }}
+                    title="Alles markeren als gelezen"
+                    className="focus-ring flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-medium text-[var(--muted)] hover:text-[var(--ink)]"
                   >
-                    Alles markeren als gelezen
+                    <CheckIcon />
+                    Gelezen
+                  </button>
+                ) : (
+                  <span aria-hidden />
+                )}
+
+                {notificationsSupported() ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      // Alleen een apparaatinstelling: nooit iets als gelezen
+                      // wegzetten en nooit de lijst of het bolletje verbergen.
+                      if (desktopActive) return;
+                      const result = await enableNotifications();
+                      setDesktop(result);
+                      setDesktopWanted(result === "granted");
+                    }}
+                    aria-label={
+                      desktop === "denied"
+                        ? "Meldingen zijn geblokkeerd in de browser"
+                        : desktopActive
+                          ? "Meldingen staan aan"
+                          : "Meldingen aanzetten"
+                    }
+                    title={
+                      desktop === "denied"
+                        ? "Geblokkeerd in de browser"
+                        : desktopActive
+                          ? "Meldingen staan aan"
+                          : "Meldingen aanzetten"
+                    }
+                    className={`focus-ring grid h-7 w-7 place-items-center rounded-full ${
+                      desktopActive ? "text-[var(--ink)]" : "text-[var(--muted)] hover:text-[var(--ink)]"
+                    }`}
+                  >
+                    {desktopActive ? <BellIcon /> : <BellOffIcon />}
                   </button>
                 ) : null}
               </div>
@@ -211,6 +270,26 @@ export function NotificationsBell({
         />
       ) : null}
     </div>
+  );
+}
+
+/** Vinkje voor de "gelezen"-actie. */
+function CheckIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+/** Bel met een streep erdoor: meldingen staan uit of zijn geblokkeerd. */
+function BellOffIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+      <path d="M3 3l18 18" />
+    </svg>
   );
 }
 

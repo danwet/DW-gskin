@@ -562,6 +562,61 @@ html:not(.dark) .menu-actief:hover {
   filter: none;
 }
 
+/* Uitklappaneel: hetzelfde glas als de knoppen, maar met een lichte blur zodat
+   de tekst eronder onscherp wordt en het paneel leesbaar blijft. */
+.glas-paneel {
+  /* Iets dichter dan het knoppenglas: een uitklap met tekst moet leesbaar
+     blijven, dus meer vulling en minder doorzicht. */
+  background-color: rgba(148, 163, 184, 0.30);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.97) 0%,
+    rgba(255, 255, 255, 0.62) 14%,
+    rgba(232, 237, 244, 0.55) 55%,
+    rgba(255, 255, 255, 0.64) 100%
+  );
+  -webkit-backdrop-filter: blur(9px) saturate(1.3);
+  backdrop-filter: blur(9px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 10px 28px rgba(16, 24, 40, 0.12);
+}
+
+.dark .glas-paneel {
+  background-color: rgba(32, 38, 48, 0.72);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0.03) 60%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+/* Het puntje boven het paneel, zodat je ziet dat het uit het icoon komt. */
+.glas-paneel-pijl {
+  position: absolute;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%) rotate(45deg);
+  border-top-left-radius: 3px;
+  border-top: 1px solid rgba(255, 255, 255, 0.85);
+  border-left: 1px solid rgba(255, 255, 255, 0.85);
+  background-color: rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+}
+
+.dark .glas-paneel-pijl {
+  border-top-color: rgba(255, 255, 255, 0.18);
+  border-left-color: rgba(255, 255, 255, 0.18);
+  background-color: rgba(40, 47, 59, 0.95);
+}
+
 /* Secundaire actie: transparant wit Liquid Glass met neutrale contour. */
 .btn-secondary {
   background: var(--btn-secondary-bg);
