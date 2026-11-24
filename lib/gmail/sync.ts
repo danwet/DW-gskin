@@ -413,7 +413,10 @@ async function importSentReplies(userId: string, refreshToken: string): Promise<
   if (!page.ok || page.ids.length === 0) return 0;
 
   const known = new Set((await listStoredMessages(userId)).map((row) => row.message_id));
-  const fresh = page.ids.filter((id) => !known.has(id)).slice(0, 10);
+  // Wat je zelf uit de inbox haalde of wat is opgeruimd, komt hier niet terug:
+  // anders staat er elke vijf minuten "2 gelezen" zonder dat er mail is.
+  const verborgen = new Set((await readMeta()).hiddenMessageIds ?? []);
+  const fresh = page.ids.filter((id) => !known.has(id) && !verborgen.has(id)).slice(0, 10);
   if (fresh.length === 0) return 0;
 
   // Een antwoord uit een andere mailclient krijgt soms een eigen thread-id.
