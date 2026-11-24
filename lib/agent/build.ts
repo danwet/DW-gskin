@@ -233,6 +233,11 @@ export function withInvoiceAmount(nextAction: string, amount?: number | null, cu
  * Keeps the action label consistent with the structured invoice data: when the
  * amount is unknown, a number must not leak into the action text.
  */
+/** "Geen actie", "No action" en varianten: niets doen. */
+function geenActie(text: string | undefined): boolean {
+  return /^\s*(geen actie|no action|niets te doen|niets|none)\s*[.!]?\s*$/i.test(text ?? "");
+}
+
 export function normalizeNextAction(nextAction: string, invoiceAmount?: number | null): string {
   const text = (nextAction ?? "").trim();
   if (!text) return "Bekijk deze mail.";
@@ -392,7 +397,13 @@ export function buildAssessment(
         ? (invoiceTier(invoice as InvoiceAssessment) ?? draft.tier)
         : draft.tier,
     nextAction: withInvoiceAmount(
-      normalizeNextAction(draft.nextAction || "Bekijk deze mail.", invoice?.amount),
+      // 'Geen actie' kan niet samengaan met werk dat bij jou ligt.
+      normalizeNextAction(
+        geenActie(draft.nextAction) && draft.classification !== "info" && draft.classification !== "waiting"
+          ? "Beoordeel deze mail."
+          : draft.nextAction || "Bekijk deze mail.",
+        invoice?.amount,
+      ),
       invoice?.amount,
       invoice?.currency,
     ),

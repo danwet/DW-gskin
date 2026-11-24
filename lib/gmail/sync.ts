@@ -4,6 +4,7 @@ import { buildAssessment, groupByConversation } from "../agent/build";
 import { classifyConversation } from "../agent/classify";
 import { loadAgentConfig, type ProviderId } from "../agent/config";
 import {
+  corrigeerTegenstrijdigheden,
   markArchivedByAgent,
   readAssessments,
   readMeta,
@@ -32,6 +33,7 @@ import {
   markThreadTriaged,
   setMessageHtml,
   saveMessages,
+  startImport,
   updateImportState,
   type ImportPhase,
 } from "./store";
@@ -541,7 +543,13 @@ export async function syncStep(
   progress: SyncProgress;
   error?: string;
 }> {
-  const state = await getImportState(userId);
+  let state = await getImportState(userId);
+  // Een run zonder importstatus (nieuwe koppeling, of een andere id dan waar de
+  // status staat) hoort niet als fout te eindigen: begin dan gewoon opnieuw.
+  if (!state) {
+    await startImport(userId).catch(() => undefined);
+    state = await getImportState(userId);
+  }
   let imported = 0;
   let error: string | undefined;
 
@@ -579,6 +587,8 @@ export async function syncStep(
   await healDeadlines().catch(() => 0);
   // Kaarten die het model in de taal van de mail schreef, alsnog Nederlands maken.
   await healLanguage().catch(() => 0);
+  // Kaarten waar beoordeling en indeling elkaar tegenspreken rechtzetten.
+  await corrigeerTegenstrijdigheden().catch(() => 0);
 
   // Order mail whose status is now stored goes to the archive by itself.
   const autoArchived = await archiveProcessedOrders(userId, refreshToken).catch(() => 0);

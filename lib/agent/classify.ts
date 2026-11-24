@@ -297,7 +297,16 @@ export function normalizeDraft(value: unknown): AssessmentDraft {
     category,
     shortSubject: str(row.shortSubject) || undefined,
     viaModel: true,
-    tier: tier ?? (classification === "info" ? "hoeft_niet" : classification === "waiting" ? "mag" : "mag"),
+    // De tier moet bij de beoordeling passen: werk dat bij jou ligt hoort nooit
+    // in "hoeft niet", ook niet als het model dat zelf zegt.
+    tier:
+      classification === "info"
+        ? "hoeft_niet"
+        : classification === "waiting"
+          ? "mag"
+          : tier === "moet"
+            ? "moet"
+            : "mag",
     nextAction: str(row.nextAction),
     priorityReason: str(row.priorityReason),
     deadline: normalizeDate(row.deadline),

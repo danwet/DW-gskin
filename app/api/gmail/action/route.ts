@@ -91,6 +91,9 @@ export async function POST(request: Request) {
   // request must still report success, because the mail really is archived.
   let cleanupError: string | null = null;
   try {
+    // Onthoud dat deze berichten bewust weg zijn: anders haalt de volgende
+    // importronde ze terug en staat de kaart er even later weer.
+    await rememberHiddenMessages(ids).catch(() => null);
     // One write: store the undo snapshot and drop the card(s).
     await applyArchiveCleanup({ conversationId, action, messageIds: ids, assessment, keepSnapshot: true });
     // Bij archiveren blijft de kaart bestaan (voor Afgehandeld); de berichtrijen

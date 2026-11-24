@@ -708,6 +708,29 @@ export function setAssessmentTaal(
   });
 }
 
+/**
+ * Kaarten waar de beoordeling en de indeling elkaar tegenspreken: werk dat bij
+ * jou ligt hoort niet in "hoeft niet" en niet op "Geen actie". Geen modelcall
+ * nodig, dit is een consistentie-regel.
+ */
+export async function corrigeerTegenstrijdigheden(): Promise<number> {
+  return withLock(async () => {
+    const state = await readState();
+    let aangepast = 0;
+    for (const item of Object.values(state.assessments)) {
+      if (item.classification !== "action_needed" && item.classification !== "reply_needed") continue;
+      const leeg = /^\s*(geen actie|no action|niets te doen|niets|none)\s*[.!]?\s*$/i.test(item.nextAction ?? "");
+      const verkeerdeTier = item.tier === "hoeft_niet";
+      if (!leeg && !verkeerdeTier) continue;
+      if (leeg) item.nextAction = "Beoordeel deze mail.";
+      if (verkeerdeTier) item.tier = "mag";
+      aangepast += 1;
+    }
+    if (aangepast > 0) await writeState(state);
+    return aangepast;
+  });
+}
+
 export function setInvoiceDueDate(
   conversationId: string,
   dueDate: string,
