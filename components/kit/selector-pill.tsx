@@ -101,9 +101,18 @@ export function SelectorPill<T extends string>({
                 className={cn(
                   "group relative t-meta h-8 min-w-0 whitespace-nowrap rounded-full transition-colors",
                   !vullend && zes && "cat-dicht",
-                  // Alle labels even zwaar: het actieve label onderscheidt zich
-                  // door de glazen druppel en de kleur, niet door dikte.
-                  actief ? "font-normal! text-black" : "font-normal! text-ink-muted hover:text-ink",
+                  // Alle labels even zwaar; de kleuren zijn omgedraaid: het
+                  // actieve label is gedempt en de rest staat zwart, zodat de
+                  // glazen druppel zelf het verschil maakt.
+                  // In elk thema hetzelfde idee: het actieve label is gedempt,
+                  // de rest staat op de volle tekstkleur. `text-ink` doet dat
+                  // per thema goed (donker op licht, licht op donker); een
+                  // vaste zwartwaarde werd onleesbaar in dark mode.
+                  actief
+                    ? "font-normal! text-ink-muted"
+                    // Hover doet hetzelfde als de kleurwissel: het label zakt
+                    // naar de gedempte tint.
+                    : "font-normal! text-ink hover:text-ink-muted",
                 )}
               >
                 {actief && <GlasDruppel layoutId={druppelId} className="inset-0" />}
@@ -120,7 +129,9 @@ export function SelectorPill<T extends string>({
                           // Inactief: bij hover licht de cirkel mee op met het
                           // label, anders blijft hij achter.
                           : !actief
-                            ? "border-[var(--muted)]/60 text-[var(--muted)] group-hover:border-[var(--ink)] group-hover:text-[var(--ink)]"
+                            // Ook hier omgedraaid: de inactieve teller staat
+                            // op de volle tekstkleur, de actieve op de gedempte.
+                            ? "border-[var(--ink)] text-[var(--ink)] group-hover:border-[var(--muted)] group-hover:text-[var(--muted)]"
                           : actief
                             // Zelfde kleur als het label: de cirkel en het
                             // cijfer erven de tekstkleur van de actieve pil.

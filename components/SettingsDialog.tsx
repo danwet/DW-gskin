@@ -205,9 +205,10 @@ export function SettingsDialog() {
                 aria-current={category === item.id ? "page" : undefined}
                 className={`focus-ring shrink-0 py-2.5 pr-3 pl-5 text-left text-[14px] whitespace-nowrap ${
                   category === item.id
-                    // Zelfde glas als de actieknoppen en het actieve menu-item.
-                    ? "btn-primary rounded-full"
-                    : "rounded-full text-[var(--ink)]/85 hover:bg-[var(--bg)]"
+                    // Zelfde glas én dezelfde gedempte tint als het actieve
+                    // menu-item en het actieve label in de focus-selectie.
+                    ? "btn-primary menu-actief !text-[var(--muted-app)] rounded-full"
+                    : "rounded-full text-[var(--ink)]/85 hover:text-[var(--muted-app)]"
                 }`}
               >
                 {item.label}

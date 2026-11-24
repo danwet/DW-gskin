@@ -16,6 +16,9 @@
   /* Tekst: neutraal */
   --ink: #1b1e21;
   --muted: #5c6267;
+  /* Dezelfde tint, maar niet overschreven binnen een sheet. Nodig om menu's in
+     een sheet dezelfde kleur te geven als de rest van de app. */
+  --muted-app: #5c6267;
   --faint: #8b9095;
 
   /* Lijnen */
@@ -102,6 +105,7 @@
 
   --ink: #f3f5f8;
   --muted: #b6beca;
+  --muted-app: #b6beca;
   --faint: #7e8795;
 
   --line: rgba(224, 232, 245, 0.14);
@@ -448,6 +452,35 @@ button {
   transition: background-color 120ms ease, box-shadow 120ms ease, filter 120ms ease;
 }
 
+
+/* ---------- Licht mode: één glasreceptuur ---------- */
+/* De actieve pill in de balk is het uitgangspunt: fel wit bovenin, een
+   doorschijnende buik met een koele tint, een heldere rim en een schaduw die
+   hem optilt. Alle glasvlakken volgen diezelfde opbouw, zodat knoppen,
+   menubalk, chips en de selectie als één familie lezen. Donker mode houdt zijn
+   eigen receptuur. */
+html:not(.dark) .btn-primary,
+html:not(.dark) .btn-secondary,
+html:not(.dark) .glass-chip,
+html:not(.dark) .glas-selectie {
+  background-color: rgba(148, 163, 184, 0.14);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.42) 14%,
+    rgba(226, 232, 241, 0.30) 55%,
+    rgba(255, 255, 255, 0.46) 100%
+  );
+  -webkit-backdrop-filter: blur(22px) saturate(1.9);
+  backdrop-filter: blur(22px) saturate(1.9);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(120, 132, 152, 0.35),
+    0 1px 1px rgba(16, 24, 40, 0.05),
+    0 3px 8px rgba(16, 24, 40, 0.04);
+}
+
 /* Donker mode: de rand wordt daar wit in plaats van donker. */
 .dark .btn-primary {
   background-color: rgba(255, 255, 255, 0.08);
@@ -465,6 +498,53 @@ button {
     inset 0 0 0 1px rgba(255, 255, 255, 0.12),
     0 1px 2px rgba(0, 0, 0, 0.35),
     0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Uitgangspunt voor al het glas in licht mode: de glans die je eerst alleen bij
+   hover zag, staat er standaard op en hover maakt het vlak een fractie
+   donkerder in plaats van lichter. */
+html:not(.dark) .btn-primary::before,
+html:not(.dark) .btn-secondary::before,
+html:not(.dark) .glass-chip::before,
+html:not(.dark) .menu-actief::before {
+  opacity: 1;
+}
+
+/* De selectiebalk hoort bij dezelfde familie: dezelfde lichtvang als de
+   knoppen, standaard zichtbaar. */
+html:not(.dark) .glas-balk::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.26) 0%,
+    rgb(255 255 255 / 0) 50%,
+    rgb(255 255 255 / 0.10) 100%
+  );
+  pointer-events: none;
+}
+
+/* Zelfde helderheid als de knoppen, maar zonder hover-reactie: de balk is een
+   houder, geen knop. */
+html:not(.dark) .glas-balk {
+  filter: brightness(1.02);
+}
+
+html:not(.dark) .btn-primary,
+html:not(.dark) .btn-secondary,
+html:not(.dark) .glass-chip,
+html:not(.dark) .menu-actief {
+  filter: brightness(1.02);
+}
+
+html:not(.dark) .btn-primary:hover,
+html:not(.dark) .btn-secondary:hover,
+html:not(.dark) .glass-chip:hover,
+html:not(.dark) .menu-actief:hover {
+  filter: brightness(0.985);
 }
 
 .btn-primary:hover {
@@ -760,7 +840,7 @@ button {
   box-shadow:
     inset 0 1.5px 3px rgb(255 255 255 / 0.55),
     inset 0 0 0 1px rgb(255 255 255 / 0.5),
-    0 8px 24px rgb(0 0 0 / 0.08);
+    0 3px 10px rgb(0 0 0 / 0.05);
 }
 
 /* Op een witte sheet valt de grijze rand te zwaar op: binnen een dialoog lichter. */

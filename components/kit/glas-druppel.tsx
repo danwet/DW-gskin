@@ -26,12 +26,17 @@ const GROOT_MS = 140;
 const RUST_VULLING =
   "linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.35) 14%, rgba(255,255,255,0.16) 55%, rgba(255,255,255,0.35) 100%)";
 
+// Light variant van de donkere pil: exact dezelfde opbouw (fel wit bovenin,
+// doorzichtige buik, lichte onderrand) maar met een iets koelere tint in de
+// buik, zodat hij op een bijna-witte balk toch als glas leest.
 const RUST_VULLING_LICHT =
-  "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.18) 8%, rgba(190,192,198,0.08) 35%, rgba(199,201,207,0.07) 65%, rgba(255,255,255,0.3) 100%)";
+  "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.42) 14%, rgba(226,232,241,0.30) 55%, rgba(255,255,255,0.46) 100%)";
 
 /** Licht mode: dezelfde schaduw als .btn-primary in licht mode. */
+// Zelfde vier lagen als donker mode, met de rollen omgedraaid: heldere rand
+// boven, donkere rand onder, rim en een schaduw die hem optilt.
 const RUST_SCHADUW_LICHT =
-  "inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(255,255,255,0.6), inset 0 0 0 1px rgba(255,255,255,0.5), 0 2px 4px rgba(16,24,40,0.14), 0 10px 24px rgba(16,24,40,0.12)";
+  "inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(120,132,152,0.35), inset 0 0 0 1px rgba(255,255,255,0.85), 0 1px 1px rgba(16,24,40,0.05), 0 3px 8px rgba(16,24,40,0.04)";
 
 /** Tijdens de overgang: doorschijnend wit glas, met dezelfde stopstructuur. */
 const GLAS_VULLING =
@@ -119,7 +124,13 @@ export function GlasDruppel({
           // In donker mode een lichte ondergrond onder het verloop, net als de
           // menukeuze: zo blijft de pil licht en de donkere tekst leesbaar.
           // Zelfde ondertint als .btn-primary: 0.08 in donker, 0.06 in licht.
-          backgroundColor: bezig ? undefined : donker ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.06)",
+          backgroundColor: bezig
+            ? undefined
+            : donker
+              ? "rgba(255,255,255,0.08)"
+              : // Een heel lichte grijze tint: daardoor leest de pil als glas op
+                // een witte balk in plaats van als een wit vlak.
+                "rgba(148,163,184,0.14)",
           boxShadow: bezig ? GLAS_SCHADUW : rustSchaduw,
         }}
         style={{
