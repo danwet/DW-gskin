@@ -74,17 +74,17 @@ export function NotificationsBell({
       if (!knop || !rij) return;
       const k = knop.getBoundingClientRect();
 
-      // Staat er een rechterkolom, dan hangt het paneel daar gecentreerd boven
-      // en mag het breder zijn; anders valt het terug op rechts uitlijnen.
+      // Het paneel blijft tegen de rechterkantlijn staan. De rechterkolom geeft
+      // alleen de breedte: zo is het paneel even ruim als die kolom.
       const kolom = document.querySelector('[data-kolom="rechts"]')?.getBoundingClientRect();
-      // Iets breder dan de kolom zelf, zodat het paneel niet benauwd staat.
       const breedte = kolom && kolom.width > 220
         ? Math.round(Math.min(kolom.width - 20, 480))
         : PANEEL_BREEDTE;
-      const links = kolom && kolom.width > 220
-        ? Math.round(kolom.left + (kolom.width - breedte) / 2)
-        : Math.round(rij.getBoundingClientRect().right - breedte);
-      const rechts = Math.max(12, Math.round(window.innerWidth - (links + breedte)));
+      const kantlijn = kolom && kolom.width > 220
+        ? Math.round(kolom.right)
+        : Math.round(rij.getBoundingClientRect().right);
+      const links = kantlijn - breedte;
+      const rechts = Math.max(12, Math.round(window.innerWidth - kantlijn));
       const pijl = Math.min(breedte - 20, Math.max(20, Math.round(k.left + k.width / 2 - links)));
       setPlaat({ top: Math.round(k.bottom + 10), right: rechts, pijl, breedte });
     };
