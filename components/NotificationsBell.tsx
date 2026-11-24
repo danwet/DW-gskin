@@ -78,7 +78,7 @@ export function NotificationsBell({
       // alleen de breedte: zo is het paneel even ruim als die kolom.
       const kolom = document.querySelector('[data-kolom="rechts"]')?.getBoundingClientRect();
       const breedte = kolom && kolom.width > 220
-        ? Math.round(Math.min(kolom.width - 20, 480))
+        ? Math.round(Math.min(kolom.width - 25, 480))
         : PANEEL_BREEDTE;
       const kantlijn = kolom && kolom.width > 220
         ? Math.round(kolom.right)
@@ -138,7 +138,14 @@ export function NotificationsBell({
 
       {open ? (
         <>
-          <button type="button" aria-label="Sluiten" className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          {/* Achtergrond die het paneel sluit; geen handje als cursor, want hier
+              is niets om op te klikken behalve sluiten. */}
+          <button
+            type="button"
+            aria-label="Sluiten"
+            className="fixed inset-0 z-40 !cursor-default"
+            onClick={() => setOpen(false)}
+          />
           <div
             className="glas-paneel fixed z-50 rounded-3xl p-2"
             style={
