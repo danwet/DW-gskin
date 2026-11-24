@@ -9,6 +9,7 @@ import { notificationPermission, showMailNotification, wantedOnThisDevice } from
 import { Avatar, Card, CardHeading } from "./ui";
 import { useApp } from "./AppProvider";
 import { enqueueMailAction } from "@/lib/actie-wachtrij";
+import { speelNotificatieGeluid } from "@/lib/geluid";
 
 export type PendingMessage = {
   conversationId: string;
@@ -487,6 +488,8 @@ export function useInbox() {
     const fresh = newItems.filter((item) => !announced.current?.has(item.conversationId));
     if (fresh.length === 0) return;
     for (const item of fresh) announced.current.add(item.conversationId);
+    // Eén keer per nieuwe melding: het belletje.
+    speelNotificatieGeluid();
     showMailNotification({
       from: fresh[0].from,
       subject: fresh[0].subject,

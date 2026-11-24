@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { speelNotificatieGeluid } from "@/lib/geluid";
 import type { MailAssessment } from "@/lib/agent/types";
 
 const SLEUTEL = "dw-notifications-v1";
@@ -55,6 +56,22 @@ export function useNotificaties(actief: boolean) {
   }, [actief, laad]);
 
   const gemist = items.filter((item) => item.classification === "unclassified");
+  // Op schermen zonder inbox: ook hier een belletje bij een nieuwe melding.
+  const gezien = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (!stand.since) return;
+    const nieuw = items
+      .filter((item) => item.receivedAt > stand.since!)
+      .map((item) => item.conversationId);
+    if (gezien.current === null) {
+      gezien.current = new Set(nieuw);
+      return;
+    }
+    const fris = nieuw.filter((id) => !gezien.current?.has(id));
+    if (fris.length === 0) return;
+    for (const id of fris) gezien.current.add(id);
+    speelNotificatieGeluid();
+  }, [items, stand.since]);
   const nieuw = stand.since
     ? items
         .filter((item) => !item.archivedAt && !item.savedAt)

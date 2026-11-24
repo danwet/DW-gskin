@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { speelNotificatieGeluid } from "@/lib/geluid";
 import {
   enableNotifications,
   notificationPermission,
@@ -126,12 +125,7 @@ export function NotificationsBell({
     <div ref={rootRef} className="relative">
       <button
         type="button"
-        onClick={() => {
-          // Tijdelijk testpunt: hier horen we het geluid bij de klik. Later
-          // verhuist dit naar het moment dat er een nieuwe melding binnenkomt.
-          speelNotificatieGeluid();
-          setOpen((value) => !value);
-        }}
+        onClick={() => setOpen((value) => !value)}
         ref={knopRef}
         aria-label={`Notificaties (${count})`}
         aria-expanded={open}
