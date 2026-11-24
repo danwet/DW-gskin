@@ -13,7 +13,7 @@ import { focusTabFor, InboxModal } from "./InboxGrid";
 import { setFocusTab } from "@/lib/focus-tab";
 import type { MailAssessment } from "@/lib/agent/types";
 
-const PANEEL_BREEDTE = 256;
+const PANEEL_BREEDTE = 241;
 
 export function NotificationsBell({
   items,
