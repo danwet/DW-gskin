@@ -132,6 +132,10 @@ async function pruneMissing(userId: string, accessToken: string): Promise<number
     )
     .map((row) => row.message_id);
   if (gone.length === 0) return 0;
+  // Onthoud wat hier wordt opgeruimd, anders haalt de recente-import het er
+  // elke ronde opnieuw in: dan staat er elke vijf minuten "2 gelezen" in het
+  // logboek terwijl er niets nieuws is.
+  await rememberHiddenMessages(gone).catch(() => undefined);
   const emptied = await purgeMessages(userId, gone);
   await removeAssessments(
     emptied.filter((id) => !archived.has(id) && !bewaard.threads.has(id) && !bewaard.purchases.has(id)),
