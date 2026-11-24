@@ -458,7 +458,6 @@ export function ScanView() {
                   <div>
                     <label className={labelClass} htmlFor="scan-due">Uiterste betaaldatum *</label>
                     <input id="scan-due" type="date" className={inputClass} value={form.dueDate} onChange={(e) => field("dueDate", e.target.value)} required />
-                    <p className="mt-1 text-[12px] text-[var(--muted)]">{form.dueDateSource || "Vul de vervaldatum in."}</p>
                   </div>
                   <div>
                     <label className={labelClass} htmlFor="scan-iban">IBAN</label>
@@ -482,7 +481,12 @@ export function ScanView() {
 
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+              {!dueValid ? (
+                <p className="mb-3 text-center text-[12px] font-medium text-[var(--danger)]">
+                  Vul een geldige uiterste betaaldatum in om op te slaan.
+                </p>
+              ) : null}
+              <div className="flex flex-wrap items-center justify-center gap-3">
                 <button
                   type="button"
                   onClick={() => void save()}
@@ -494,7 +498,6 @@ export function ScanView() {
                 <button type="button" onClick={reset} className="focus-ring rounded-full px-4 py-2.5 text-[13px] text-[var(--muted)]">
                   Annuleren
                 </button>
-                {!dueValid ? <p className="text-[12px] text-[var(--muted)]">Vul een geldige uiterste betaaldatum in om op te slaan.</p> : null}
                 {error ? <p className="text-[13px] text-[var(--danger)]">{error}</p> : null}
               </div>
             </section>
