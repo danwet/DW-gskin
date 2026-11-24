@@ -22,6 +22,7 @@ import { backfillSavedVerdicts } from "../agent/saved-verdict";
 import { backfillShortSubjects } from "../agent/short-subject";
 import { healDeadlines } from "../agent/deadline-heal";
 import { healLanguage } from "../agent/taal-heal";
+import { healCounterparty } from "../agent/counterparty-heal";
 import { reconcileGmailHistory } from "./history";
 import { archiveGmailMessage, markGmailMessageRead } from "./actions";
 import {
@@ -592,6 +593,12 @@ export async function syncStep(
   await healLanguage().catch(() => 0);
   // Kaarten waar beoordeling en indeling elkaar tegenspreken rechtzetten.
   await corrigeerTegenstrijdigheden().catch(() => 0);
+  // Kaarten met je eigen naam erop: haal het gesprek bij Gmail op en naam ze
+  // naar de andere partij, zodat de geschiedenis weer compleet is.
+  const heelToken = await refreshGoogleAccessToken(refreshToken).catch(() => null);
+  if (heelToken) {
+    await healCounterparty(userId, heelToken.access_token, ownerEmail).catch(() => 0);
+  }
 
   // Order mail whose status is now stored goes to the archive by itself.
   const autoArchived = await archiveProcessedOrders(userId, refreshToken).catch(() => 0);

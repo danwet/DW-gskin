@@ -94,8 +94,8 @@ export function HandledView() {
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="bg-[var(--bg)] text-[11px] tracking-[0.12em] text-[var(--muted)] uppercase">
+                <th className="px-4 py-2.5 font-medium">Afzender</th>
                 <th className="px-4 py-2.5 font-medium">Onderwerp</th>
-                <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Afzender</th>
                 <th className="hidden px-4 py-2.5 font-medium md:table-cell">Soort</th>
                 <th className="px-4 py-2.5 text-right font-medium">Afgehandeld</th>
               </tr>
@@ -107,18 +107,19 @@ export function HandledView() {
                   onClick={() => setGekozen(item)}
                   className="cursor-pointer border-t border-[var(--line)] align-top transition-colors hover:bg-[var(--bg)]"
                 >
+                  <td className="px-4 py-3 text-[13px] text-[var(--ink)]">
+                    {item.from}
+                  </td>
                   <td className="px-4 py-3">
                     <p className="line-clamp-1 text-[14px] font-medium text-[var(--ink)]">
                       {item.shortSubject || item.subject}
                     </p>
-                    <p className="mt-0.5 truncate text-[12px] text-[var(--muted)]">
-                      {item.from}
-                      {/* Het factuurnummer hoort zichtbaar te zijn: daar zoek je
-                          een factuur later op terug. */}
-                      {item.invoice?.invoiceNumber ? ` · ${item.invoice.invoiceNumber}` : ""}
-                    </p>
+                    {item.invoice?.invoiceNumber ? (
+                      // Het factuurnummer hoort zichtbaar te zijn: daar zoek je
+                      // een factuur later op terug.
+                      <p className="mt-0.5 truncate text-[12px] text-[var(--muted)]">{item.invoice.invoiceNumber}</p>
+                    ) : null}
                   </td>
-                  <td className="hidden px-4 py-3 text-[13px] text-[var(--muted)] sm:table-cell">{item.from}</td>
                   <td className="hidden px-4 py-3 text-[13px] text-[var(--muted)] md:table-cell">{soortLabel(item)}</td>
                   <td className="px-4 py-3 text-right text-[13px] whitespace-nowrap text-[var(--muted)]">
                     {datum(afgehandeldOp(item))}

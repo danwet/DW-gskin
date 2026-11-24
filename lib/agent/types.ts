@@ -104,6 +104,8 @@ export type MailAssessment = {
   deadlineVersion?: number;
   /** Bewijsversie van het taalherstel: kaarten van vóór de Nederlandse regel. */
   languageVersion?: number;
+  /** Wanneer we voor het laatst de tegenpartij bij Gmail zochten. */
+  counterpartyCheckedAt?: string;
 
   classification: AgentClassification;
   nextAction: string;

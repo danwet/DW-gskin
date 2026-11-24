@@ -7,6 +7,10 @@ import { judgeSavedConversation } from "@/lib/agent/saved-verdict";
 import { runMailAgent } from "@/lib/agent/pipeline";
 import type { MailAssessment } from "@/lib/agent/types";
 import { resolveGmailConnection } from "@/lib/gmail/connection";
+import { vulTegenpartij } from "@/lib/agent/tegenpartij";
+import { herstelTegenpartijen } from "@/lib/agent/counterparty-heal";
+import { gmailRefreshTokenState } from "@/lib/gmail/connection";
+import { refreshGoogleAccessToken } from "@/lib/google-token";
 import { getSyncProgress, type SyncProgress } from "@/lib/gmail/sync";
 
 export const dynamic = "force-dynamic";
@@ -76,7 +80,30 @@ export async function GET() {
       // opgeslagen mail, zodat de kaart op eigen gegevens wordt ingedeeld.
       const items = await healInvoiceDueDates(user.id, raw);
 
-      return Response.json({ items, pending: [], progress, meta, model, gmail: connection, undoable: Boolean(meta.lastAction) });
+      // De afzenderkolom toont altijd de andere partij. Voor kaarten waar je
+      // eigen naam op staat halen we het gesprek bij Gmail op en zetten we het
+      // meteen goed, zodat de lijst niet op een sync hoeft te wachten.
+      const tokenState = await gmailRefreshTokenState(user.id).catch(() => null);
+      if (connection && tokenState?.ok) {
+        const token = await refreshGoogleAccessToken(tokenState.token).catch(() => null);
+        if (token) {
+          await herstelTegenpartijen(user.id, token.access_token, connection.email, items, 3).catch(
+            () => 0,
+          );
+        }
+      }
+
+      const metTegenpartij = await vulTegenpartij(user.id, items, connection?.email);
+
+      return Response.json({
+        items: metTegenpartij,
+        pending: [],
+        progress,
+        meta,
+        model,
+        gmail: connection,
+        undoable: Boolean(meta.lastAction),
+      });
     }
 
     // Fixtures: seed the demo data on first use when the store has never run.

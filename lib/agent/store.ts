@@ -721,6 +721,34 @@ export function markReplyNeeded(conversationIds: string[]): Promise<void> {
   });
 }
 
+/** Naam van de andere partij op de kaart zetten (herstel na een lege thread). */
+export function setAssessmentCounterparty(
+  conversationId: string,
+  from: string,
+  fromEmail: string,
+): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    const item = state.assessments[conversationId];
+    if (!item) return;
+    if (item.from === from && item.fromEmail === fromEmail) return;
+    item.from = from;
+    item.fromEmail = fromEmail;
+    await writeState(state);
+  });
+}
+
+/** Onthoud dat we de tegenpartij al eens zochten, ook als het niets opleverde. */
+export function markCounterpartyChecked(conversationId: string): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    const item = state.assessments[conversationId];
+    if (!item) return;
+    item.counterpartyCheckedAt = new Date().toISOString();
+    await writeState(state);
+  });
+}
+
 /** Zet de Nederlandse labels van een kaart (taalherstel). */
 export function setAssessmentTaal(
   conversationId: string,

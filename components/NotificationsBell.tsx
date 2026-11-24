@@ -80,13 +80,17 @@ export function NotificationsBell({
       const breedte = kolom && kolom.width > 220
         ? Math.round(Math.min(kolom.width - 25, 480))
         : PANEEL_BREEDTE;
-      const kantlijn = kolom && kolom.width > 220
-        ? Math.round(kolom.right)
-        : Math.round(rij.getBoundingClientRect().right);
+      // Rechts uitlijnen tegen de kantlijn van de pagina. Die halen we uit de
+      // rij van de topbalk zelf: dat is op elk scherm dezelfde rand, ook op
+      // pagina's zonder rechterkolom.
+      const rijVak = document.querySelector('[data-topbar-rij]')?.getBoundingClientRect();
+      const kantlijn = Math.round(rijVak?.right ?? rij.getBoundingClientRect().right);
       const links = kantlijn - breedte;
-      const rechts = Math.max(12, Math.round(window.innerWidth - kantlijn));
+      // clientWidth in plaats van innerWidth: zo valt de rand van het paneel
+      // precies op de rand van het eiland, ook als er een scrollbar staat.
+      const rechts = Math.max(12, Math.round(document.documentElement.clientWidth - kantlijn));
       const pijl = Math.min(breedte - 20, Math.max(20, Math.round(k.left + k.width / 2 - links)));
-      setPlaat({ top: Math.round(k.bottom + 10), right: rechts, pijl, breedte });
+      setPlaat({ top: Math.round(k.bottom + 15), right: rechts, pijl, breedte });
     };
     bereken();
     window.addEventListener("resize", bereken);

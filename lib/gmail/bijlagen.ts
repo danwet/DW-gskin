@@ -102,3 +102,33 @@ export async function haalFactuurbijlage(
   }
   return null;
 }
+
+/** Alle berichten van een gesprek, rechtstreeks uit Gmail. */
+export async function haalThreadBerichten(
+  accessToken: string,
+  threadId: string,
+): Promise<{ id: string; fromEmail: string; from: string; subject: string; receivedAt: string }[]> {
+  const thread = await fetch(`${GMAIL_API}/threads/${encodeURIComponent(threadId)}?format=metadata`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  }).catch(() => null);
+  if (!thread?.ok) return [];
+  const data = (await thread.json().catch(() => null)) as {
+    messages?: { id?: string; payload?: { headers?: { name?: string; value?: string }[] }; internalDate?: string }[];
+  } | null;
+  const uit: { id: string; fromEmail: string; from: string; subject: string; receivedAt: string }[] = [];
+  for (const bericht of data?.messages ?? []) {
+    if (!bericht.id) continue;
+    const kop = (naam: string) =>
+      bericht.payload?.headers?.find((h) => (h.name ?? "").toLowerCase() === naam)?.value ?? "";
+    const van = kop("from");
+    const email = /<([^>]+)>/.exec(van)?.[1] ?? van;
+    uit.push({
+      id: bericht.id,
+      fromEmail: email.trim().toLowerCase(),
+      from: van.replace(/<[^>]*>/, "").replace(/"/g, "").trim(),
+      subject: kop("subject"),
+      receivedAt: bericht.internalDate ? new Date(Number(bericht.internalDate)).toISOString() : "",
+    });
+  }
+  return uit;
+}
