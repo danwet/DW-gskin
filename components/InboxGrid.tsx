@@ -1047,29 +1047,22 @@ export function InboxModal({
           </section>
         ) : null}
 
-        {previewHtml || item.body ? (
+        {/* Geen tweede venster: de mail zelf staat al hierboven. Alleen als de
+            opmaak ontbreekt, tonen we de tekstversie zodat er niets wegvalt. */}
+        {!previewHtml && item.body ? (
           <section className="mt-5">
             <p className="mx-[5%] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">
-              {item.draftReply ? "Oorspronkelijk bericht" : "Bericht"}
+              Bericht
             </p>
-            {previewHtml ? (
-              // De mail zoals hij verstuurd is: opmaak en handtekening erbij,
-              // direct in het vak in plaats van in een apart venster.
-              <div
-                className="handtekening mx-[5%] mt-2 max-h-[420px] overflow-y-auto text-[14px] leading-6 text-[var(--ink)] [&_img]:max-w-full [&_img]:rounded-lg [&_table]:max-w-full"
-                dangerouslySetInnerHTML={{ __html: opschonenHandtekening(previewHtml) }}
-              />
-            ) : (
-              <div
-                className={`mx-[5%] mt-2 space-y-3 text-[14px] leading-6 text-[var(--ink)] ${
-                  item.draftReply ? "max-h-[220px] overflow-y-auto rounded-2xl bg-[var(--bg)] px-4 py-3" : ""
-                }`}
-              >
-                {(item.body ?? "").split(/\n{2,}/).map((paragraph, index) => (
-                  <p key={index} className="whitespace-pre-line">{paragraph.trim()}</p>
-                ))}
-              </div>
-            )}
+            <div
+              className={`mx-[5%] mt-2 space-y-3 text-[14px] leading-6 text-[var(--ink)] ${
+                item.draftReply ? "max-h-[220px] overflow-y-auto rounded-2xl bg-[var(--bg)] px-4 py-3" : ""
+              }`}
+            >
+              {(item.body ?? "").split(/\n{2,}/).map((paragraph, index) => (
+                <p key={index} className="whitespace-pre-line">{paragraph.trim()}</p>
+              ))}
+            </div>
             {newsletterImages.length > 0 ? (
               <div className="mt-4 grid gap-2">
                 {newsletterImages.map((src, index) => (
