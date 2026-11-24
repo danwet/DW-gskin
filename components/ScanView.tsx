@@ -49,7 +49,9 @@ type ExistingInvoice = {
 
 // Zelfde veldstijl als in Instellingen en het opstelvenster: geen kader, maar
 // een lijn onder het veld.
-const inputClass = "veld-underline mt-1 px-0 py-2 text-[14px] text-ink";
+// Vaste hoogte, net als in Instellingen: anders is een keuzelijst lager dan een
+// tekstveld en springt de rij in hoogte.
+const inputClass = "veld-underline mt-1 h-9 px-0 py-0 text-[14px] text-ink";
 const labelClass = "text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]";
 
 export function ScanView() {
@@ -90,7 +92,7 @@ export function ScanView() {
         dueDate: ext.dueDate,
         dueDateSource: ext.dueDateSource,
         amount: ext.amount != null ? String(ext.amount) : "",
-        currency: ext.currency || "EUR",
+        currency: "EUR",
         iban: ext.iban,
         // Het declaratie-/factuurnummer is het betalingskenmerk; staat er een
         // eigen kenmerk in de factuur, dan gaat dat voor.
@@ -376,14 +378,6 @@ export function ScanView() {
                   <div>
                     <label className={labelClass} htmlFor="scan-amount">Totaalbedrag</label>
                     <input id="scan-amount" type="number" inputMode="decimal" step="0.01" min="0" className={inputClass} value={form.amount} onChange={(e) => field("amount", e.target.value)} placeholder="0,00" />
-                  </div>
-                  <div>
-                    <label className={labelClass} htmlFor="scan-currency">Valuta</label>
-                    <select id="scan-currency" className={inputClass} value={form.currency} onChange={(e) => field("currency", e.target.value)}>
-                      <option value="EUR">EUR</option>
-                      <option value="USD">USD</option>
-                      <option value="GBP">GBP</option>
-                    </select>
                   </div>
                   <div>
                     <label className={labelClass} htmlFor="scan-iban">IBAN</label>
