@@ -1047,14 +1047,7 @@ export function InboxModal({
           </section>
         ) : null}
 
-        {(!canPreview || previewFailed) &&
-        (item.unsubscribe ||
-          item.classification === "info" ||
-          item.classification === "unclassified" ||
-          // A reply needs the original text above the concept, otherwise you
-          // are writing blind.
-          Boolean(item.draftReply)) &&
-        item.body ? (
+        {previewHtml || item.body ? (
           <section className="mt-5">
             <p className="mx-[5%] text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">
               {item.draftReply ? "Oorspronkelijk bericht" : "Bericht"}
@@ -1072,7 +1065,7 @@ export function InboxModal({
                   item.draftReply ? "max-h-[220px] overflow-y-auto rounded-2xl bg-[var(--bg)] px-4 py-3" : ""
                 }`}
               >
-                {item.body.split(/\n{2,}/).map((paragraph, index) => (
+                {(item.body ?? "").split(/\n{2,}/).map((paragraph, index) => (
                   <p key={index} className="whitespace-pre-line">{paragraph.trim()}</p>
                 ))}
               </div>

@@ -201,7 +201,7 @@ export function Modal({
               "kleef pointer-events-none absolute inset-x-0 top-0 z-30 h-14",
               schaduw && "kleef-schaduw",
             )}
-            style={{ ["--kleef-vlak" as string]: "var(--card)" }}
+            style={{ ["--kleef-vlak" as string]: "var(--bg)" }}
           >
             <div
               aria-hidden
@@ -238,7 +238,7 @@ export function Modal({
                   "kleef kleef-titel relative z-20 shrink-0 px-5 pt-16",
                   schaduw && "kleef-schaduw",
                 )}
-                style={{ ["--kleef-vlak" as string]: "var(--card)" }}
+                style={{ ["--kleef-vlak" as string]: "var(--bg)" }}
               >
                 <div className="flex flex-col gap-1 pb-4">
                   {waarschuwing && (
