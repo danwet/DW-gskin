@@ -25,6 +25,16 @@ export function TopBar() {
         <UndoIcon />
       </button>
 
+      <button
+        type="button"
+        onClick={() => void refresh()}
+        disabled={refreshing || !ready}
+        aria-label="Bijwerken"
+        className="btn-primary focus-ring grid h-8 w-8 place-items-center rounded-full text-[var(--ink)] disabled:opacity-60"
+      >
+        <RefreshIcon spinning={refreshing} />
+      </button>
+
       {topBar ? (
         <NotificationsBell
           items={topBar.missedItems}
@@ -42,16 +52,6 @@ export function TopBar() {
           <BellIconMuted />
         </span>
       )}
-
-      <button
-        type="button"
-        onClick={() => void refresh()}
-        disabled={refreshing || !ready}
-        aria-label="Bijwerken"
-        className="btn-primary focus-ring grid h-8 w-8 place-items-center rounded-full text-[var(--ink)] disabled:opacity-60"
-      >
-        <RefreshIcon spinning={refreshing} />
-      </button>
 
       <WeatherChip />
     </div>
