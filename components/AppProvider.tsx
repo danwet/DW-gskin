@@ -420,6 +420,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (Date.now() - last > MISSED_RUN_AFTER_MS) void refresh();
   }, [ready, lastRun, refresh]);
 
+  // Een nieuwe serverrun betekent nieuwe mail. Zodra de poll hierboven een
+  // nieuwere lastRun ziet, leest de inbox zichzelf opnieuw — anders moest je de
+  // pagina verversen voordat kaarten en de notificatieteller bijwerkten.
+  const vorigeRun = useRef<string | null>(null);
+  useEffect(() => {
+    if (!ready || !lastRun) return;
+    const vorige = vorigeRun.current;
+    vorigeRun.current = lastRun;
+    if (!vorige) return;
+    if (Date.parse(lastRun) <= Date.parse(vorige)) return;
+    topBar?.onReloadInbox?.();
+  }, [lastRun, ready, topBar]);
+
   // The sync time should follow the server, also when the sync ran elsewhere
   // (background run, cron or another tab).
   useEffect(() => {

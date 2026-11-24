@@ -85,7 +85,9 @@ export function NotificationsBell({
         onClick={() => setOpen((value) => !value)}
         aria-label={`Notificaties (${count})`}
         aria-expanded={open}
-        className="btn-primary focus-ring relative grid h-8 w-8 place-items-center rounded-full text-[var(--ink)]"
+        // !overflow-visible: de teller hangt boven de knop en mag niet afgeknipt
+        // worden door de overflow van de glasstijl.
+        className="btn-primary focus-ring relative grid h-8 w-8 !overflow-visible place-items-center rounded-full text-[var(--ink)]"
       >
         <BellIcon />
         {count > 0 ? (
