@@ -14,9 +14,11 @@ type Deel = {
   parts?: Deel[];
 };
 
+type Pdf = { filename: string; attachmentId?: string; data?: string };
+
 /** Zoekt in een bericht naar PDF-bijlagen. */
-function zoekPdf(payload: unknown): { filename: string; attachmentId?: string; data?: string }[] {
-  const gevonden: { filename: string; attachmentId?: string; data?: string }[] = [];
+function zoekPdf(payload: unknown): Pdf[] {
+  const gevonden: Pdf[] = [];
   const loop = (node: unknown) => {
     if (!node || typeof node !== "object") return;
     const deel = node as Deel;
@@ -31,35 +33,72 @@ function zoekPdf(payload: unknown): { filename: string; attachmentId?: string; d
   return gevonden;
 }
 
+/** Leest één bericht en pakt de eerste PDF die eraan hangt. */
+async function pdfUitBericht(
+  accessToken: string,
+  id: string,
+): Promise<{ filename: string; buffer: Buffer } | null> {
+  const response = await fetch(`${GMAIL_API}/messages/${encodeURIComponent(id)}?format=full`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) return null;
+
+  const bericht = (await response.json().catch(() => null)) as { payload?: unknown } | null;
+  const pdf = zoekPdf(bericht?.payload)[0];
+  if (!pdf) return null;
+  if (pdf.data) return { filename: pdf.filename, buffer: naarBuffer(pdf.data) };
+  if (!pdf.attachmentId) return null;
+
+  const bijlage = await fetch(
+    `${GMAIL_API}/messages/${encodeURIComponent(id)}/attachments/${encodeURIComponent(pdf.attachmentId)}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!bijlage.ok) return null;
+  const data = (await bijlage.json().catch(() => null)) as { data?: string } | null;
+  if (!data?.data) return null;
+  return { filename: pdf.filename, buffer: naarBuffer(data.data) };
+}
+
 /**
- * Haalt de factuurbijlage van een gesprek op: de nieuwste PDF die in een van de
- * berichten hangt. Geeft null als er geen PDF is.
+ * Haalt de factuurbijlage van een gesprek op. Het gesprek wordt rechtstreeks bij
+ * Gmail opgevraagd, zodat het niet uitmaakt of de berichtrijen hier nog staan.
+ *
+ * Een herinnering heeft vaak zelf geen bijlage; daarom zoeken we daarna op het
+ * notanummer in de hele mailbox. Lukt dat ook niet, dan zoeken we op de afzender
+ * met een bijlage.
  */
 export async function haalFactuurbijlage(
   accessToken: string,
-  messageIds: string[],
+  threadId: string,
+  zoektermen: string[] = [],
 ): Promise<{ filename: string; buffer: Buffer } | null> {
-  for (const id of messageIds) {
-    const response = await fetch(`${GMAIL_API}/messages/${encodeURIComponent(id)}?format=full`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!response.ok) continue;
-    const bericht = (await response.json().catch(() => null)) as { payload?: unknown } | null;
-    const pdf = zoekPdf(bericht?.payload)[0];
-    if (!pdf) continue;
-
-    if (pdf.data) {
-      return { filename: pdf.filename, buffer: naarBuffer(pdf.data) };
+  const thread = await fetch(`${GMAIL_API}/threads/${encodeURIComponent(threadId)}?format=full`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  }).catch(() => null);
+  if (thread?.ok) {
+    const data = (await thread.json().catch(() => null)) as { messages?: { id?: string }[] } | null;
+    const ids = (data?.messages ?? [])
+      .map((message) => message.id)
+      .filter((id): id is string => Boolean(id))
+      .reverse();
+    for (const id of ids) {
+      const gevonden = await pdfUitBericht(accessToken, id);
+      if (gevonden) return gevonden;
     }
-    if (!pdf.attachmentId) continue;
-    const bijlage = await fetch(
-      `${GMAIL_API}/messages/${encodeURIComponent(id)}/attachments/${encodeURIComponent(pdf.attachmentId)}`,
+  }
+
+  for (const term of zoektermen.map((value) => value.trim()).filter(Boolean)) {
+    const zoek = await fetch(
+      `${GMAIL_API}/messages?q=${encodeURIComponent(`${term} has:attachment`)}&maxResults=8`,
       { headers: { Authorization: `Bearer ${accessToken}` } },
-    );
-    if (!bijlage.ok) continue;
-    const data = (await bijlage.json().catch(() => null)) as { data?: string } | null;
-    if (!data?.data) continue;
-    return { filename: pdf.filename, buffer: naarBuffer(data.data) };
+    ).catch(() => null);
+    if (!zoek?.ok) continue;
+    const data = (await zoek.json().catch(() => null)) as { messages?: { id?: string }[] } | null;
+    for (const bericht of data?.messages ?? []) {
+      if (!bericht.id) continue;
+      const gevonden = await pdfUitBericht(accessToken, bericht.id);
+      if (gevonden) return gevonden;
+    }
   }
   return null;
 }

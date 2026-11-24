@@ -2,7 +2,7 @@ import { sessionUser, unauthorized } from "@/lib/api-auth";
 import { refreshGoogleAccessToken } from "@/lib/google-token";
 import { gmailRefreshTokenState, resolveGmailConnection } from "@/lib/gmail/connection";
 import { haalFactuurbijlage } from "@/lib/gmail/bijlagen";
-import { listStoredMessages } from "@/lib/gmail/store";
+import { readAssessments } from "@/lib/agent/store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -21,14 +21,15 @@ export async function GET(request: Request) {
   const tokenState = await gmailRefreshTokenState(connection.userId);
   if (!tokenState.ok) return Response.json({ error: "De Gmail-koppeling is niet bruikbaar." }, { status: 409 });
 
-  const rows = (await listStoredMessages(connection.userId)).filter((row) => row.thread_id === conversationId);
-  const ids = rows.map((row) => row.message_id);
-  if (ids.length === 0) return Response.json({ error: "Geen berichten gevonden." }, { status: 404 });
-
   const token = await refreshGoogleAccessToken(tokenState.token);
   if (!token) return Response.json({ error: "Gmail-token kon niet worden vernieuwd." }, { status: 502 });
 
-  const bijlage = await haalFactuurbijlage(token.access_token, ids);
+  // Zoektermen voor als de herinnering zelf geen pdf heeft: eerst het
+  // notanummer, dan de afzender.
+  const kaart = (await readAssessments()).find((item) => item.conversationId === conversationId);
+  const zoektermen = [kaart?.invoice?.invoiceNumber ?? "", kaart?.invoice?.supplier ?? ""];
+
+  const bijlage = await haalFactuurbijlage(token.access_token, conversationId, zoektermen);
   if (!bijlage) return Response.json({ error: "Deze mail heeft geen pdf-bijlage." }, { status: 404 });
 
   const naam = bijlage.filename.replace(/["\\]/g, "").trim() || "factuur.pdf";
