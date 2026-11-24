@@ -278,8 +278,10 @@ function SidebarContent({
               className={`focus-ring relative flex items-center gap-3 py-2.5 pr-3 pl-5 text-[14px] whitespace-nowrap transition-colors ${
                 active
                   // Zelfde glas als de actieknoppen (zoals "Kies bestand").
-                  ? "btn-primary menu-actief !text-[var(--muted)] rounded-full"
-                  : "rounded-[14px] text-[var(--ink)]/85 hover:text-[var(--muted)]"
+                  // Actief staat op de volle tekstkleur, de rest is gedempt;
+                  // bij hover wisselen ze van rol, net als in de focus-selectie.
+                  ? "btn-primary menu-actief !text-[var(--ink)] rounded-full"
+                  : "rounded-[14px] text-[var(--muted)] hover:text-[var(--ink)]/85"
               }`}
             >
               <NavIcon name={link.icon} active={active} />
@@ -330,9 +332,8 @@ function SidebarContent({
 }
 
 function NavIcon({ name, active }: { name: "home" | "today" | "inbox" | "agent" | "scan" | "missed" | "save" | "done"; active: boolean }) {
-  // Het actieve item volgt dezelfde tint als het actieve label in de
-  // focus-selectie: gedempt, niet zwart.
-  const color = "var(--muted)";
+  // Het icoon volgt zijn label: actief vol, inactief gedempt.
+  const color = active ? "var(--ink)" : "var(--muted)";
   const common = {
     width: 19,
     height: 19,
