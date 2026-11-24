@@ -8,6 +8,7 @@ import { invoiceTier } from "@/lib/agent/invoice-tier";
 import { opschonenHandtekening } from "@/lib/handtekening";
 import type { MailAssessment } from "@/lib/agent/types";
 import { InvoiceBlock, timeZoneOf, UrgencyPill } from "./AgentInbox";
+import { cn } from "@/lib/utils";
 import { Modal } from "@/components/kit/modal";
 import { SelectorPill } from "@/components/kit/selector-pill";
 import { enqueueMailAction } from "@/lib/actie-wachtrij";
@@ -50,6 +51,11 @@ const TONE_TEXT: Record<UrgencyTone, string> = {
   green: "text-[var(--green)]",
   grey: "text-[var(--muted)]",
 };
+
+/**
+ * Het actievak op de kaart draagt dezelfde kleur als de pil rechtsboven: zo zie
+ * je in één oogopslag bij welke urgentie de actie hoort.
+ */
 
 export function InboxGrid({
   items,
@@ -574,7 +580,10 @@ export function InboxCard({
 
       <div className="flex w-full flex-1 flex-col justify-between py-4">
         {!isNewsletter ? (
-          <div className="flex w-full flex-col items-center gap-1 rounded-2xl border-2 border-[var(--ink)]/30 bg-[var(--bg)] px-3 py-2.5 shadow-[0_2px_8px_rgba(16,24,40,0.12)]">
+          <div
+            data-toon={pillTone(item, urgency.tone)}
+            className="actie-kader flex w-full flex-col items-center gap-1 rounded-2xl border-2 bg-[var(--bg)] px-3 py-2.5 shadow-[0_2px_8px_rgba(16,24,40,0.12)]"
+          >
             <p className="text-[11px] font-semibold tracking-[0.08em] text-[var(--muted)]">Actie:</p>
             <BalancedText
               text={item.declaration === "pending" ? declareLabel(item) : item.nextAction}

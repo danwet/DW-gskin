@@ -611,6 +611,29 @@ html:not(.dark) .segment-hover:hover {
   background-image: linear-gradient(180deg, #eeeeee 0%, #f0f0f0 55%, #f3f3f3 100%);
 }
 
+/* Het actiekader op een kaart draagt de kleur van de urgentiepil. */
+.actie-kader {
+  border-color: color-mix(in srgb, var(--ink) 30%, transparent);
+}
+.actie-kader[data-toon="red"] {
+  border-color: color-mix(in srgb, var(--danger) 50%, transparent);
+}
+.actie-kader[data-toon="orange"] {
+  border-color: color-mix(in srgb, var(--orange) 50%, transparent);
+}
+.actie-kader[data-toon="yellow"] {
+  border-color: color-mix(in srgb, var(--yellow) 50%, transparent);
+}
+.actie-kader[data-toon="blue"] {
+  border-color: color-mix(in srgb, var(--blue) 45%, transparent);
+}
+.actie-kader[data-toon="green"] {
+  border-color: color-mix(in srgb, var(--green) 50%, transparent);
+}
+.actie-kader[data-toon="grey"] {
+  border-color: color-mix(in srgb, var(--muted) 40%, transparent);
+}
+
 /* Uitklappaneel: hetzelfde glas als de knoppen, maar met een lichte blur zodat
    de tekst eronder onscherp wordt en het paneel leesbaar blijft. */
 .glas-paneel {
