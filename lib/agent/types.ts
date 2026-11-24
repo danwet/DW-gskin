@@ -102,6 +102,8 @@ export type MailAssessment = {
   shortSubjectVersion?: number;
   /** Met welke regelversie de deadline is bepaald; lager betekent opnieuw. */
   deadlineVersion?: number;
+  /** Bewijsversie van het taalherstel: kaarten van vóór de Nederlandse regel. */
+  languageVersion?: number;
 
   classification: AgentClassification;
   nextAction: string;

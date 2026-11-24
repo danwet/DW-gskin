@@ -691,6 +691,23 @@ export function setAssessmentDeadline(conversationId: string, deadline: string, 
   });
 }
 
+/** Zet de Nederlandse labels van een kaart (taalherstel). */
+export function setAssessmentTaal(
+  conversationId: string,
+  next: { nextAction: string; priorityReason: string; impact?: string; version: number },
+): Promise<void> {
+  return withLock(async () => {
+    const state = await readState();
+    const item = state.assessments[conversationId];
+    if (!item) return;
+    item.nextAction = next.nextAction;
+    item.priorityReason = next.priorityReason;
+    item.impact = next.impact;
+    item.languageVersion = next.version;
+    await writeState(state);
+  });
+}
+
 export function setInvoiceDueDate(
   conversationId: string,
   dueDate: string,

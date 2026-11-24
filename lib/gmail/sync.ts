@@ -19,6 +19,7 @@ import { fetchGmailMessage, listGmailInbox, listGmailRecent, listGmailSent } fro
 import { backfillSavedVerdicts } from "../agent/saved-verdict";
 import { backfillShortSubjects } from "../agent/short-subject";
 import { healDeadlines } from "../agent/deadline-heal";
+import { healLanguage } from "../agent/taal-heal";
 import { reconcileGmailHistory } from "./history";
 import { archiveGmailMessage, markGmailMessageRead } from "./actions";
 import {
@@ -576,6 +577,8 @@ export async function syncStep(
   await backfillShortSubjects().catch(() => 0);
   // Kaarten met een datum die de mail nooit noemde rechttrekken.
   await healDeadlines().catch(() => 0);
+  // Kaarten die het model in de taal van de mail schreef, alsnog Nederlands maken.
+  await healLanguage().catch(() => 0);
 
   // Order mail whose status is now stored goes to the archive by itself.
   const autoArchived = await archiveProcessedOrders(userId, refreshToken).catch(() => 0);

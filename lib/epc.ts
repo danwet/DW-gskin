@@ -41,7 +41,7 @@ export function dueTime(iso: string): number | null {
   return calendarDate(iso)?.getTime() ?? null;
 }
 
-export function formatDueLabel(iso: string, locale: "en-GB" | "nl-NL" = "en-GB"): string {
+export function formatDueLabel(iso: string, locale: "en-GB" | "nl-NL" = "nl-NL"): string {
   const due = calendarDate(iso);
   if (!due) return iso;
   return due.toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });

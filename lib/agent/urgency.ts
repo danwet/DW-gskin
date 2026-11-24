@@ -50,7 +50,8 @@ function daysBetween(then: Date, now: Date): number {
 }
 
 function formatDeadline(date: Date): string {
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  // Nederlands: de maand met een kleine letter ("26 nov 2026", niet "26 Nov").
+  return date.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
 }
 
 /**
