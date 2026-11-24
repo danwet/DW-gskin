@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatClock } from "@/lib/greeting";
 import { useApp } from "./AppProvider";
 import { useInbox } from "./AgentInbox";
@@ -23,7 +23,26 @@ const ddClass = "mt-1 text-[16px] font-semibold text-[var(--ink)]";
 export function AgentView() {
   const { ready, now, refresh, refreshing } = useApp();
   const { meta: rawMeta, model, gmail } = useInbox();
-  const [showRuns, setShowRuns] = useState(false);
+  // De log volgt de hoogte van "Laatste run": even hoog, met eigen scroll.
+  const laatsteRef = useRef<HTMLElement | null>(null);
+  const [logHoogte, setLogHoogte] = useState<number | null>(null);
+  useEffect(() => {
+    const vak = laatsteRef.current;
+    if (!vak) return;
+    const meet = () => {
+      // Alleen naast elkaar (lg); op mobiel staan ze onder elkaar en is er
+      // geen hoogte om te delen.
+      setLogHoogte(window.matchMedia("(min-width: 1024px)").matches ? Math.round(vak.getBoundingClientRect().height) : null);
+    };
+    meet();
+    const observer = new ResizeObserver(meet);
+    observer.observe(vak);
+    window.addEventListener("resize", meet);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", meet);
+    };
+  }, []);
 
   // Follow the server while the page is open: a new run must show up without
   // reloading anything.
@@ -86,57 +105,38 @@ export function AgentView() {
           </div>
         </section>
 
-        <section className="glass-panel rounded-[22px] p-5">
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Laatste run</h2>
-            <p className="pt-1 text-[13px] text-[var(--muted)]">{runs[0]?.ok === false ? "Mislukt" : "Geslaagd"}</p>
-          </div>
-          {runs.length === 0 ? (
-            <p className="text-[14px] leading-6 text-[var(--muted)]">Nog geen run uitgevoerd.</p>
-          ) : (
-            <ul className="space-y-3 text-[14px] leading-6 text-[var(--ink)]">
-              <li>{runs[0].conversations} gesprekken beoordeeld.</li>
-              <li>{runs[0].skipped ?? 0} gesprekken wachten nog op een beoordeling.</li>
-              <li>{runs[0].messages} nieuwe berichten gelezen.</li>
-              {runs[0].error ? <li className="text-[var(--danger)]">{runs[0].error}</li> : null}
-              <li className="text-[var(--muted)]">
-                Bron: {runs[0].source === "gmail" ? "Gmail" : "Testdata"} · model: {runs[0].model}
-              </li>
-            </ul>
-          )}
-        </section>
-
-        <section className="glass-panel rounded-[22px] p-5">
-          <button
-            type="button"
-            onClick={() => setShowRuns((value) => !value)}
-            aria-expanded={showRuns}
-            className="focus-ring flex w-full items-center justify-between gap-3 text-left"
-          >
-            <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Eerdere runs</h2>
-            <span className="flex items-center gap-2 text-[13px] text-[var(--muted)]">
-              {earlierRuns.length}
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-                className={`transition-transform ${showRuns ? "rotate-180" : ""}`}
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </span>
-          </button>
-          {showRuns ? (
-            earlierRuns.length === 0 ? (
-              <p className="mt-4 border-t border-[var(--line)] pt-3 text-[13px] text-[var(--muted)]">Geen eerdere runs.</p>
+        <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+          <section ref={laatsteRef} className="glass-panel rounded-[22px] p-5">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Laatste run</h2>
+              <p className="pt-1 text-[13px] text-[var(--muted)]">{runs[0]?.ok === false ? "Mislukt" : "Geslaagd"}</p>
+            </div>
+            {runs.length === 0 ? (
+              <p className="text-[14px] leading-6 text-[var(--muted)]">Nog geen run uitgevoerd.</p>
             ) : (
-              <ul className="mt-4 space-y-2 border-t border-[var(--line)] pt-3">
+              <ul className="space-y-3 text-[14px] leading-6 text-[var(--ink)]">
+                <li>{runs[0].conversations} gesprekken beoordeeld.</li>
+                <li>{runs[0].skipped ?? 0} gesprekken wachten nog op een beoordeling.</li>
+                <li>{runs[0].messages} nieuwe berichten gelezen.</li>
+                {runs[0].error ? <li className="text-[var(--danger)]">{runs[0].error}</li> : null}
+                <li className="text-[var(--muted)]">
+                  Bron: {runs[0].source === "gmail" ? "Gmail" : "Testdata"} · model: {runs[0].model}
+                </li>
+              </ul>
+            )}
+          </section>
+          <section
+            className="glass-panel flex min-h-0 flex-col rounded-[22px] p-5"
+            style={logHoogte ? { height: logHoogte } : undefined}
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Log eerdere runs</h2>
+              <span className="pt-1 text-[13px] text-[var(--muted)]">{earlierRuns.length}</span>
+            </div>
+            {earlierRuns.length === 0 ? (
+              <p className="border-t border-[var(--line)] pt-3 text-[13px] text-[var(--muted)]">Geen eerdere runs.</p>
+            ) : (
+              <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto border-t border-[var(--line)] pt-3 pr-1">
                 {earlierRuns.map((run, index) => (
                   <li key={`${run.at}-${index}`} className="flex items-start justify-between gap-3 text-[13px]">
                     <span className="shrink-0 text-[var(--muted)]">{formatRunTime(run.at)}</span>
@@ -149,9 +149,9 @@ export function AgentView() {
                   </li>
                 ))}
               </ul>
-            )
-          ) : null}
-        </section>
+            )}
+          </section>
+        </div>
       </div>
     </div>
   );

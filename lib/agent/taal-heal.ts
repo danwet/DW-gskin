@@ -67,8 +67,9 @@ export async function healLanguage(limit = 3): Promise<number> {
   return hersteld;
 }
 
-/** Grof maar genoeg: Engelse functiewoorden die in een Nederlandse kaart niet horen. */
+/** Grof maar genoeg: Engelse woorden die in een Nederlandse kaart niet horen. */
+const ENGELS = /\b(check|your|you|the|this|license|licence|section|activation|expires|tomorrow|paid|subscription|unusable|and|with|for|from|please|reply|review|waiting|answer|confirm|sign|we|have|has|need|needs|expired|update|required|missing|payment|deadline)\b/i;
+
 function lijktEngels(tekst: string): boolean {
-  const waarde = `/\\b(check|your|you|the|this|license|section|and|with|for|from|please|reply|review|pay|invoice\\s+(is|due)|waiting|answer|confirm|sign|we|have|has|need|needs)\\b/i`;
-  return new RegExp(waarde).test(tekst);
+  return ENGELS.test(tekst);
 }
