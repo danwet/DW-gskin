@@ -4,7 +4,14 @@ import { gmailRefreshTokenState, resolveGmailConnection } from "@/lib/gmail/conn
 import { restoreGmailMessage } from "@/lib/gmail/actions";
 import { fetchGmailMessage } from "@/lib/gmail/fetch";
 import { saveMessages } from "@/lib/gmail/store";
-import { readMeta, restoreAssessment, revertDeclaration, unarchiveConversation, updateMeta } from "@/lib/agent/store";
+import {
+  forgetHiddenMessages,
+  readMeta,
+  restoreAssessment,
+  revertDeclaration,
+  unarchiveConversation,
+  updateMeta,
+} from "@/lib/agent/store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -67,6 +74,10 @@ export async function POST() {
   // The card comes back exactly as it was; without a card the re-imported mail
   // is judged again, which rebuilds it.
   if (last.assessment) await restoreAssessment(last.assessment);
+  // De actie had deze berichten verborgen ("niet opnieuw binnenhalen"); bij het
+  // terugzetten moet dat merk weg, anders ruimt de volgende ronde de kaart
+  // opnieuw op en is hij na een herlaadactie weer verdwenen.
+  await forgetHiddenMessages(messageIds).catch(() => undefined);
   await unarchiveConversation(last.conversationId);
   await updateMeta({ lastAction: null });
 

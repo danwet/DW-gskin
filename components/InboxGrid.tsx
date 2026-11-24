@@ -10,6 +10,7 @@ import type { MailAssessment } from "@/lib/agent/types";
 import { InvoiceBlock, timeZoneOf, UrgencyPill } from "./AgentInbox";
 import { Modal } from "@/components/kit/modal";
 import { SelectorPill } from "@/components/kit/selector-pill";
+import { enqueueMailAction } from "@/lib/actie-wachtrij";
 
 /**
  * Rood betekent "nu, in Moet". Dezelfde boodschap in Mag of Hoeft niet is
@@ -449,11 +450,9 @@ function BalancedText({ text, className }: { text: string; className: string }) 
 }
 
 // Every action rewrites the same agent document, so run them one at a time.
-// Firing several at once let a later write undo an earlier removal.
-let actionQueue: Promise<unknown> = Promise.resolve();
-function enqueueAction(task: () => Promise<void>): void {
-  actionQueue = actionQueue.then(task, task);
-}
+// De wachtrij staat in lib/actie-wachtrij.ts, zodat de undo-knop in de topbalk
+// dezelfde volgorde deelt.
+const enqueueAction = enqueueMailAction;
 
 export function InboxCard({
   item,
@@ -869,11 +868,12 @@ export function InboxModal({
     if (busyAction) return;
     setBusyAction(action);
 
-    // Close and drop the card right away, but leave the eye a short beat so the
-    // click is acknowledged before the popup disappears.
+    // De kaart gaat meteen uit het overzicht; het verplaatsen in Gmail en de
+    // administratie gebeuren op de achtergrond. Alleen het sluiten van de sheet
+    // krijgt een korte tel, zodat de klik zichtbaar is voordat het vlak wegvalt.
+    onRemove?.(item.conversationId);
     setTimeout(() => {
       onClose();
-      onRemove?.(item.conversationId);
     }, 140);
 
     enqueueAction(async () => {

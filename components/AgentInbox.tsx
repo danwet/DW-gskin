@@ -8,6 +8,7 @@ import type { AgentMeta, MailAssessment } from "@/lib/agent/types";
 import { notificationPermission, showMailNotification, wantedOnThisDevice } from "@/lib/desktop-notify";
 import { Avatar, Card, CardHeading } from "./ui";
 import { useApp } from "./AppProvider";
+import { enqueueMailAction } from "@/lib/actie-wachtrij";
 
 export type PendingMessage = {
   conversationId: string;
@@ -104,6 +105,32 @@ export function useInbox() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Bouwt de zichtbare lijst: de serverbasis, zonder wat je net weghaalde, plus
+   * wat je terugzette maar de server nog niet kent. Zo blijft het scherm kloppen
+   * terwijl de achtergrondtaak nog loopt.
+   */
+  const pasToe = useCallback((basis: MailAssessment[]) => {
+    const nu = Date.now();
+    const zichtbaar = basis.filter((item) => {
+      const weg = onderdrukt.current.get(item.conversationId);
+      if (!weg) return true;
+      if (nu - weg > ONDERDRUK_MS) {
+        onderdrukt.current.delete(item.conversationId);
+        return true;
+      }
+      return false;
+    });
+    // Wat de server nu kent hoeft niet meer optimistisch te blijven.
+    for (const id of [...teruggezet.current.keys()]) {
+      if (basis.some((item) => item.conversationId === id)) teruggezet.current.delete(id);
+    }
+    const extra = [...teruggezet.current.values()].filter(
+      (item) => !zichtbaar.some((entry) => entry.conversationId === item.conversationId),
+    );
+    setItems([...zichtbaar, ...extra]);
+  }, []);
+
   const reload = useCallback(async () => {
     setError(null);
     try {
@@ -117,7 +144,10 @@ export function useInbox() {
         throw new Error(body?.error ?? "Inbox could not be loaded.");
       }
       const data = (await response.json()) as InboxPayload;
-      setItems(data.items);
+      // Net weggehaalde kaarten niet meteen terugzetten: de server weet het pas
+      // als de achtergrondtaak klaar is.
+      const nu = Date.now();
+      pasToe(data.items);
       setPending(data.pending ?? []);
       setProgress(data.progress ?? null);
       setGmail(data.gmail ?? null);
@@ -265,21 +295,68 @@ export function useInbox() {
     return () => clearTimeout(timer);
   }, [notice]);
 
+  /** De laatst weggehaalde kaart, zodat terugzetten meteen zichtbaar is. */
+  const [laatsteWeg, setLaatsteWeg] = useState<{ item: MailAssessment; index: number } | null>(null);
+  /**
+   * Kaarten die jij net weghaalde. Een herlaadactie van de server mag ze niet
+   * terugzetten voordat de achtergrondtaak klaar is; na een minuut geven we het
+   * weer aan de server over, zodat een mislukte actie niet voor altijd verbergt.
+   */
+  const onderdrukt = useRef<Map<string, number>>(new Map());
+  const ONDERDRUK_MS = 60_000;
+  /**
+   * Kaarten die je terugzette maar die de server nog niet kent. Ze blijven in
+   * het overzicht staan tot een herlaadactie ze bevestigt.
+   */
+  const teruggezet = useRef<Map<string, MailAssessment>>(new Map());
+  /** De huidige lijst, zodat we buiten een state-updater kunnen lezen. */
+  const itemsRef = useRef<MailAssessment[]>([]);
+  itemsRef.current = items;
+
   const undo = useCallback(async () => {
-    try {
-      const response = await fetch("/api/gmail/undo", { method: "POST" });
-      if (response.ok) await reload();
-    } catch {
-      // Nothing changed; the card simply stays away.
+    const vorige = laatsteWeg;
+    setLaatsteWeg(null);
+    // Eerst visueel terugzetten: de kaart staat er weer voordat de server
+    // antwoordt. Het echte werk (Gmail, administratie) loopt daarna.
+    if (vorige) {
+      onderdrukt.current.delete(vorige.item.conversationId);
+      teruggezet.current.set(vorige.item.conversationId, vorige.item);
+      // Meteen tonen, zonder op de server te wachten.
+      pasToe(itemsRef.current);
     }
-  }, [reload]);
+    const terugdraaien = () => {
+      if (!vorige) return;
+      teruggezet.current.delete(vorige.item.conversationId);
+      pasToe(itemsRef.current.filter((entry) => entry.conversationId !== vorige.item.conversationId));
+    };
+    try {
+      // Achteraan in dezelfde wachtrij als de acties: anders kan het
+      // terugzetten aankomen voordat de verwijdering is verwerkt.
+      const response = await enqueueMailAction(() => fetch("/api/gmail/undo", { method: "POST" }));
+      if (response.ok) {
+        await reload();
+        return;
+      }
+      terugdraaien();
+      setNotice("Terugzetten mislukt.");
+    } catch {
+      terugdraaien();
+      setNotice("Terugzetten mislukt: geen verbinding.");
+    }
+  }, [pasToe, reload, laatsteWeg]);
 
   const updateItem = useCallback((next: MailAssessment) => {
     setItems((current) => current.map((entry) => (entry.conversationId === next.conversationId ? next : entry)));
   }, []);
 
   const removeItem = useCallback((conversationId: string) => {
+    const index = itemsRef.current.findIndex((entry) => entry.conversationId === conversationId);
+    // Onthoud wat er weg ging: terugzetten kan de kaart dan direct tonen.
+    if (index >= 0) setLaatsteWeg({ item: itemsRef.current[index], index });
     setItems((current) => current.filter((entry) => entry.conversationId !== conversationId));
+    onderdrukt.current.set(conversationId, Date.now());
+    // De terugzetknop meteen aanzetten; de server bevestigt het even later.
+    setUndoable(true);
   }, []);
 
   // New mail since you last looked. Kept on the server so the badge is the same
@@ -450,7 +527,7 @@ export function useInbox() {
     setTopBar({
       missedItems: items.filter((item) => item.classification === "unclassified"),
       newItems,
-      undoable,
+      undoable: undoable || Boolean(laatsteWeg),
       lastSyncAt: meta?.lastRunAt ?? null,
       undo: () => handlersRef.current.undo(),
       onToggleHandled: (item) => handlersRef.current.toggleHandled(item),
@@ -461,7 +538,7 @@ export function useInbox() {
       onReloadInbox: () => void handlersRef.current.reload(),
       onError: (message) => handlersRef.current.setNotice(message),
     });
-  }, [items, newItems, undoable, meta?.lastRunAt, setTopBar]);
+  }, [items, newItems, undoable, laatsteWeg, meta?.lastRunAt, setTopBar]);
 
   useEffect(() => () => setTopBar(null), [setTopBar]);
 
