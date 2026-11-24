@@ -165,6 +165,7 @@ const INSTRUCTION_LINES = [
   "Mail about your own employment is always action_needed: a job offer or voorstel, an arbeidsovereenkomst or contract, a signature request, onboarding terms or a start date. It is never info and never waiting, even when a colleague still has to send something.",
   "If the mail expects something FROM you, it is never waiting and never info. That includes a contract or arbeidsovereenkomst sent for signature, an offerte/quotation/proposal to review, a document or attachment you must read or approve, a data or address change, and any request to confirm. Example: a labour contract 'ter ondertekening' is action_needed with nextAction like 'Onderteken arbeidsovereenkomst'.",
   "waiting is only correct when you clearly handed the follow-up to someone else AND the sender says they will come back to you. When in doubt, choose action_needed.",
+  "When someone answers a message you sent — a support desk replying to your report or question — and their reply needs something back from you, it is reply_needed and it belongs in moet: a person is sitting on your answer. Never file such a mail as info or waiting, and never as hoeft_niet.",
   "nextAction must never contain an amount, a date or an invoice number; those belong in the structured fields below. If the amount is unknown, write 'Betaal factuur' without a number.",
   "nextAction: a SHORT imperative, max ~5 words. Examples: 'Betaal factuur €300', 'Beantwoord email', 'Geen actie'. Never embed the reason, sender name or invoice description here.",
   "priorityReason: the sharp reason why this needs attention now, max ~8 words. Examples: 'Kickoff hangt van jou af', 'Escalatie dreigt', 'Incasso dreigt', 'De ander is aan zet'. Never use soft phrasing like 'controleer of al betaald is'.",
@@ -305,9 +306,12 @@ export function normalizeDraft(value: unknown): AssessmentDraft {
         ? "hoeft_niet"
         : classification === "waiting"
           ? "mag"
-          : tier === "moet"
+          : // Iemand wacht op jouw antwoord: dat is per definitie aandacht vandaag.
+            classification === "reply_needed"
             ? "moet"
-            : "mag",
+            : tier === "moet"
+              ? "moet"
+              : "mag",
     nextAction: str(row.nextAction),
     priorityReason: str(row.priorityReason),
     deadline: normalizeDate(row.deadline),

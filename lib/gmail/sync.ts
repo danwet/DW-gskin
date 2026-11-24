@@ -6,6 +6,7 @@ import { loadAgentConfig, type ProviderId } from "../agent/config";
 import {
   corrigeerTegenstrijdigheden,
   markArchivedByAgent,
+  markReplyNeeded,
   readAssessments,
   readMeta,
   setAssessmentTier,
@@ -488,6 +489,8 @@ async function applyAnsweredThreads(
   }
   if (reopened.length > 0) {
     await setUserReplied(reopened, true);
+    // Er is weer iemand aan het woord na jouw antwoord: die wacht op jou.
+    await markReplyNeeded(reopened);
     // Er is weer iemand aan het woord: de thread hoort terug in de lijst.
     for (const id of reopened) await unarchiveConversation(id).catch(() => undefined);
   }

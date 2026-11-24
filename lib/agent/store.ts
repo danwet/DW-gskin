@@ -414,7 +414,10 @@ export function upsertAssessments(updates: MailAssessment[]): Promise<MailAssess
         }
         const prevPay = existing.invoice?.paymentStatus;
         const nextPay = update.invoice?.paymentStatus;
-        if (prevPay && nextPay && prevPay !== nextPay) {
+        // Alleen een echte betaling telt: "onbekend" dat opnieuw "onbekend"
+        // wordt (of heen en weer schommelt tussen onbekend en open) is geen
+        // bijgewerkte betaalstatus. Zo telt dezelfde factuur nooit twee keer.
+        if (nextPay === "paid_confirmed" && prevPay !== "paid_confirmed") {
           changes.paymentStatus += 1;
           touched = true;
         }
@@ -688,6 +691,28 @@ export function setAssessmentDeadline(conversationId: string, deadline: string, 
     item.deadline = deadline;
     item.deadlineVersion = version;
     await writeState(state);
+  });
+}
+
+/**
+ * Iemand heeft na jouw antwoord weer geschreven: dan wacht er een persoon op
+ * jou. Dat is reply_needed en hoort bij "moet", ongeacht wat het model vond.
+ */
+export function markReplyNeeded(conversationIds: string[]): Promise<void> {
+  if (conversationIds.length === 0) return Promise.resolve();
+  return withLock(async () => {
+    const state = await readState();
+    let changed = false;
+    for (const id of conversationIds) {
+      const item = state.assessments[id];
+      if (!item) continue;
+      if (item.classification === "info") continue;
+      if (item.classification === "reply_needed" && item.tier === "moet") continue;
+      item.classification = "reply_needed";
+      item.tier = "moet";
+      changed = true;
+    }
+    if (changed) await writeState(state);
   });
 }
 
