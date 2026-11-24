@@ -374,6 +374,18 @@ function preparedLabel(item: MailAssessment): string {
   return "Actie voorbereid";
 }
 
+/** "Declareer € 151,38" — met bedrag, want dat is wat je gaat declareren. */
+function declareLabel(item: MailAssessment): string {
+  const bedrag = item.invoice?.amount;
+  if (bedrag == null) return "Declareer factuur";
+  const code = (item.invoice?.currency ?? "").toUpperCase();
+  const teken = code === "USD" ? "$" : code === "GBP" ? "£" : "€";
+  const getal = bedrag.toFixed(2).replace(".", ",");
+  // Non-breaking space: het bedrag mag nooit los van het teken op een nieuwe
+  // regel belanden.
+  return `Declareer ${teken}\u00A0${getal}`;
+}
+
 function ctaLabel(item: MailAssessment): string {
   if (item.declaration === "pending") return "Declareer";
   if (item.source === "scan") return "Bekijk scan";
@@ -565,7 +577,7 @@ export function InboxCard({
           <div className="flex w-full flex-col items-center gap-1 rounded-2xl border-2 border-[var(--ink)]/30 bg-[var(--bg)] px-3 py-2.5 shadow-[0_2px_8px_rgba(16,24,40,0.12)]">
             <p className="text-[11px] font-semibold tracking-[0.08em] text-[var(--muted)]">Actie:</p>
             <BalancedText
-              text={item.declaration === "pending" ? "Declareer factuur" : item.nextAction}
+              text={item.declaration === "pending" ? declareLabel(item) : item.nextAction}
               className="flex min-h-[40px] w-full flex-col justify-start text-[16px] font-semibold leading-5 text-[var(--ink)]"
             />
           </div>
