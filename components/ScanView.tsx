@@ -47,8 +47,9 @@ type ExistingInvoice = {
   invoice?: { supplier?: string; invoiceNumber?: string; amount?: number; currency?: string; dueDate?: string };
 };
 
-const inputClass =
-  "mt-1 w-full rounded-xl border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-[14px] text-[var(--ink)] outline-none focus:border-[var(--blue)]";
+// Zelfde veldstijl als in Instellingen en het opstelvenster: geen kader, maar
+// een lijn onder het veld.
+const inputClass = "veld-underline mt-1 px-0 py-2 text-[14px] text-ink";
 const labelClass = "text-[11px] font-medium tracking-[0.08em] text-[var(--faint)]";
 
 export function ScanView() {
@@ -247,7 +248,9 @@ export function ScanView() {
       ) : null}
 
       {stage === "uploading" ? (
-        <section className="glass-panel rounded-[24px] px-6 py-14 text-center">
+        // Dezelfde bovenmarge als het sleepvak: het vlak blijft staan waar het
+        // staat terwijl de factuur wordt uitgelezen.
+        <section className="glass-panel mt-[200px] rounded-[24px] px-6 py-14 text-center">
           <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--blue)]" />
           <p className="mt-4 text-[15px] font-medium text-[var(--ink)]">Factuur wordt uitgelezen…</p>
           <p className="mt-1 text-[13px] text-[var(--muted)]">Dit kan even duren.</p>
