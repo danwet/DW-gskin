@@ -53,7 +53,17 @@ export async function POST(request: Request) {
       : [];
 
   if (ids.length === 0) {
-    return Response.json({ error: "Mail niet gevonden." }, { status: 404 });
+    // De berichtrijen zijn al eens opgeruimd (bijvoorbeeld omdat de mail in
+    // Gmail al gearchiveerd was). Er valt niets meer te verplaatsen, maar de
+    // kaart hoort wel gewoon weg te gaan in plaats van een fout te geven.
+    await applyArchiveCleanup({
+      conversationId,
+      action,
+      messageIds: [],
+      assessment,
+      keepSnapshot: false,
+    }).catch(() => null);
+    return Response.json({ ok: true, action, messages: 0, note: "De mail was al opgeruimd." });
   }
 
   // Record the undo before anything moves. If Gmail then refuses, the record is
