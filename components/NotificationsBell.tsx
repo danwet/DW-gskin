@@ -108,11 +108,14 @@ export function NotificationsBell({
 
   // Klik buiten de popup (en buiten de bel zelf) sluit hem.
   const rootRef = useRef<HTMLDivElement | null>(null);
+  // Het paneel hangt via een portal aan body en valt dus buiten rootRef; zonder
+  // deze verwijzing sluit elke klik in het paneel hem meteen.
+  const paneelRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
-      if (target && rootRef.current?.contains(target)) return;
+      if (target && (rootRef.current?.contains(target) || paneelRef.current?.contains(target))) return;
       setOpen(false);
     };
     document.addEventListener("pointerdown", onPointerDown);
@@ -159,6 +162,7 @@ export function NotificationsBell({
             onClick={() => setOpen(false)}
           />
           <div
+            ref={paneelRef}
             className="glas-paneel fixed z-50 rounded-3xl p-2"
             style={
               plaats
