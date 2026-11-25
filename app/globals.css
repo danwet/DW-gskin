@@ -1106,6 +1106,11 @@ html.glas-safari .glas-balk {
    licht worden en de blauwe naam een lichte blauwtint krijgt; afbeeldingen
    draaien we terug zodat het logo klopt. */
 .dark .handtekening {
+  /* De filter hieronder keert alles om, dus de bron moet donker zijn: anders
+     wordt licht-op-donker na het omkeren juist donker-op-donker. Tekst die zijn
+     kleur erft, komt daardoor goed uit; eigen kleuren (zoals de blauwe naam)
+     worden zoals ze bedoeld zijn omgekeerd. */
+  color: #17191b;
   filter: invert(1) hue-rotate(180deg);
 }
 
