@@ -668,11 +668,11 @@ html:not(.dark) .segment-hover:hover {
 .glas-paneel-pijl {
   position: absolute;
   /* Klein en laag genoeg om vrij van het glas-eiland te blijven. */
-  top: -3px;
-  width: 7px;
-  height: 7px;
+  top: -5px;
+  width: 13px;
+  height: 13px;
   transform: translateX(-50%) rotate(45deg);
-  border-top-left-radius: 3px;
+  border-top-left-radius: 5px;
   border-top: 1px solid #e7e7e7;
   border-left: 1px solid #e7e7e7;
   background-color: #ffffff;

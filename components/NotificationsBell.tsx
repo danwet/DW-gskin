@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   enableNotifications,
   notificationPermission,
@@ -41,6 +42,9 @@ export function NotificationsBell({
   onInboxError?: (message: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  // Een portal mag pas na de eerste render: op de server bestaat document niet.
+  const [gemonteerd, setGemonteerd] = useState(false);
+  useEffect(() => setGemonteerd(true), []);
   const knopRef = useRef<HTMLButtonElement | null>(null);
   /** Positie van het paneel: rechts tegen de kantlijn, pijl onder het icoon. */
   const [plaats, setPlaat] = useState<{ top: number; right: number; pijl: number; breedte: number } | null>(null);
@@ -141,8 +145,11 @@ export function NotificationsBell({
         ) : null}
       </button>
 
-      {open ? (
-        <>
+      {/* Het paneel hangt aan body: het glas-eiland heeft een backdrop-filter en
+          dat maakt `fixed` ten opzichte van het eiland in plaats van het scherm. */}
+      {open && gemonteerd
+        ? createPortal(
+            <>
           {/* Achtergrond die het paneel sluit; geen handje als cursor, want hier
               is niets om op te klikken behalve sluiten. */}
           <button
@@ -274,8 +281,10 @@ export function NotificationsBell({
             ) : null}
 
           </div>
-        </>
-      ) : null}
+            </>,
+            document.body,
+          )
+        : null}
 
       {selected ? (
         <InboxModal
