@@ -438,7 +438,11 @@ async function importSentReplies(userId: string, refreshToken: string): Promise<
     const mapped = await fetchGmailMessage(token.access_token, id);
     if (!mapped) continue;
     const doel = perOnderwerp.get(normalizeSubject(mapped.subject ?? ""));
-    if (doel) mapped.threadId = doel;
+    // Wat je zelf verstuurt telt alleen mee in een gesprek dat we al kennen.
+    // Zonder die voorwaarde werd een mail aan een nieuwe ontvanger een eigen
+    // kaart, met jezelf als afzender en een concept erbij.
+    if (!doel) continue;
+    mapped.threadId = doel;
     messages.push(mapped);
   }
   const saved = await saveMessages(userId, messages);
