@@ -8,6 +8,8 @@ import { startOfLogicalDay } from "@/lib/day-boundary";
 import type { MailAssessment, ShipmentInfo } from "@/lib/agent/types";
 import { useInbox, type InboxProgress } from "./AgentInbox";
 import { useApp } from "./AppProvider";
+import { useRandVeeg } from "@/lib/use-rand-veeg";
+import { useMobielNav } from "./mobiel-nav";
 import { InboxGrid } from "./InboxGrid";
 import { LegacyLoopsCard } from "./LegacyLoopsCard";
 import { ShipmentDialog, type TrailStep } from "./ShipmentDialog";
@@ -198,6 +200,18 @@ export function TodayView() {
    * Op mobiel moet de zijbalk eerst dichtglijden voordat een agendascherm opent;
    * anders schuift dat scherm open achter een paneel dat nog in beeld is.
    */
+  const { setOpen: zetLade } = useMobielNav();
+
+  // Veeg vanaf de rechterrand opent het paneel, net als het lipje.
+  useRandVeeg(
+    "rechts",
+    () => {
+      // De lade en het paneel niet tegelijk open.
+      zetLade(false);
+      if (!zijbalkOpen) openZijbalk();
+    },
+  );
+
   const openVanuitZijbalk = (actie: () => void) => {
     if (!zijbalkOpen) {
       actie();

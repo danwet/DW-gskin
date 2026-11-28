@@ -4,6 +4,7 @@ import { ontgrendelGeluid } from "@/lib/geluid";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRandVeeg } from "@/lib/use-rand-veeg";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { signOutOfDashboard } from "@/app/login/actions";
@@ -43,6 +44,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [floatingOpen, setFloatingOpen] = useState(false);
   const [nieuweMail, setNieuweMail] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Veeg vanaf de linkerrand opent de menubalk.
+  useRandVeeg("links", () => setMobileOpen(true));
 
   const asideRef = useRef<HTMLElement | null>(null);
   const openTimer = useRef<number | null>(null);

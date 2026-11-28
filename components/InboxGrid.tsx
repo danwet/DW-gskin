@@ -199,6 +199,11 @@ export function InboxGrid({
         return;
       }
       const raak = event.touches[0];
+      // Een veeg die op de rand begint is voor de menubalk of het paneel.
+      if (raak.clientX <= 18 || raak.clientX >= window.innerWidth - 18) {
+        veegStart.current = null;
+        return;
+      }
       veegStart.current = { x: raak.clientX, y: raak.clientY };
       veegDx.current = 0;
       setVeeg({ dx: 0, sleept: true });
