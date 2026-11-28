@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { useRandVeeg } from "@/lib/use-rand-veeg";
 import { useSluier } from "@/lib/use-sluier";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import { signOutOfDashboard } from "@/app/login/actions";
 import { useApp, type SyncProgressView } from "./AppProvider";
 import { DraftDialog } from "./DraftDialog";
@@ -45,8 +45,60 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [floatingOpen, setFloatingOpen] = useState(false);
   const [nieuweMail, setNieuweMail] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Stand van de lade in pixels vanaf dicht (0) tot open (breedte). Zo kan hij
+  // de vinger volgen bij een veeg vanaf de linkerrand.
+  const ladeX = useMotionValue(0);
+  const ladeRef = useRef<HTMLElement | null>(null);
+  const ladeBreedte = () => ladeRef.current?.offsetWidth ?? 206;
+  const ladeTransform = useTransform(ladeX, (waarde) => `calc(-100% + ${waarde}px)`);
+  const ladeSluier = useTransform(ladeX, [0, 110], [0, 1]);
+
+  /** Slepen aan de lade zelf: naar links volgt de vinger en klapt dicht. */
+  const ladeSleep = useRef<{ startX: number; basis: number; actief: boolean } | null>(null);
+  const beginLadeSleep = (event: React.PointerEvent) => {
+    const doel = event.target as Element | null;
+    if (doel?.closest?.("button, a, input, textarea, select, [contenteditable]")) return;
+    if (document.querySelector('[data-slot="dialog-content"]')) return;
+    void animate(ladeX, ladeX.get(), { duration: 0 });
+    ladeSleep.current = { startX: event.clientX, basis: ladeX.get(), actief: true };
+    const beweeg = (native: PointerEvent) => {
+      const stand = ladeSleep.current;
+      if (!stand?.actief) return;
+      const dx = native.clientX - stand.startX;
+      ladeX.set(Math.max(0, Math.min(ladeBreedte(), stand.basis + dx)));
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", beweeg);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+      ladeSleep.current = null;
+      if (ladeX.get() > ladeBreedte() * 0.5) openLade();
+      else sluitLade();
+    };
+    window.addEventListener("pointermove", beweeg, { passive: true });
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+  };
+
+  const openLade = () => {
+    setMobileOpen(true);
+    void animate(ladeX, ladeBreedte(), { type: "spring", stiffness: 420, damping: 38, mass: 0.9 });
+  };
+  const sluitLade = () => {
+    setMobileOpen(false);
+    void animate(ladeX, 0, { type: "spring", stiffness: 420, damping: 38, mass: 0.9 });
+  };
   // Veeg vanaf de linkerrand opent de menubalk.
-  useRandVeeg("links", () => setMobileOpen(true));
+  useRandVeeg("links", {
+    onStart: () => {
+      void animate(ladeX, ladeX.get(), { duration: 0 });
+    },
+    onMove: (afstand) => ladeX.set(Math.max(0, Math.min(ladeBreedte(), afstand))),
+    onEnd: (_afstand, genoeg) => {
+      if (genoeg || ladeX.get() > ladeBreedte() * 0.5) openLade();
+      else sluitLade();
+    },
+  });
 
   // Zolang de lade open is, kleurt ook het gebied buiten de lade mee.
   useSluier(mobileOpen ? "lade" : null);
@@ -103,7 +155,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       if (!pinned && floatingOpen) {
         setFloatingOpen(false);
       } else if (mobileOpen) {
-        setMobileOpen(false);
+        sluitLade();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -116,7 +168,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Alleen de mobiele drawer sluit bij navigeren; de zwevende balk blijft staan
   // tot de muis eruit gaat.
   const closeOverlay = useCallback(() => {
-    setMobileOpen(false);
+    sluitLade();
   }, []);
 
   const sidebar = (
@@ -182,47 +234,46 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobiel: geen witte balk meer. Het menu-icoon en het eiland staan in de
           paginakop; hier alleen de lade die daarvandaan opengaat. */}
-      <AnimatePresence>
-        {mobileOpen ? (
-          <div className="md:hidden">
-            <motion.button
-              key="mobiel-sluier"
-              type="button"
-              aria-label="Navigatie sluiten"
-              onClick={() => setMobileOpen(false)}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              // Reikt tot boven de veilige marge, zodat die strook dezelfde
-              // sluier krijgt als de rest van de pagina.
-              style={{ top: "calc(-1 * env(safe-area-inset-top) - 40px)", height: "calc(100% + env(safe-area-inset-top) + 40px)" }}
-              className="fixed inset-x-0 bottom-0 z-40 bg-black/25 !cursor-default backdrop-blur-[2px]"
-            />
-            <motion.aside
-              key="mobiel-menu"
-              id="mobile-sidebar"
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={{ left: 0.6, right: 0 }}
-              dragMomentum={false}
-              onDragEnd={(_, info) => {
-                // Naar links wegvegen sluit het menu; tikken ernaast ook.
-                if (info.offset.x < -60) setMobileOpen(false);
-              }}
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", stiffness: 420, damping: 38, mass: 0.9 }}
-              className="glass-float fixed top-0 left-0 z-50 flex h-full w-[58vw] max-w-[206px] touch-pan-y flex-col !rounded-l-none rounded-r-lg"
-            >
-              {sidebar}
-            </motion.aside>
-          </div>
-        ) : null}
-      </AnimatePresence>
+      {/* De lade is altijd gemonteerd zodat hij de vinger kan volgen; de stand
+          komt uit `ladeX` (0 = dicht, breedte = open). */}
+      <div className="md:hidden">
+        <motion.button
+          type="button"
+          aria-label="Navigatie sluiten"
+          onClick={sluitLade}
+          style={{
+            opacity: ladeSluier,
+            pointerEvents: mobileOpen ? "auto" : "none",
+            top: "calc(-1 * env(safe-area-inset-top) - 40px)",
+            height: "calc(100% + env(safe-area-inset-top) + 40px)",
+          }}
+          className="fixed inset-x-0 bottom-0 z-40 bg-black/30 !cursor-default"
+        />
+        <motion.div
+          aria-hidden
+          style={{
+            opacity: ladeSluier,
+            pointerEvents: "none",
+            top: "calc(-1 * env(safe-area-inset-top) - 40px)",
+            height: "calc(100% + env(safe-area-inset-top) + 40px)",
+          }}
+          className="pointer-events-none fixed inset-x-0 bottom-0 z-40 backdrop-blur-[2px]"
+        />
+        <motion.aside
+          ref={(element) => {
+            ladeRef.current = element;
+          }}
+          id="mobile-sidebar"
+          aria-hidden={!mobileOpen}
+          onPointerDown={beginLadeSleep}
+          style={{ x: ladeTransform, pointerEvents: mobileOpen ? "auto" : "none" }}
+          className="glass-float fixed top-0 left-0 z-50 flex h-full w-[58vw] max-w-[206px] touch-pan-y flex-col !rounded-l-none rounded-r-lg"
+        >
+          {sidebar}
+        </motion.aside>
+      </div>
 
-      <MobielNavProvider value={{ open: mobileOpen, setOpen: setMobileOpen }}>
+      <MobielNavProvider value={{ open: mobileOpen, setOpen: (open) => (open ? openLade() : sluitLade()) }}>
       <main
         className="h-full min-w-0 flex-1 overflow-y-auto overscroll-contain md:min-h-0 md:overflow-y-auto"
         // Ruimte voor de home-indicator onderaan, zodat de laatste knop niet

@@ -209,15 +209,23 @@ export function TodayView() {
   // over. Op de html zou daardoor elke veeg worden genegeerd.
   useSluier(zijbalkOpen ? "paneel" : null);
 
-  // Veeg vanaf de rechterrand opent het paneel, net als het lipje.
-  useRandVeeg(
-    "rechts",
-    () => {
+  // Veeg vanaf de rechterrand: het paneel volgt de vinger, net als het lipje.
+  useRandVeeg("rechts", {
+    onStart: () => {
       // De lade en het paneel niet tegelijk open.
       zetLade(false);
-      if (!zijbalkOpen) openZijbalk();
+      void animate(sleep, sleep.get(), { duration: 0 });
     },
-  );
+    onMove: (afstand) => {
+      const breedte = paneelRef.current?.offsetWidth ?? 300;
+      sleep.set(Math.max(0, Math.min(breedte, afstand)));
+    },
+    onEnd: (_afstand, genoeg) => {
+      const breedte = paneelRef.current?.offsetWidth ?? 300;
+      if (genoeg || sleep.get() > breedte * 0.5) openZijbalk();
+      else sluitZijbalk();
+    },
+  });
 
   const openVanuitZijbalk = (actie: () => void) => {
     if (!zijbalkOpen) {
@@ -292,6 +300,8 @@ export function TodayView() {
       sleepGesleept.current = true;
       return;
     }
+    // Niet bewogen? Dan is het een tik; die handelt de klik af.
+    if (!sleepGesleept.current) return;
     const breedte = paneelRef.current?.offsetWidth ?? 300;
     const stand0 = sleep.get();
     // Zeventig pixel is genoeg om te wisselen; minder veert terug.
@@ -427,7 +437,20 @@ export function TodayView() {
             top: "calc(-1 * env(safe-area-inset-top) - 40px)",
             height: "calc(100% + env(safe-area-inset-top) + 40px)",
           }}
-          className="fixed inset-x-0 bottom-0 z-40 bg-black/35 !cursor-default backdrop-blur-[2px]"
+          className="fixed inset-x-0 bottom-0 z-40 bg-black/40 !cursor-default"
+        />
+        {/* De blur op een eigen laag, los van de donkere tint. Safari zet
+            glasachtige elementen (de focus-selector, de kaarten) boven een laag
+            met backdrop-filter; de tint erboven dimt ze alsnog. */}
+        <motion.div
+          aria-hidden
+          style={{
+            opacity: sluierOpacity,
+            pointerEvents: "none",
+            top: "calc(-1 * env(safe-area-inset-top) - 40px)",
+            height: "calc(100% + env(safe-area-inset-top) + 40px)",
+          }}
+          className="fixed inset-x-0 bottom-0 z-40 backdrop-blur-[2px]"
         />
         <motion.aside
           ref={paneelRef}
