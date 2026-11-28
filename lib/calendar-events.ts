@@ -1,4 +1,5 @@
 import type { CalendarEvent } from "./types";
+import { zonderLand, zonderPostcode } from "./adres";
 import { DAY_ROLLOVER_HOUR } from "./day-boundary";
 
 const tones: CalendarEvent["tone"][] = ["blue", "green", "orange", "purple"];
@@ -114,7 +115,8 @@ function hourMinute(date: Date, timeZone: string): { hour: number; minute: numbe
 }
 
 function detailFor(event: GoogleCalendarEvent, allDay: boolean): string {
-  const location = event.location?.trim();
+  // In het paneel is straat en plaats genoeg: geen land, geen postcode.
+  const location = zonderPostcode(zonderLand(event.location?.trim() ?? ""));
   const description = event.description?.trim().split("\n")[0]?.trim().slice(0, 140);
   const bits: string[] = [];
   if (allDay) bits.push("All day");

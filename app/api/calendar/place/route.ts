@@ -47,7 +47,18 @@ export async function GET(request: Request) {
     }[];
   } | null;
 
-  const places = (data?.features ?? [])
+  // Eindigt de vraag op een huisnummer? Dan eerst de treffers die dat nummer
+  // echt hebben; Photon geeft bij twijfel ook straten zonder nummer terug en
+  // die stonden dan bovenaan.
+  const nummer = /\s(\d+[a-zA-Z]?)\s*$/.exec(query)?.[1] ?? null;
+  const features = [...(data?.features ?? [])];
+  if (nummer) {
+    const rang = (feature: (typeof features)[number]) =>
+      String(feature.properties?.housenumber ?? "").startsWith(nummer) ? 0 : 1;
+    features.sort((a, b) => rang(a) - rang(b));
+  }
+
+  const places = features
     .map((feature) => {
       const p = feature.properties ?? {};
       const [lon, lat] = feature.geometry?.coordinates ?? [];

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Modal } from "@/components/kit/modal";
 import { PlaceField } from "@/components/PlaceField";
+import { zonderLand } from "@/lib/adres";
 import type { CalendarEvent } from "@/lib/types";
 
 type CalendarChoice = { id: string; name: string; primary: boolean };
@@ -110,7 +111,8 @@ export function AppointmentDialog({
   const [allDay, setAllDay] = useState(Boolean(event?.allDay));
   const [startTime, setStartTime] = useState(timeOf(event?.start) || "09:00");
   const [endTime, setEndTime] = useState(timeOf(event?.end) || "09:30");
-  const [location, setLocation] = useState(event?.location ?? "");
+  // Bestaande afspraken kunnen nog ", Nederland" in de locatie hebben staan.
+  const [location, setLocation] = useState(zonderLand(event?.location ?? ""));
   const [coords, setCoords] = useState<{ lat: number; lon: number; label: string } | null>(null);
   const [description, setDescription] = useState(event?.description ?? "");
   const [busy, setBusy] = useState(false);

@@ -2,12 +2,37 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { zonderLand } from "@/lib/adres";
+
 /**
  * Zoekt echt bestaande adressen terwijl je typt, zoals Apple Calendar: je kiest
  * uit een lijst en wat er in het veld komt te staan is een adres dat andere apps
  * als locatie herkennen. Zonder keuze blijft het een gewoon tekstveld.
  */
 type Place = { label: string; lat: number | null; lon: number | null };
+
+/**
+ * Houdt het huisnummer dat iemand typte vast. Photon geeft bij twijfel ook
+ * straten zonder nummer terug; dan kwam het adres er zonder nummer in te staan.
+ */
+function metHuisnummer(label: string, nummer: string | null): string {
+  if (!nummer) return label;
+  const delen = label.split(",");
+  const straat = (delen[0] ?? "").trim();
+  // Zit er al een nummer in het straatdeel, of is dit geen straat, doe niets.
+  if (!straat || /\d/.test(straat)) return label;
+  delen[0] = `${straat} ${nummer}`;
+  return delen.join(",");
+}
+
+/** Het huisnummer achteraan de invoer, of null. */
+function huisnummerVan(waarde: string): string | null {
+  const match = /(?:^|\s)(\d+[a-zA-Z]?)\s*$/.exec(waarde.trim());
+  if (!match) return null;
+  // "1234 AB" is een postcode, geen huisnummer.
+  if (/\b\d{4}\s?[a-zA-Z]{2}\b/.test(waarde)) return null;
+  return match[1];
+}
 
 export function PlaceField({
   id,
@@ -66,9 +91,13 @@ export function PlaceField({
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open]);
 
+  const nummer = huisnummerVan(value);
   const choose = (place: Place) => {
-    onChange(place.label);
-    onPick?.(place);
+    // Het getypte huisnummer blijft staan, ook als de treffer alleen de straat
+    // kent; anders verdwijnt het bij het kiezen.
+    const label = zonderLand(metHuisnummer(place.label, nummer));
+    onChange(label);
+    onPick?.({ ...place, label });
     setOpen(false);
     setActive(-1);
   };
@@ -127,7 +156,7 @@ export function PlaceField({
                   index === active ? "bg-[var(--bg)]" : ""
                 }`}
               >
-                {place.label}
+                {zonderLand(metHuisnummer(place.label, nummer))}
               </button>
             </li>
           ))}
