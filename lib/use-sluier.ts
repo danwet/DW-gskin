@@ -40,9 +40,16 @@ export function useSluier(soort: Sluier | null): void {
 function pasToe(): void {
   const wortel = document.documentElement;
   const boven = stapel[stapel.length - 1];
-  if (boven) wortel.dataset.sluier = boven;
-  else delete wortel.dataset.sluier;
-  zetMeta(kleurVan(wortel));
+  if (boven) {
+    wortel.dataset.sluier = boven;
+    zetMeta(kleurVan(wortel));
+    return;
+  }
+  delete wortel.dataset.sluier;
+  // Bij sluiten niet de zojuist gemeten kleur gebruiken: op iOS is die meting
+  // nog de oude (donkere) waarde en dan blijft de strook donker staan. De
+  // paginakleur staat als variabele klaar en is altijd goed.
+  zetMeta(naarHex(getComputedStyle(wortel).getPropertyValue("--page").trim()));
 }
 
 /**
@@ -70,6 +77,11 @@ function zetMeta(hex: string | null): void {
 
 /** `color(srgb …)` en `rgb(…)` omzetten naar #rrggbb; anders null. */
 function naarHex(waarde: string): string | null {
+  // Al een hexwaarde (zoals --page)? Dan zo laten.
+  if (/^#[0-9a-f]{6}$/i.test(waarde)) return waarde.toLowerCase();
+  if (/^#[0-9a-f]{3}$/i.test(waarde)) {
+    return `#${[...waarde.slice(1)].map((teken) => teken + teken).join("").toLowerCase()}`;
+  }
   const srgb = /color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)/.exec(waarde);
   const rgb = /rgba?\((\d+), (\d+), (\d+)/.exec(waarde);
   const delen = srgb

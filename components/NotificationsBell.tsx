@@ -85,8 +85,10 @@ export function NotificationsBell({
       // Op mobiel de volle breedte (met een kleine kantlijn), daarboven een
       // vaste breedte die rechts tegen de kantlijn van de pagina staat.
       const mobiel = window.matchMedia("(max-width: 767px)").matches;
+      // Op mobiel dezelfde kantlijn als het icooneiland rechts heeft.
+      const rand = 18;
       const breedte = mobiel
-        ? Math.round(document.documentElement.clientWidth - 16)
+        ? Math.round(document.documentElement.clientWidth - rand * 2)
         : Math.min(PANEEL_BREEDTE, Math.max(220, Math.round(window.innerWidth - 48)));
       // Rechts uitlijnen tegen de kantlijn van de pagina. Die halen we uit de
       // rij van de topbalk zelf: dat is op elk scherm dezelfde rand, ook op
@@ -96,7 +98,7 @@ export function NotificationsBell({
       const links = kantlijn - breedte;
       // clientWidth in plaats van innerWidth: zo valt de rand van het paneel
       // precies op de kantlijn, ook als er een scrollbar staat.
-      const rechts = mobiel ? 8 : Math.max(12, Math.round(document.documentElement.clientWidth - kantlijn));
+      const rechts = mobiel ? rand : Math.max(12, Math.round(document.documentElement.clientWidth - kantlijn));
       const pijl = Math.min(breedte - 20, Math.max(20, Math.round(k.left + k.width / 2 - links)));
       setPlaat({ top: Math.round(k.bottom + 15), right: rechts, pijl, breedte });
     };

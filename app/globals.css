@@ -1211,9 +1211,10 @@ html.glas-safari .glas-balk {
     background-color: color-mix(in srgb, var(--page) 65%, #000);
     background-image: none;
   }
+  /* De lade gebruikt dezelfde tint als het paneel. */
   html[data-sluier="lade"],
   html[data-sluier="lade"] body {
-    background-color: color-mix(in srgb, var(--page) 75%, #000);
+    background-color: color-mix(in srgb, var(--page) 65%, #000);
     background-image: none;
   }
   html[data-sluier="sheet"],
