@@ -21,7 +21,7 @@ export function TopBar() {
   return (
     <div data-topbar-rij className="flex items-center gap-3 md:gap-5">
       {/* Eén glas-eiland voor de drie bedieningen, zoals in macOS. */}
-      <div className="glas-balk mx-auto flex items-center gap-1 rounded-full p-1">
+      <div className="glas-balk mx-auto flex items-center gap-1 rounded-full p-1 max-md:gap-1.5 max-md:p-1.5">
         <button
           type="button"
           onClick={() => {
@@ -37,7 +37,7 @@ export function TopBar() {
           disabled={topBar ? !undoable : !ready}
           aria-label="Laatste actie terugzetten"
           title={undoable || !topBar ? "Laatste actie terugzetten" : "Nog niets om terug te zetten"}
-          className="focus-ring grid h-7 w-7 place-items-center rounded-full text-[var(--ink)] hover:bg-black/[0.06] disabled:opacity-40"
+          className="focus-ring grid h-7 w-7 place-items-center rounded-full text-[var(--ink)] hover:bg-black/[0.06] disabled:opacity-40 max-md:h-8 max-md:w-8"
         >
           <UndoIcon />
         </button>
@@ -47,7 +47,7 @@ export function TopBar() {
           onClick={() => void refresh()}
           disabled={refreshing || !ready}
           aria-label="Bijwerken"
-          className="focus-ring grid h-7 w-7 place-items-center rounded-full text-[var(--ink)] hover:bg-black/[0.06] disabled:opacity-60"
+          className="focus-ring grid h-7 w-7 place-items-center rounded-full text-[var(--ink)] hover:bg-black/[0.06] disabled:opacity-60 max-md:h-8 max-md:w-8"
         >
           <RefreshIcon spinning={refreshing} />
         </button>
@@ -113,6 +113,7 @@ export function TopBar() {
 function UndoIcon() {
   return (
     <svg
+      className="max-md:h-[17px] max-md:w-[17px]"
       width="15"
       height="15"
       viewBox="0 0 24 24"
@@ -142,7 +143,7 @@ function RefreshIcon({ spinning }: { spinning: boolean }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className={spinning ? "animate-spin" : ""}
+      className={`max-md:h-[17px] max-md:w-[17px] ${spinning ? "animate-spin" : ""}`}
     >
       <path d="M21 12a9 9 0 1 1-2.64-6.36" />
       <path d="M21 3v6h-6" />

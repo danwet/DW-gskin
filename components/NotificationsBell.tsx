@@ -138,7 +138,7 @@ export function NotificationsBell({
         aria-expanded={open}
         // !overflow-visible: de teller hangt boven de knop en mag niet afgeknipt
         // worden door de overflow van de glasstijl.
-        className="focus-ring relative grid h-7 w-7 !overflow-visible place-items-center rounded-full text-[var(--ink)] hover:bg-black/[0.06]"
+        className="focus-ring relative grid h-7 w-7 !overflow-visible place-items-center rounded-full text-[var(--ink)] hover:bg-black/[0.06] max-md:h-8 max-md:w-8"
       >
         <BellIcon />
         {count > 0 ? (
@@ -319,7 +319,7 @@ function CheckIcon() {
 /** Bel met een streep erdoor: meldingen staan uit of zijn geblokkeerd. */
 function BellOffIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg className="max-md:h-[17px] max-md:w-[17px]" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
       <path d="M13.7 21a2 2 0 0 1-3.4 0" />
       <path d="M3 3l18 18" />

@@ -23,7 +23,7 @@ export function PageTitle({ eyebrow, title }: { eyebrow: string; title: string }
         aria-label="Navigatie openen"
         aria-expanded={nav.open}
         aria-controls="mobile-sidebar"
-        className="btn-secondary focus-ring grid h-10 w-10 place-items-center rounded-full text-[var(--ink)] md:hidden"
+        className="btn-secondary focus-ring grid h-12 w-12 place-items-center rounded-full text-[var(--ink)] md:hidden"
       >
         <MenuIcoon />
       </button>
