@@ -229,7 +229,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         // btn-primary zet zelf `position: relative`; !fixed houdt de knop rechtsonder.
         // Onder het zijpaneel (z-40) en het lipje (z-50): als het paneel
         // uitgeklapt is, valt dat over deze knop heen.
-        className="btn-primary focus-ring !fixed z-30 grid h-14 w-14 place-items-center rounded-full shadow-[var(--shadow)]"
+        className="btn-primary focus-ring !fixed z-30 grid h-14 w-14 place-items-center rounded-full shadow-[var(--shadow)] max-md:h-16 max-md:w-16"
         // Op iOS valt de knop anders achter de home-indicator; de veilige marge
         // komt er dus bij, met een minimum van de gewone 24 px.
         style={{
@@ -238,7 +238,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         }}
       >
         {/* Nieuwe mail: een pen op een vel, geen plus. */}
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg className="max-md:h-[26px] max-md:w-[26px]" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
           <path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z" />
         </svg>

@@ -31,11 +31,14 @@ export function MobieleLijst({
   now,
   timeZone,
   onOpen,
+  toonActie = true,
 }: {
   items: MailAssessment[];
   now: Date;
   timeZone: string;
   onOpen: (item: MailAssessment) => void;
+  /** Bij "Hoeft niet" is er geen actie om te tonen. */
+  toonActie?: boolean;
 }) {
   return (
     <ul className="divide-y divide-[var(--line)]">
@@ -44,6 +47,8 @@ export function MobieleLijst({
         const toon = urgentie.tone;
         const bedrag = item.invoice?.amount;
         const declaratie = item.declaration === "pending";
+        // In "Hoeft niet" is er geen actie, dus die regel vervalt helemaal.
+        const actie = toonActie ? (declaratie ? declareLabel(item) : (item.nextAction ?? "")) : "";
         return (
           <li key={item.conversationId}>
             <button
@@ -66,18 +71,20 @@ export function MobieleLijst({
                 <span className="mt-1 line-clamp-2 block text-[15px] leading-[1.35] text-[var(--muted)]">
                   {item.shortSubject || item.subject}
                 </span>
-                <span className="mt-1 flex items-baseline justify-between gap-3">
-                  <span className="truncate text-[14px] text-[var(--ink)]/80">
-                    {declaratie ? declareLabel(item) : (item.nextAction ?? "")}
+                {actie || bedrag || item.invoice?.dueDate ? (
+                  <span className="mt-1 flex items-baseline justify-between gap-3">
+                    <span className="truncate text-[14px] text-[var(--ink)]/80">{actie}</span>
+                    {declaratie && bedrag ? (
+                      <span className="shrink-0 text-[14px] font-medium text-[var(--ink)]">
+                        {bedragTekst(bedrag, item.invoice?.currency)}
+                      </span>
+                    ) : item.invoice?.dueDate ? (
+                      <span className="shrink-0 text-[13px] text-[var(--muted)]">
+                        {datumKort(item.invoice.dueDate, timeZone)}
+                      </span>
+                    ) : null}
                   </span>
-                  {declaratie && bedrag ? (
-                    <span className="shrink-0 text-[14px] font-medium text-[var(--ink)]">{bedragTekst(bedrag, item.invoice?.currency)}</span>
-                  ) : item.invoice?.dueDate ? (
-                    <span className="shrink-0 text-[13px] text-[var(--muted)]">
-                      {datumKort(item.invoice.dueDate, timeZone)}
-                    </span>
-                  ) : null}
-                </span>
+                ) : null}
               </span>
             </button>
           </li>

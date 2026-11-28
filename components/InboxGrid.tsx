@@ -194,7 +194,7 @@ export function InboxGrid({
     const start = (event: TouchEvent) => {
       const doel = event.target as Element | null;
       // In een sheet of op een formulierveld niet meedoen.
-      if (doel?.closest?.('[role="dialog"], input, textarea, select')) {
+      if (doel?.closest?.('[role="dialog"], [data-zijbalk], input, textarea, select')) {
         veegStart.current = null;
         return;
       }
@@ -375,6 +375,8 @@ export function InboxGrid({
                   items={activeCards}
                   now={now}
                   timeZone={timeZone}
+                  // In "Hoeft niet" valt er niets te doen, dus geen actieregel.
+                  toonActie={activeTab !== "info"}
                   onOpen={(item) => {
                     onSeen?.(item);
                     setSelected(item);
