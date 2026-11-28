@@ -2,8 +2,10 @@ import "server-only";
 
 import type { InboundMessage, ShipmentInfo } from "./types";
 
-const SHIPMENT_MARKER = /track(?:ing)?|track & trace|pakket|package|parcel|verzonden|onderweg|geleverd|bezorgd|delivered|shipped|dispatched|in transit|shipment|vervoerder|carrier|bezorging|levering|order bevestigd|orderbevestiging|order confirmed/i;
-const ORDER_MARKER = /order|bestelling|pakket|package|bestelnummer/i;
+const SHIPMENT_MARKER = /track & trace|tracking|track(?:ing)?nummer|pakket|parcel|verzonden|onderweg|geleverd|bezorgd|delivered|shipped|dispatched|in transit|shipment|vervoerder|carrier|bezorging|levering|order bevestigd|orderbevestiging|order confirmed/i;
+// Een order herken je aan een nummer, niet aan het woord alleen: "in order to"
+// of "support packages" is geen zending.
+const ORDER_MARKER = /(?:bestel|order|tracking|track & trace|zendings)\s*(?:nummer|number|nr\.?|id|code)?\s*[:#]?\s*[A-Z0-9][A-Z0-9-]{3,}|order\s*#|bestelnummer|ordernummer|track & trace/i;
 
 export function isShipmentRelated(message: InboundMessage): boolean {
   const text = `${message.subject ?? ""}\n${message.snippet ?? ""}\n${message.body ?? ""}`;

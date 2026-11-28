@@ -337,12 +337,17 @@ function ShipmentsPanel({ items }: { items: MailAssessment[] }) {
 
   const paymentEntries = [...payments.values()].sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
 
+  // Een zending die nog onderweg is mag blijven staan, ook als hij van gisteren
+  // is. Al het andere hoort bij de dag: na de wissel om 05:00 valt het weg.
+  const ONDERWEG = new Set(["Onderweg", "Vertraagd", "In behandeling", "Order bevestigd", "Verzonden"]);
   const shipments = [...byKey.values()]
     .filter((entry) => {
-      if (entry.shipment.status !== "Geleverd") return true;
-      // Today's delivery, or one the agent processed today, stays visible.
+      const vandaag = Date.parse(entry.receivedAt) >= startOfToday.getTime();
+      if (vandaag) return true;
       const archivedToday = item_archivedToday(entry.shipment.supplier, items, startOfToday);
-      return archivedToday || Date.parse(entry.receivedAt) >= startOfToday.getTime();
+      if (archivedToday) return true;
+      // Een pakket dat nog loopt blijft zichtbaar tot het bezorgd is.
+      return ONDERWEG.has(entry.shipment.status);
     })
     .sort((a, b) => Date.parse(b.receivedAt) - Date.parse(a.receivedAt));
 

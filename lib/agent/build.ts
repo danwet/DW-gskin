@@ -315,14 +315,19 @@ function mergeShipment(
   detected: ShipmentInfo | null,
 ): ShipmentInfo | undefined {
   if (!draft && !detected) return undefined;
-  const status = draft?.status || detected?.status || "Update";
+  const status = draft?.status || detected?.status || "";
+  const orderNumber = draft?.orderNumber || detected?.orderNumber || "";
+  // "Update" is de terugvalstatus van de regels: dat is geen zending maar een
+  // mededeling. Zonder nummer, vervoerder of tracking is het er dus geen.
+  const echt = Boolean(orderNumber || draft?.tracking || detected?.tracking || detected?.carrier || draft?.carrier);
+  if (!status || (status === "Update" && !echt)) return undefined;
   return {
     // Het model leest de winkel uit de mail; de regels vullen alleen aan wat
     // het model niet noemde. Andersom gooide weg wat de AI wél begreep.
     supplier: draft?.shop || detected?.supplier || "",
     shop: draft?.shop || detected?.shop || undefined,
     carrier: draft?.carrier || detected?.carrier || undefined,
-    orderNumber: draft?.orderNumber || detected?.orderNumber || "",
+    orderNumber,
     tracking: draft?.tracking || detected?.tracking || undefined,
     status,
     international: detected?.international,
