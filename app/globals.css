@@ -1190,3 +1190,25 @@ html.glas-safari .glas-balk {
 .veld-underline:disabled {
   opacity: 0.6;
 }
+
+/* Op mobiel: als het paneel open is, krijgt ook het vlak boven het paneel de
+   kleur van de sluier (de pagina Donkerder gemaakt met zwart), zodat de veilige
+   marge bovenaan niet wit blijft. */
+@media (max-width: 767px) {
+  /* Paneel: sluier is zwart op 35%. Lade: zwart op 25%. */
+  html[data-zijbalk="open"],
+  html[data-zijbalk="open"] body {
+    background-color: color-mix(in srgb, var(--page) 65%, #000);
+    background-image: none;
+  }
+  html[data-lade="open"],
+  html[data-lade="open"] body {
+    background-color: color-mix(in srgb, var(--page) 75%, #000);
+    background-image: none;
+  }
+  html[data-sheet="open"],
+  html[data-sheet="open"] body {
+    background-color: color-mix(in srgb, var(--page) 70%, #000);
+    background-image: none;
+  }
+}

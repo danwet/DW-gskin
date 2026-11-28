@@ -86,6 +86,15 @@ export function Modal({
   const groeiRef = useRef<HTMLDivElement | null>(null);
   const lijstRef = useRef<HTMLDivElement | null>(null);
   const [heeftVak, setHeeftVak] = useState(false);
+  // Zolang een sheet open is, kleurt ook het gebied buiten de sheet mee; anders
+  // blijft de veilige marge bovenaan wit op iOS.
+  useEffect(() => {
+    if (!open) return;
+    document.documentElement.dataset.sheet = "open";
+    return () => {
+      delete document.documentElement.dataset.sheet;
+    };
+  }, [open]);
 
   const scherm = typeof window === "undefined" ? 800 : window.innerHeight;
   const minHoogte = Math.round(scherm * 0.5);

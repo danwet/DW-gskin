@@ -202,6 +202,15 @@ export function TodayView() {
    */
   const { setOpen: zetLade } = useMobielNav();
 
+  // Zolang het paneel open is, kleurt ook het gebied buiten het paneel mee;
+  // anders blijft de veilige marge bovenaan wit op iOS.
+  useEffect(() => {
+    document.documentElement.dataset.zijbalk = zijbalkOpen ? "open" : "";
+    return () => {
+      delete document.documentElement.dataset.zijbalk;
+    };
+  }, [zijbalkOpen]);
+
   // Veeg vanaf de rechterrand opent het paneel, net als het lipje.
   useRandVeeg(
     "rechts",

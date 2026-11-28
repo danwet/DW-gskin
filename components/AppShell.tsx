@@ -47,6 +47,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Veeg vanaf de linkerrand opent de menubalk.
   useRandVeeg("links", () => setMobileOpen(true));
 
+  // Zolang de lade open is, kleurt ook het gebied buiten de lade mee; anders
+  // blijft de veilige marge bovenaan wit op iOS.
+  useEffect(() => {
+    document.documentElement.dataset.lade = mobileOpen ? "open" : "";
+    return () => {
+      delete document.documentElement.dataset.lade;
+    };
+  }, [mobileOpen]);
+
   const asideRef = useRef<HTMLElement | null>(null);
   const openTimer = useRef<number | null>(null);
   const closeTimer = useRef<number | null>(null);
