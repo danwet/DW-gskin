@@ -254,31 +254,17 @@ export function TodayView() {
   );
 
   /**
-   * Slepen met eigen pointer-afhandeling. Framer's drag zet zijn eigen
-   * transform bovenop de stand die wij al bijhouden; die twee vochten om
-   * dezelfde waarde en dat gaf zichtbaar geflikker.
+   * Slepen met window-luisteraars in plaats van pointer capture. Safari op iOS
+   * breekt die capture halverwege af; dan stopte het lipje met volgen en klapte
+   * het paneel alsnog open door de klik die daarna kwam.
    */
   const sleepSleep = useRef<{ startX: number; startY: number; basis: number; actief: boolean } | null>(null);
   // Na een echte sleep volgt er nog een klik; die mag het paneel niet meteen
-  // weer sluiten.
+  // weer openen of sluiten.
   const sleepGesleept = useRef(false);
+  const sleepOpruimen = useRef<(() => void) | null>(null);
 
-  const beginSleep = (event: React.PointerEvent) => {
-    const doel = event.target as Element | null;
-    // Ligt er een sheet bovenop? Dan is die leidend en doen lipje en paneel
-    // niet mee met slepen.
-    if (document.querySelector('[data-slot="dialog-content"]')) return;
-    // Ook niet slepen aan een knop of veld ín het paneel: die kaapte de
-    // pointer, waardoor de eerstvolgende veeg elders het paneel opende.
-    if (doel?.closest?.('button, a, input, textarea, select, [contenteditable]')) {
-      if (doel.closest('[aria-label="Zijbalk"]')) return;
-    }
-    sleepSleep.current = { startX: event.clientX, startY: event.clientY, basis: sleep.get(), actief: true };
-    sleepGesleept.current = false;
-    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
-  };
-
-  const beweegSleep = (event: React.PointerEvent) => {
+  const beweegSleep = (event: { clientX: number; clientY: number }) => {
     const stand = sleepSleep.current;
     if (!stand?.actief) return;
     const dx = event.clientX - stand.startX;
@@ -286,18 +272,26 @@ export function TodayView() {
     // Verticaal scrollen wint: dan laten we het paneel met rust.
     if (Math.abs(dy) > Math.abs(dx) * 1.2) {
       stand.actief = false;
+      sleepGesleept.current = true;
       return;
     }
-    if (Math.abs(dx) > 6) sleepGesleept.current = true;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) sleepGesleept.current = true;
     const breedte = paneelRef.current?.offsetWidth ?? 300;
     // Nooit verder dan het paneel breed is, anders laat het lipje los.
     sleep.set(Math.max(0, Math.min(breedte, stand.basis - dx)));
   };
 
-  const eindSleep = () => {
+  const eindSleep = (geannuleerd: boolean) => {
     const stand = sleepSleep.current;
     sleepSleep.current = null;
+    sleepOpruimen.current?.();
     if (!stand?.actief) return;
+    // Afgebroken door de browser? Dan geen beslissing nemen: het paneel blijft
+    // staan waar de vinger het liet, en de klik erna doet niets.
+    if (geannuleerd) {
+      sleepGesleept.current = true;
+      return;
+    }
     const breedte = paneelRef.current?.offsetWidth ?? 300;
     const stand0 = sleep.get();
     // Zeventig pixel is genoeg om te wisselen; minder veert terug.
@@ -311,11 +305,35 @@ export function TodayView() {
     }
   };
 
-  /**
-   * Het lipje: een tab tegen de schermrand met holle bochten naar de rand,
-   * zoals een iOS-zijbalk. In open toestand verdwijnen die bochten, want dan
-   * zit het lipje tegen het paneel aan.
-   */
+  const beginSleep = (event: React.PointerEvent) => {
+    const doel = event.target as Element | null;
+    // Ligt er een sheet bovenop? Dan is die leidend en doen lipje en paneel
+    // niet mee met slepen.
+    if (document.querySelector('[data-slot="dialog-content"]')) return;
+    // Ook niet slepen aan een knop of veld ín het paneel.
+    if (doel?.closest?.('button, a, input, textarea, select, [contenteditable]')) {
+      if (doel.closest('[aria-label="Zijbalk"]')) return;
+    }
+
+    // Een lopende veer stilleggen, anders vecht hij met de vinger.
+    void animate(sleep, sleep.get(), { duration: 0 });
+    sleepSleep.current = { startX: event.clientX, startY: event.clientY, basis: sleep.get(), actief: true };
+    sleepGesleept.current = false;
+
+    const beweeg = (native: PointerEvent) => beweegSleep(native);
+    const stop = () => eindSleep(false);
+    const afbreken = () => eindSleep(true);
+    window.addEventListener("pointermove", beweeg, { passive: true });
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", afbreken);
+    sleepOpruimen.current = () => {
+      window.removeEventListener("pointermove", beweeg);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", afbreken);
+      sleepOpruimen.current = null;
+    };
+  };
+
   const lipjeKnoppen = (open: boolean) => (
     <svg width={34} height={122} viewBox="-2 -10 34 122" aria-hidden className="lipje-vlak touch-pan-y">
       {/* Altijd dezelfde vorm: ook als het paneel open is blijft dit lipje
@@ -390,9 +408,6 @@ export function TodayView() {
         aria-label={zijbalkOpen ? "Zijbalk sluiten" : "Open de zijbalk met agenda, bestellingen en de dag"}
         data-zijbalk="lipje"
         onPointerDown={beginSleep}
-        onPointerMove={beweegSleep}
-        onPointerUp={eindSleep}
-        onPointerCancel={eindSleep}
         style={{ x: lipX }}
         className="fixed top-1/2 right-0 z-50 -translate-y-1/2 touch-pan-y lg:hidden"
       >
@@ -421,9 +436,6 @@ export function TodayView() {
           aria-label="Zijbalk"
           data-zijbalk="paneel"
           onPointerDown={beginSleep}
-          onPointerMove={beweegSleep}
-          onPointerUp={eindSleep}
-          onPointerCancel={eindSleep}
           style={{ x: paneelX, pointerEvents: zijbalkOpen ? "auto" : "none" }}
           className="zijvlak donker-paneel dark fixed inset-y-0 right-0 z-40 w-[74vw] max-w-[304px] touch-pan-y rounded-l-[22px] [&_h2]:!mt-5 [&_h2]:!text-[19px] [&_h2:first-of-type]:!mt-0 [&_p]:!text-[14px] [&_p:first-child]:!text-[13px]"
         >
