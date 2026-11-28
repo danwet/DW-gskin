@@ -425,7 +425,7 @@ export function TodayView() {
           onPointerUp={eindSleep}
           onPointerCancel={eindSleep}
           style={{ x: paneelX, pointerEvents: zijbalkOpen ? "auto" : "none" }}
-          className="zijvlak donker-paneel dark fixed inset-y-0 right-0 z-40 w-[74vw] max-w-[304px] touch-pan-y rounded-l-[22px] [&_h2]:!mt-5 [&_h2]:!text-[18px] [&_h2:first-of-type]:!mt-0 [&_p]:!text-[13px]"
+          className="zijvlak donker-paneel dark fixed inset-y-0 right-0 z-40 w-[74vw] max-w-[304px] touch-pan-y rounded-l-[22px] [&_h2]:!mt-5 [&_h2]:!text-[19px] [&_h2:first-of-type]:!mt-0 [&_p]:!text-[14px] [&_p:first-child]:!text-[13px]"
         >
           {/* De schaduw zit op een eigen laag die meeschuift met de stand van het
               paneel: ingeklapt valt hij weg, anders zag je een schaduwband langs

@@ -203,7 +203,7 @@ export function SettingsDialog() {
                   setNotice(null);
                 }}
                 aria-current={category === item.id ? "page" : undefined}
-                className={`focus-ring shrink-0 py-2.5 pr-3 pl-5 text-left text-[14px] !font-semibold whitespace-nowrap ${
+                className={`focus-ring shrink-0 py-2.5 pr-3 pl-5 text-left text-[14px] max-md:text-[16px] !font-semibold whitespace-nowrap ${
                   category === item.id
                     // Zelfde glas én dezelfde gedempte tint als het actieve
                     // menu-item en het actieve label in de focus-selectie.
@@ -284,8 +284,8 @@ export function SettingsDialog() {
 function SectionTitle({ title, hint }: { title: string; hint?: string }) {
   return (
     <div className="mb-5">
-      <h3 className="text-[17px] font-semibold tracking-[-0.02em]">{title}</h3>
-      {hint ? <p className="mt-1 text-[13px] leading-5 text-[var(--muted)]">{hint}</p> : null}
+      <h3 className="text-[17px] font-semibold tracking-[-0.02em] max-md:text-[18px]">{title}</h3>
+      {hint ? <p className="mt-1 text-[13px] leading-5 text-[var(--muted)] max-md:text-[14px]">{hint}</p> : null}
     </div>
   );
 }
@@ -488,8 +488,8 @@ function ConnectionsSection({
         <div className="rounded-2xl border border-[var(--line)] px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[14px] font-semibold">Google Agenda</p>
-              <p className="mt-0.5 text-[13px] text-[var(--muted)]">Agenda lezen via je Google-account.</p>
+              <p className="text-[14px] font-semibold max-md:text-[15px]">Google Agenda</p>
+              <p className="mt-0.5 text-[13px] text-[var(--muted)] max-md:text-[14px]">Agenda lezen via je Google-account.</p>
             </div>
             <Status dot={server?.calendar.configured === true} label={server?.calendar.configured ? "Gekoppeld" : "Niet geconfigureerd"} />
           </div>
@@ -503,7 +503,7 @@ function ConnectionsSection({
         <div className="rounded-2xl border border-[var(--line)] px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[14px] font-semibold">Gmail</p>
+              <p className="text-[14px] font-semibold max-md:text-[15px]">Gmail</p>
               <p className="mt-0.5 truncate text-[13px] text-[var(--muted)]">
                 {connection ? connection.email : "Alleen-lezen koppeling met je Gmail-inbox."}
               </p>
@@ -658,7 +658,7 @@ function ServerSection({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[12px] font-semibold text-[var(--muted)]">{label}</span>
+      <span className="mb-1.5 block text-[12px] font-semibold text-[var(--muted)] max-md:text-[13px]">{label}</span>
       {children}
     </label>
   );
