@@ -79,15 +79,20 @@ function kleurVan(wortel: HTMLElement): string | null {
 
 function zetMeta(hex: string | null): void {
   if (!hex) return;
-  const metas = [...document.querySelectorAll('meta[name="theme-color"]')];
-  // iOS neemt de kleur met een vertraging over; daarom een paar keer opnieuw.
-  for (const meta of metas) meta.setAttribute("content", hex);
-  window.setTimeout(() => {
-    for (const meta of metas) meta.setAttribute("content", hex);
-  }, 250);
-  window.setTimeout(() => {
-    for (const meta of metas) meta.setAttribute("content", hex);
-  }, 900);
+  // iOS leest `theme-color` niet betrouwbaar opnieuw als alleen de `content`
+  // verandert. De tag weggooien en opnieuw aanmaken is een veel sterker signaal
+  // en dwingt Safari de browser-chrome (en de strook) opnieuw te kleuren.
+  const vervang = () => {
+    document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.remove());
+    const meta = document.createElement("meta");
+    meta.name = "theme-color";
+    meta.content = hex;
+    document.head.appendChild(meta);
+  };
+  vervang();
+  // Safari kan een enkel frame later zijn; een paar herhalingen dekken dat af.
+  window.setTimeout(vervang, 250);
+  window.setTimeout(vervang, 900);
 }
 
 /** `color(srgb …)` en `rgb(…)` omzetten naar #rrggbb; anders null. */

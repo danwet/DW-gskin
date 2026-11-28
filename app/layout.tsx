@@ -32,7 +32,9 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "DW Gskin",
-    statusBarStyle: "black",
+    // Transparant zodat de pagina zelf de kleur van de statusbalk bepaalt;
+    // "black" zou de strook juist hard zwart maken in standalone-modus.
+    statusBarStyle: "black-translucent",
   },
   icons: {
     icon: [{ url: "/favicon.png", sizes: "512x512", type: "image/png" }],

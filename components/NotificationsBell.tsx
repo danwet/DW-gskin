@@ -118,13 +118,16 @@ export function NotificationsBell({
   const paneelRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
+    // Sluiten op `click`, niet op `pointerdown`: op iOS sloot de pointerdown
+    // het paneel al, waarna de klik die erbij hoorde op de bel terechtkwam en
+    // het paneel meteen weer opende. Nu valt die klik nog op de achtergrond.
+    const onKlik = (event: MouseEvent) => {
       const target = event.target as Node | null;
       if (target && (rootRef.current?.contains(target) || paneelRef.current?.contains(target))) return;
       setOpen(false);
     };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener("click", onKlik);
+    return () => document.removeEventListener("click", onKlik);
   }, [open]);
   // Het aanzetten van desktopmeldingen is een apparaatinstelling; die mag de
   // lijst en het bolletje nooit beïnvloeden. Nieuwe berichten blijven altijd
