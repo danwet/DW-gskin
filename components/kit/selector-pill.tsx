@@ -84,7 +84,7 @@ export function SelectorPill<T extends string>({
           GLAS_BALK,
           MORFING_BLUR,
           // overflow-VISIBLE: de opgetilde druppel (1,24×) mag niet afgeknipt worden.
-          "relative w-full min-w-0 overflow-visible rounded-full p-1 max-md:p-0.5",
+          "relative w-full min-w-0 overflow-visible rounded-full p-[2px]",
           !vullend && vorm?.max,
           !vullend &&
             zes &&
@@ -112,9 +112,9 @@ export function SelectorPill<T extends string>({
                 title={optie.titel ?? optie.label}
                 onClick={() => onChange(optie.waarde)}
                 className={cn(
-                  "segment-hover group relative t-meta h-8 min-w-0 whitespace-nowrap rounded-full transition-colors max-md:h-10",
+                  "segment-hover group relative t-meta h-10 min-w-0 whitespace-nowrap rounded-full transition-colors",
                   // Op een telefoon is er minder ruimte: iets kleiner en strakker.
-                  "max-md:px-0.5 max-md:text-[10.5px]",
+                  "max-md:px-0.5 max-md:text-[10px]",
                   !vullend && zes && "cat-dicht",
                   // Alle labels even zwaar. De kleuren zijn omgedraaid ten
                   // opzichte van de eerste opzet: het actieve label staat op de
@@ -127,7 +127,7 @@ export function SelectorPill<T extends string>({
                 )}
               >
                 {actief && <GlasDruppel layoutId={druppelId} className="inset-0" />}
-                <span className="relative z-10 inline-flex items-center gap-1.5">
+                <span className="relative z-10 inline-flex items-center gap-1.5 max-md:gap-1">
                   {/* Op een smal scherm mag het label korter zijn: "Declareren"
                       met een bedrag erachter past daar niet. */}
                   <span className="md:hidden">{optie.labelMobiel ?? optie.label}</span>
@@ -137,7 +137,7 @@ export function SelectorPill<T extends string>({
                       className={cn(
                         // Een omtrek in plaats van een gevuld balletje: dat
                         // weegt visueel minder naast het label.
-                        "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border px-1.5 text-[10px] leading-none font-semibold transition-colors max-md:h-4 max-md:min-w-4 max-md:px-1 max-md:text-[9px]",
+                        "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border px-1.5 text-[10px] leading-none font-semibold transition-colors max-md:h-4 max-md:min-w-4 max-md:px-0.5 max-md:text-[9px]",
                         optie.badgeAlert
                           ? "border-[var(--dot-red)] text-[var(--dot-red)]"
                           // Inactief: bij hover licht de cirkel mee op met het

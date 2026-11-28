@@ -220,9 +220,9 @@ export function Modal({
                   type="button"
                   onClick={() => onOpenChange(false)}
                   aria-label="Sluiten"
-                  className="btn-primary focus-ring grid h-8 w-8 place-items-center rounded-full text-[var(--ink)]"
+                  className="btn-primary focus-ring grid h-8 w-8 place-items-center rounded-full text-[var(--ink)] max-md:h-9 max-md:w-9"
                 >
-                  <X aria-hidden className="size-4" strokeWidth={2.5} />
+                  <X aria-hidden className="size-4 max-md:size-[18px]" strokeWidth={2.5} />
                 </button>
               </div>
             </div>
@@ -285,7 +285,11 @@ export function Modal({
                 )}
                 <div className="flex min-h-full flex-col gap-5 px-5 pb-2">{children}</div>
               </div>
-              {voet !== undefined && <div className="mx-[5%] flex shrink-0 justify-center px-5 pt-2 pb-5">{voet}</div>}
+              {voet !== undefined && (
+                <div className="mx-[5%] flex shrink-0 justify-center px-5 pt-2 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+                  {voet}
+                </div>
+              )}
             </>
           ) : (
             <>

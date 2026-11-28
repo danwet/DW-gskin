@@ -385,7 +385,7 @@ export function TodayView() {
             className="pointer-events-none absolute inset-0 rounded-l-[22px]"
             style={{ opacity: schaduwOpacity, boxShadow: "-10px 0 30px -18px rgba(0,0,0,0.35)" }}
           />
-          <div className="h-full overflow-y-auto pt-7 pr-6 pb-10 pl-8 [&_.truncate]:!whitespace-normal">
+          <div className="h-full overflow-y-auto pt-7 pr-6 pb-[calc(2.5rem+env(safe-area-inset-bottom))] pl-8 [&_.truncate]:!whitespace-normal">
             {zijbalk}
           </div>
         </motion.aside>

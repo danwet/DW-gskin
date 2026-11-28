@@ -22,7 +22,7 @@ export function AgendaPanel() {
           onClick={() => setCreating(true)}
           aria-label="Afspraak toevoegen"
           title="Afspraak toevoegen"
-          className="btn-primary focus-ring grid h-7 w-7 shrink-0 place-items-center rounded-full text-[var(--ink)]"
+          className="btn-primary focus-ring grid h-7 w-7 shrink-0 place-items-center rounded-full text-[var(--ink)] max-md:h-8 max-md:w-8"
         >
           <PlusIcon />
         </button>
@@ -107,7 +107,7 @@ export function AgendaPanel() {
 
 function PlusIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+    <svg className="max-md:h-[15px] max-md:w-[15px]" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
       <path d="M8 3.2v9.6M3.2 8h9.6" />
     </svg>
   );

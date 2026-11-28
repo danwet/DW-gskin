@@ -6,4 +6,4 @@
  * rechts ruimte voor het lipje van de zijbalk.
  */
 export const PAGINA_VAK =
-  "mx-auto max-w-[1180px] px-6 pt-1 pb-7 max-md:pr-9 sm:px-8 sm:pb-8 md:pt-9 md:pb-14";
+  "mx-auto max-w-[1180px] px-6 pt-1 pb-7 max-md:pr-[26px] sm:px-8 sm:pb-8 md:pt-9 md:pb-14";

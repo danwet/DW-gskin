@@ -54,7 +54,9 @@ export function MobieleLijst({
             <button
               type="button"
               onClick={() => onOpen(item)}
-              className="focus-ring flex w-full items-start gap-3 py-4 text-left active:bg-black/[0.04] dark:active:bg-white/[0.06]"
+              // Rechts ruimte houden: op het midden van het scherm hangt het
+              // lipje, en daar mogen de regels niet onder schuiven.
+              className="focus-ring flex w-full items-start gap-3 py-4 pr-2.5 text-left active:bg-black/[0.04] dark:active:bg-white/[0.06]"
             >
               <span
                 aria-hidden

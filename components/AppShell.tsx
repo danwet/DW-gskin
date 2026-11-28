@@ -213,7 +213,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </AnimatePresence>
 
       <MobielNavProvider value={{ open: mobileOpen, setOpen: setMobileOpen }}>
-      <main className="h-full min-w-0 flex-1 overflow-y-auto overscroll-contain md:min-h-0 md:overflow-y-auto">
+      <main
+        className="h-full min-w-0 flex-1 overflow-y-auto overscroll-contain md:min-h-0 md:overflow-y-auto"
+        // Ruimte voor de home-indicator onderaan, zodat de laatste knop niet
+        // tegen de rand van het scherm staat.
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
         {/* Ruimte die de oude bovenbalk innam, zodat elke pagina op dezelfde
             hoogte begint. De kop zelf zit in PageTitle. */}
         <div className="h-2 md:h-5" aria-hidden="true" />
@@ -308,7 +313,9 @@ function SidebarContent({
         <BrandMark className="mt-2 px-1" />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-5">
+      {/* De zijbalk en de mobiele lade delen deze inhoud; onderaan ruimte voor
+          de home-indicator zodat "Uitloggen" niet tegen de rand plakt. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
       <nav className="mt-[2.4rem] flex flex-col gap-1" aria-label="Hoofdnavigatie">
         {NAV.map((link) => {
           const active = pathname === link.href;

@@ -568,8 +568,10 @@ html:not(.dark) .menu-actief:hover {
   filter: none;
 }
 
-.dark .segment-hover:hover {
-  background-image: linear-gradient(180deg, #5c5e60 0%, #575958 55%, #545658 100%);
+@media (hover: hover) and (pointer: fine) {
+  .dark .segment-hover:hover {
+    background-image: linear-gradient(180deg, #5c5e60 0%, #575958 55%, #545658 100%);
+  }
 }
 
 /* Uitgangspunt voor al het glas in licht mode: de glans die je eerst alleen bij
@@ -607,8 +609,10 @@ html:not(.dark) .glas-balk {
 
 /* Hover op een niet-actief segment: een lichtere vulling dan het actieve
    segment, met hetzelfde verloop van boven naar beneden. */
-html:not(.dark) .segment-hover:hover {
-  background-image: linear-gradient(180deg, #eeeeee 0%, #f0f0f0 55%, #f3f3f3 100%);
+@media (hover: hover) and (pointer: fine) {
+  html:not(.dark) .segment-hover:hover {
+    background-image: linear-gradient(180deg, #eeeeee 0%, #f0f0f0 55%, #f3f3f3 100%);
+  }
 }
 
 /* Het actiekader op een kaart draagt de kleur van de urgentiepil. */

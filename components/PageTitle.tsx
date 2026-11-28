@@ -27,7 +27,9 @@ export function PageTitle({ eyebrow, title }: { eyebrow: string; title: string }
       >
         <MenuIcoon />
       </button>
-      <div className="absolute top-0 right-0 flex items-center md:static md:float-right md:mt-[22px]">
+      {/* Op mobiel trekt het eiland 8 px naar buiten, zodat het rechts gelijk
+          staat met de focus-selector (die ook 8 px buiten de marge valt). */}
+      <div className="absolute top-0 -right-2 flex items-center md:static md:float-right md:mt-[22px] md:right-0">
         <TopBar />
       </div>
 
