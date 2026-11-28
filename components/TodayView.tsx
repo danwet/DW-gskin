@@ -9,6 +9,7 @@ import type { MailAssessment, ShipmentInfo } from "@/lib/agent/types";
 import { useInbox, type InboxProgress } from "./AgentInbox";
 import { useApp } from "./AppProvider";
 import { useRandVeeg } from "@/lib/use-rand-veeg";
+import { createPortal } from "react-dom";
 import { useSluier } from "@/lib/use-sluier";
 import { useMobielNav } from "./mobiel-nav";
 import { InboxGrid } from "./InboxGrid";
@@ -187,6 +188,10 @@ export function TodayView() {
   // van het paneel is één motion value, zodat het lipje en het paneel samen
   // met de vinger meebewegen in plaats van pas na het loslaten te springen.
   const [zijbalkOpen, setZijbalkOpen] = useState(false);
+  // Het lipje, de sluier en het paneel hangen in een portal aan `body`; dat kan
+  // pas na de eerste render aan de clientkant.
+  const [portalKlaar, setPortalKlaar] = useState(false);
+  useEffect(() => setPortalKlaar(true), []);
   const sleep = useMotionValue(0);
   const paneelRef = useRef<HTMLElement | null>(null);
   const paneelX = useTransform(sleep, (waarde) => `calc(100% - ${waarde}px)`);
@@ -403,6 +408,12 @@ export function TodayView() {
         </div>
       </div>
 
+      {/* Het lipje, de sluier en het paneel hangen in een portal aan `body`:
+          binnen het scrollvlak van `main` tekende Safari ze niet boven de
+          inhoud, waardoor kaarten en de selector niet meedimden. */}
+      {portalKlaar
+        ? createPortal(
+            <>
       {/* Mobiel: een zwart lipje aan de rechterrand, zoals iOS een beeld-in-beeld
           laat staan. Tikken opent dezelfde kolom als op de desktop. */}
       <motion.button
@@ -463,6 +474,10 @@ export function TodayView() {
           </div>
         </motion.aside>
       </div>
+            </>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

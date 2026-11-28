@@ -1,4 +1,5 @@
 import { auth, GOOGLE_CALLBACK_PATH, googleAuthConfigured } from "@/auth";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { signInWithGoogle } from "./actions";
 import { BrandMark } from "@/components/BrandMark";
@@ -21,6 +22,17 @@ export default async function LoginPage({
   }
 
   const params = await searchParams;
+  // De terugkeer-URL van Google moet die van het apparaat zijn dat inlogt.
+  // AUTH_URL staat op localhost; op een telefoon via het netwerk-IP zou je dan
+  // naar je eigen toestel worden gestuurd en "kan geen verbinding maken" zien.
+  const kop = await headers();
+  const gastheer = kop.get("x-forwarded-host") ?? kop.get("host") ?? "";
+  const schema =
+    kop.get("x-forwarded-proto") ??
+    (/^(localhost|127\.|192\.168\.|10\.)/.test(gastheer) ? "http" : "https");
+  const oorsprong = gastheer
+    ? `${schema}://${gastheer}`
+    : (process.env.AUTH_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
   return (
     <main className="grid min-h-screen place-items-center px-4 py-10">
@@ -43,7 +55,7 @@ export default async function LoginPage({
             </button>
           </form>
         ) : (
-          <GoogleSetup redirectUri={redirectUri()} />
+          <GoogleSetup redirectUri={redirectUri(oorsprong)} />
         )}
         {params.error && configured ? (
           <p className="mt-4 text-[13px] leading-5 text-[var(--muted)]">
@@ -55,9 +67,8 @@ export default async function LoginPage({
   );
 }
 
-function redirectUri() {
-  const origin = (process.env.AUTH_URL || "http://localhost:3000").replace(/\/$/, "");
-  return `${origin}${GOOGLE_CALLBACK_PATH}`;
+function redirectUri(origin: string) {
+  return `${origin.replace(/\/$/, "")}${GOOGLE_CALLBACK_PATH}`;
 }
 
 function GoogleSetup({ redirectUri }: { redirectUri: string }) {
