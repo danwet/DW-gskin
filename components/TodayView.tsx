@@ -191,6 +191,7 @@ export function TodayView() {
   // Eén lipje voor beide standen: het schuift mee met het paneel en klapt op
   // zijn plek om, in plaats van te verdwijnen en ergens anders terug te komen.
   const lipX = useTransform(sleep, (waarde) => -waarde);
+  const sleepBijStart = useRef(0);
   /** Schaduw van het paneel pas zodra het paneel echt in beeld komt. */
   const schaduwOpacity = useTransform(sleep, [0, 30], [0, 1]);
 
@@ -292,14 +293,28 @@ export function TodayView() {
           else if (zijbalkOpen) sluitZijbalk();
         }}
         aria-label={zijbalkOpen ? "Zijbalk sluiten" : "Open de zijbalk met agenda, bestellingen en de dag"}
-        drag={zijbalkOpen ? undefined : "x"}
-        dragConstraints={{ left: -320, right: 0 }}
+        // In beide standen sleepbaar: naar links opent, naar rechts sluit.
+        drag="x"
+        dragConstraints={zijbalkOpen ? { left: 0, right: 260 } : { left: -320, right: 0 }}
         dragElastic={0}
         dragMomentum={false}
-        onDrag={(_, info) => sleep.set(Math.max(0, Math.min(320, -info.offset.x)))}
+        onDragStart={() => {
+          sleepBijStart.current = sleep.get();
+        }}
+        onDrag={(_, info) => {
+          const breedte = paneelRef.current?.offsetWidth ?? 300;
+          // Naar rechts is minder ver open.
+          sleep.set(Math.max(0, Math.min(breedte, sleepBijStart.current - info.offset.x)));
+        }}
         onDragEnd={(_, info) => {
+          const breedte = paneelRef.current?.offsetWidth ?? 300;
           const stand = sleep.get();
-          if (stand > 90 || info.velocity.x < -520) openZijbalk();
+          if (zijbalkOpen) {
+            if (info.offset.x > 70 || info.velocity.x > 520 || stand < breedte * 0.55) sluitZijbalk();
+            else void animate(sleep, breedte, { type: "spring", stiffness: 420, damping: 38, mass: 0.9 });
+            return;
+          }
+          if (stand > 70 || info.velocity.x < -520) openZijbalk();
           else void animate(sleep, 0, { type: "spring", stiffness: 480, damping: 40 });
         }}
         style={{ x: lipX }}

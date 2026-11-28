@@ -183,6 +183,62 @@ export function InboxGrid({
   // Richting van de overgang: 1 is naar links geveegd (volgende tab),
   // -1 naar rechts. De animatie schuift daarmee dezelfde kant op.
   const [veegRichting, setVeegRichting] = useState<1 | -1>(1);
+  // De vinger kan overal in het scrollvlak beginnen, ook onder de laatste regel.
+  // De luisteraars hangen daarom aan `main`, niet aan de lijst zelf.
+  const wisselFocusRef = useRef<(richting: 1 | -1) => void>(() => undefined);
+  useEffect(() => {
+    const vlak = document.querySelector("main");
+    if (!vlak) return;
+    if (!window.matchMedia("(max-width: 767px)").matches) return;
+
+    const start = (event: TouchEvent) => {
+      const doel = event.target as Element | null;
+      // In een sheet of op een formulierveld niet meedoen.
+      if (doel?.closest?.('[role="dialog"], input, textarea, select')) {
+        veegStart.current = null;
+        return;
+      }
+      const raak = event.touches[0];
+      veegStart.current = { x: raak.clientX, y: raak.clientY };
+      veegDx.current = 0;
+      setVeeg({ dx: 0, sleept: true });
+    };
+    const schuif = (event: TouchEvent) => {
+      const begin = veegStart.current;
+      if (!begin) return;
+      const raak = event.touches[0];
+      const dx = raak.clientX - begin.x;
+      const dy = raak.clientY - begin.y;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        veegStart.current = null;
+        veegDx.current = 0;
+        setVeeg({ dx: 0, sleept: false });
+        return;
+      }
+      veegDx.current = dx;
+      setVeeg({ dx, sleept: true });
+    };
+    const eindig = () => {
+      const dx = veegDx.current;
+      veegStart.current = null;
+      veegDx.current = 0;
+      setVeeg({ dx: 0, sleept: false });
+      if (Math.abs(dx) < 56) return;
+      wisselFocusRef.current(dx < 0 ? 1 : -1);
+    };
+
+    vlak.addEventListener("touchstart", start, { passive: true });
+    vlak.addEventListener("touchmove", schuif, { passive: true });
+    vlak.addEventListener("touchend", eindig, { passive: true });
+    vlak.addEventListener("touchcancel", eindig, { passive: true });
+    return () => {
+      vlak.removeEventListener("touchstart", start);
+      vlak.removeEventListener("touchmove", schuif);
+      vlak.removeEventListener("touchend", eindig);
+      vlak.removeEventListener("touchcancel", eindig);
+    };
+  }, []);
+
   const wisselFocus = (richting: 1 | -1) => {
     const nu = tabOrde.indexOf(activeTab);
     const volgende = tabOrde[Math.min(tabOrde.length - 1, Math.max(0, nu + richting))];
@@ -190,6 +246,7 @@ export function InboxGrid({
     setVeegRichting(richting);
     setActiveTab(volgende);
   };
+  wisselFocusRef.current = wisselFocus;
 
   const selectorOpties = tabs.map((tab) => ({
     waarde: tab.id,
@@ -265,48 +322,7 @@ export function InboxGrid({
       </div>
 
       <div
-        className="touch-pan-y md:contents"
-        onTouchStart={(event) => {
-          const raak = event.touches[0];
-          veegStart.current = { x: raak.clientX, y: raak.clientY };
-          veegDx.current = 0;
-          setVeeg({ dx: 0, sleept: true });
-        }}
-        onTouchMove={(event) => {
-          const start = veegStart.current;
-          if (!start) return;
-          const raak = event.touches[0];
-          const dx = raak.clientX - start.x;
-          const dy = raak.clientY - start.y;
-          // Alleen horizontaal vegen; verticaal scrollen blijft scrollen.
-          if (Math.abs(dy) > Math.abs(dx)) {
-            veegStart.current = null;
-            veegDx.current = 0;
-            setVeeg({ dx: 0, sleept: false });
-            return;
-          }
-          veegDx.current = dx;
-          setVeeg({ dx, sleept: true });
-        }}
-        onTouchEnd={() => {
-          const dx = veegDx.current;
-          veegStart.current = null;
-          veegDx.current = 0;
-          if (Math.abs(dx) < 56) {
-            setVeeg({ dx: 0, sleept: false });
-            return;
-          }
-          // De verschuiving blijft heel even staan, zodat de oude lijst vanuit
-          // de vinger vertrekt in plaats van terug te springen.
-          setVeeg({ dx, sleept: false });
-          wisselFocus(dx < 0 ? 1 : -1);
-          window.setTimeout(() => setVeeg({ dx: 0, sleept: false }), 260);
-        }}
-        onTouchCancel={() => {
-          veegStart.current = null;
-          veegDx.current = 0;
-          setVeeg({ dx: 0, sleept: false });
-        }}
+        className="md:contents"
         style={{
           transform: veeg.dx ? `translateX(${Math.round(veeg.dx * 0.28)}px)` : undefined,
           transition: veeg.sleept ? "none" : "transform 160ms ease-out",
