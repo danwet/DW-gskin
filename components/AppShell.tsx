@@ -5,6 +5,7 @@ import { ontgrendelGeluid } from "@/lib/geluid";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRandVeeg } from "@/lib/use-rand-veeg";
+import { useSluier } from "@/lib/use-sluier";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { signOutOfDashboard } from "@/app/login/actions";
@@ -47,14 +48,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Veeg vanaf de linkerrand opent de menubalk.
   useRandVeeg("links", () => setMobileOpen(true));
 
-  // Zolang de lade open is, kleurt ook het gebied buiten de lade mee; anders
-  // blijft de veilige marge bovenaan wit op iOS.
-  useEffect(() => {
-    document.documentElement.dataset.lade = mobileOpen ? "open" : "";
-    return () => {
-      delete document.documentElement.dataset.lade;
-    };
-  }, [mobileOpen]);
+  // Zolang de lade open is, kleurt ook het gebied buiten de lade mee.
+  useSluier(mobileOpen ? "lade" : null);
 
   const asideRef = useRef<HTMLElement | null>(null);
   const openTimer = useRef<number | null>(null);
@@ -199,7 +194,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
-              className="fixed inset-0 z-40 bg-black/25 !cursor-default backdrop-blur-[2px]"
+              // Reikt tot boven de veilige marge, zodat die strook dezelfde
+              // sluier krijgt als de rest van de pagina.
+              style={{ top: "calc(-1 * env(safe-area-inset-top) - 40px)", height: "calc(100% + env(safe-area-inset-top) + 40px)" }}
+              className="fixed inset-x-0 bottom-0 z-40 bg-black/25 !cursor-default backdrop-blur-[2px]"
             />
             <motion.aside
               key="mobiel-menu"

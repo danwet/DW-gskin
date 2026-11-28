@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import { GLAS_BOOT } from "@/lib/glas-boot";
 import { GlasFilters } from "@/components/kit/glas-filters";
+import { ThemeKleur } from "@/components/ThemeKleur";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -17,6 +18,11 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  // Zonder theme-color schildert iOS de strook boven de pagina (en de
+  // statusbalk) wit. Eén vaste waarde: de app heeft zijn eigen themakeuze, dus
+  // een media-query op het systeemthema zou de verkeerde kleur geven.
+  // `ThemeKleur` zet hem bij naar de kleur die op dat moment geldt.
+  themeColor: "#f2f2f2",
 };
 
 export const metadata: Metadata = {
@@ -51,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: GLAS_BOOT }} />
       </head>
       <body>
+        <ThemeKleur />
         <GlasFilters />
         {children}
       </body>

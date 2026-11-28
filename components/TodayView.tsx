@@ -9,6 +9,7 @@ import type { MailAssessment, ShipmentInfo } from "@/lib/agent/types";
 import { useInbox, type InboxProgress } from "./AgentInbox";
 import { useApp } from "./AppProvider";
 import { useRandVeeg } from "@/lib/use-rand-veeg";
+import { useSluier } from "@/lib/use-sluier";
 import { useMobielNav } from "./mobiel-nav";
 import { InboxGrid } from "./InboxGrid";
 import { LegacyLoopsCard } from "./LegacyLoopsCard";
@@ -202,14 +203,11 @@ export function TodayView() {
    */
   const { setOpen: zetLade } = useMobielNav();
 
-  // Zolang het paneel open is, kleurt ook het gebied buiten het paneel mee;
-  // anders blijft de veilige marge bovenaan wit op iOS.
-  useEffect(() => {
-    document.documentElement.dataset.zijbalk = zijbalkOpen ? "open" : "";
-    return () => {
-      delete document.documentElement.dataset.zijbalk;
-    };
-  }, [zijbalkOpen]);
+  // Zolang het paneel open is, kleurt ook het gebied buiten het paneel mee.
+  // Let op: dit attribuut heet bewust niet `data-zijbalk`; dat gebruiken de
+  // lipje en het paneel zelf, en de focus-veeg slaat alles met dat attribuut
+  // over. Op de html zou daardoor elke veeg worden genegeerd.
+  useSluier(zijbalkOpen ? "paneel" : null);
 
   // Veeg vanaf de rechterrand opent het paneel, net als het lipje.
   useRandVeeg(
@@ -397,8 +395,15 @@ export function TodayView() {
           type="button"
           aria-label="Sluiten"
           onClick={sluitZijbalk}
-          style={{ opacity: sluierOpacity, pointerEvents: zijbalkOpen ? "auto" : "none" }}
-          className="fixed inset-0 z-40 bg-black/35 !cursor-default backdrop-blur-[2px]"
+          // Ook boven de gewone bovenrand, zodat de strook in de veilige marge
+          // dezelfde sluier krijgt als de rest van de pagina.
+          style={{
+            opacity: sluierOpacity,
+            pointerEvents: zijbalkOpen ? "auto" : "none",
+            top: "calc(-1 * env(safe-area-inset-top) - 40px)",
+            height: "calc(100% + env(safe-area-inset-top) + 40px)",
+          }}
+          className="fixed inset-x-0 bottom-0 z-40 bg-black/35 !cursor-default backdrop-blur-[2px]"
         />
         <motion.aside
           ref={paneelRef}

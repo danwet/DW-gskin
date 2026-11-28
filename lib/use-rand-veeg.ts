@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 type Kant = "links" | "rechts";
 
@@ -12,6 +12,11 @@ type Kant = "links" | "rechts";
  * veeg in de lijst per ongeluk de rand raakt.
  */
 export function useRandVeeg(kant: Kant, actie: () => void, zone = 18): void {
+  // De actie verandert bij elke render; via een ref blijven de luisteraars
+  // staan in plaats van bij elke render opnieuw te worden aangehangen.
+  const actieRef = useRef(actie);
+  actieRef.current = actie;
+
   useEffect(() => {
     if (!window.matchMedia("(max-width: 767px)").matches) return;
     const vlak = document.querySelector("main");
@@ -41,7 +46,7 @@ export function useRandVeeg(kant: Kant, actie: () => void, zone = 18): void {
       const naarBinnen = kant === "links" ? dx : -dx;
       if (naarBinnen >= 56) {
         start.gedaan = true;
-        actie();
+        actieRef.current();
       }
     };
 
@@ -59,5 +64,5 @@ export function useRandVeeg(kant: Kant, actie: () => void, zone = 18): void {
       vlak.removeEventListener("touchend", eindig);
       vlak.removeEventListener("touchcancel", eindig);
     };
-  }, [kant, actie, zone]);
+  }, [kant, zone]);
 }
