@@ -82,9 +82,12 @@ export function NotificationsBell({
       if (!knop || !rij) return;
       const k = knop.getBoundingClientRect();
 
-      // Vaste breedte, op elk scherm gelijk. Alleen op een smal venster krimpt
-      // hij mee met de pagina.
-      const breedte = Math.min(PANEEL_BREEDTE, Math.max(220, Math.round(window.innerWidth - 48)));
+      // Op mobiel de volle breedte (met een kleine kantlijn), daarboven een
+      // vaste breedte die rechts tegen de kantlijn van de pagina staat.
+      const mobiel = window.matchMedia("(max-width: 767px)").matches;
+      const breedte = mobiel
+        ? Math.round(document.documentElement.clientWidth - 16)
+        : Math.min(PANEEL_BREEDTE, Math.max(220, Math.round(window.innerWidth - 48)));
       // Rechts uitlijnen tegen de kantlijn van de pagina. Die halen we uit de
       // rij van de topbalk zelf: dat is op elk scherm dezelfde rand, ook op
       // pagina's zonder rechterkolom.
@@ -93,7 +96,7 @@ export function NotificationsBell({
       const links = kantlijn - breedte;
       // clientWidth in plaats van innerWidth: zo valt de rand van het paneel
       // precies op de kantlijn, ook als er een scrollbar staat.
-      const rechts = Math.max(12, Math.round(document.documentElement.clientWidth - kantlijn));
+      const rechts = mobiel ? 8 : Math.max(12, Math.round(document.documentElement.clientWidth - kantlijn));
       const pijl = Math.min(breedte - 20, Math.max(20, Math.round(k.left + k.width / 2 - links)));
       setPlaat({ top: Math.round(k.bottom + 15), right: rechts, pijl, breedte });
     };
@@ -171,15 +174,15 @@ export function NotificationsBell({
             }
           >
             {plaats ? (
-              <span className="glas-paneel-pijl" style={{ left: plaats.pijl }} aria-hidden />
+              <span className="glas-paneel-pijl max-md:hidden" style={{ left: plaats.pijl }} aria-hidden />
             ) : null}
             {items.length === 0 && !showNew ? (
-              <p className="px-3 py-4 text-center text-[13px] text-[var(--muted)]">Geen notificaties.</p>
+              <p className="px-3 py-4 text-center text-[13px] text-[var(--muted)] max-md:text-[15px]">Geen notificaties.</p>
             ) : null}
 
             {showNew ? (
               <>
-                <p className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-[0.08em] text-[var(--muted)]">
+                <p className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-[0.08em] text-[var(--muted)] max-md:text-[12px]">
                   {newItems.length === 1 ? "Nieuw bericht" : "Nieuwe berichten"}
                 </p>
                 <ul className="max-h-[240px] overflow-y-auto">
@@ -196,8 +199,8 @@ export function NotificationsBell({
                         }}
                         className="focus-ring w-full rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/[0.045] dark:hover:bg-white/10"
                       >
-                        <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{item.from}</p>
-                        <p className="truncate text-[12px] text-[var(--muted)]">{item.subject}</p>
+                        <p className="truncate text-[13px] font-semibold text-[var(--ink)] max-md:text-[15px]">{item.from}</p>
+                        <p className="truncate text-[12px] text-[var(--muted)] max-md:text-[13px]">{item.subject}</p>
                       </button>
                     </li>
                   ))}
@@ -207,7 +210,7 @@ export function NotificationsBell({
 
             {items.length > 0 ? (
               <>
-                <p className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-[0.08em] text-[var(--muted)]">Gemiste berichten</p>
+                <p className="px-3 pt-2 pb-1 text-[11px] font-medium tracking-[0.08em] text-[var(--muted)] max-md:text-[12px]">Gemiste berichten</p>
                 <ul className="max-h-[240px] overflow-y-auto">
                   {items.map((item) => (
                     <li key={item.conversationId} className="border-t border-black/55 dark:border-[var(--line)]">
@@ -219,8 +222,8 @@ export function NotificationsBell({
                         }}
                         className="focus-ring w-full rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/[0.045] dark:hover:bg-white/10"
                       >
-                        <p className="truncate text-[13px] font-semibold text-[var(--ink)]">{item.from}</p>
-                        <p className="truncate text-[12px] text-[var(--muted)]">{item.subject}</p>
+                        <p className="truncate text-[13px] font-semibold text-[var(--ink)] max-md:text-[15px]">{item.from}</p>
+                        <p className="truncate text-[12px] text-[var(--muted)] max-md:text-[13px]">{item.subject}</p>
                       </button>
                     </li>
                   ))}

@@ -8,6 +8,7 @@ import { useRandVeeg } from "@/lib/use-rand-veeg";
 import { useSluier } from "@/lib/use-sluier";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
+import { createPortal } from "react-dom";
 import { signOutOfDashboard } from "@/app/login/actions";
 import { useApp, type SyncProgressView } from "./AppProvider";
 import { DraftDialog } from "./DraftDialog";
@@ -45,6 +46,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [floatingOpen, setFloatingOpen] = useState(false);
   const [nieuweMail, setNieuweMail] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [portalKlaar, setPortalKlaar] = useState(false);
+  useEffect(() => setPortalKlaar(true), []);
   // Stand van de lade in pixels vanaf dicht (0) tot open (breedte). Zo kan hij
   // de vinger volgen bij een veeg vanaf de linkerrand.
   const ladeX = useMotionValue(0);
@@ -194,7 +197,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     // Op mobiel is de pagina zelf niet scrollbaar: alleen `main` scrolt, en
     // alleen als de inhoud hoger is dan het scherm. Zo kan de kop niet
     // wegvegen op een scherm waar alles al past.
-    <div className="h-[100dvh] overflow-hidden md:flex md:h-screen">
+    <div id="app-inhoud" className="h-[100dvh] overflow-hidden md:flex md:h-screen">
       {/* Pinned sidebar (desktop) */}
       {pinned ? (
         <aside
@@ -236,7 +239,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           paginakop; hier alleen de lade die daarvandaan opengaat. */}
       {/* De lade is altijd gemonteerd zodat hij de vinger kan volgen; de stand
           komt uit `ladeX` (0 = dicht, breedte = open). */}
-      <div className="md:hidden">
+      {portalKlaar
+        ? createPortal(
+            <div className="md:hidden">
         <motion.button
           type="button"
           aria-label="Navigatie sluiten"
@@ -247,7 +252,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             top: "calc(-1 * env(safe-area-inset-top) - 40px)",
             height: "calc(100% + env(safe-area-inset-top) + 40px)",
           }}
-          className="fixed inset-x-0 bottom-0 z-40 bg-black/30 !cursor-default"
+          className="fixed inset-x-0 bottom-0 z-40 bg-transparent !cursor-default"
         />
 
         <motion.aside
@@ -262,7 +267,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         >
           {sidebar}
         </motion.aside>
-      </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       <MobielNavProvider value={{ open: mobileOpen, setOpen: (open) => (open ? openLade() : sluitLade()) }}>
       <main

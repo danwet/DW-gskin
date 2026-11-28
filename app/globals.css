@@ -1223,6 +1223,17 @@ html.glas-safari .glas-balk {
   }
 }
 
+/* De inhoud zelf dimmen met een filter: dat raakt alles in één keer, ook glas
+   met backdrop-filter dat op iOS anders boven een gewone sluier blijft staan.
+   Het paneel, de lade en de sheets hangen in een portal en blijven dus helder. */
+@media (max-width: 767px) {
+  html[data-sluier] #app-inhoud {
+    /* Zelfde verhouding als de tint op de veilige marge (pagina × 0,65), zodat
+       de inhoud en de strook bovenaan dezelfde kleur krijgen. */
+    filter: brightness(0.65);
+  }
+}
+
 /* iOS Safari zoomt de pagina in zodra je een veld met tekst onder de 16 px
    aanraakt. Op mobiel zetten we die velden daarom op 16 px; de rest van de
    opmaak blijft zoals hij is. */

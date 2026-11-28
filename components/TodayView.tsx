@@ -448,7 +448,9 @@ export function TodayView() {
             top: "calc(-1 * env(safe-area-inset-top) - 40px)",
             height: "calc(100% + env(safe-area-inset-top) + 40px)",
           }}
-          className="fixed inset-x-0 bottom-0 z-40 bg-black/40 !cursor-default"
+          // Alleen een vanger om buiten te tikken; het donkerder maken doet de
+          // filter op de inhoud, zodat de kleur gelijk is aan de veilige marge.
+          className="fixed inset-x-0 bottom-0 z-40 !cursor-default bg-transparent"
         />
 
         <motion.aside
