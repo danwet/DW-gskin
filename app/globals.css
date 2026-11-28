@@ -1219,3 +1219,15 @@ html.glas-safari .glas-balk {
     background-image: none;
   }
 }
+
+/* iOS Safari zoomt de pagina in zodra je een veld met tekst onder de 16 px
+   aanraakt. Op mobiel zetten we die velden daarom op 16 px; de rest van de
+   opmaak blijft zoals hij is. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select,
+  [contenteditable="true"] {
+    font-size: 16px !important;
+  }
+}

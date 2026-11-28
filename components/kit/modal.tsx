@@ -90,6 +90,14 @@ export function Modal({
   // Zolang een sheet open is, kleurt ook het gebied buiten de sheet mee.
   useSluier(open ? "sheet" : null);
 
+  // iOS laat de pagina ingezoomd staan als er nog een veld focus heeft. Bij
+  // sluiten het veld loslaten, dan springt het beeld terug.
+  useEffect(() => {
+    if (open) return;
+    const actief = document.activeElement as HTMLElement | null;
+    if (actief && actief !== document.body && typeof actief.blur === "function") actief.blur();
+  }, [open]);
+
   const scherm = typeof window === "undefined" ? 800 : window.innerHeight;
   const minHoogte = Math.round(scherm * 0.5);
   const maxHoogte = Math.round(scherm * 0.9);
