@@ -58,22 +58,22 @@ export function MobieleLijst({
               />
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline justify-between gap-3">
-                  <span className="truncate text-[14px] font-semibold text-[var(--ink)]">{item.from}</span>
-                  <span className="shrink-0 text-[11px] font-medium" style={{ color: TOON[toon] }}>
+                  <span className="truncate text-[15px] font-semibold text-[var(--ink)]">{item.from}</span>
+                  <span className="shrink-0 text-[12px] font-medium" style={{ color: TOON[toon] }}>
                     {urgentie.label}
                   </span>
                 </span>
-                <span className="mt-0.5 line-clamp-2 block text-[13px] leading-[1.35] text-[var(--muted)]">
+                <span className="mt-1 line-clamp-2 block text-[14px] leading-[1.35] text-[var(--muted)]">
                   {item.shortSubject || item.subject}
                 </span>
                 <span className="mt-1 flex items-baseline justify-between gap-3">
-                  <span className="truncate text-[12px] text-[var(--ink)]/80">
+                  <span className="truncate text-[13px] text-[var(--ink)]/80">
                     {declaratie ? declareLabel(item) : (item.nextAction ?? "")}
                   </span>
                   {declaratie && bedrag ? (
-                    <span className="shrink-0 text-[12px] font-medium text-[var(--ink)]">{bedragTekst(bedrag, item.invoice?.currency)}</span>
+                    <span className="shrink-0 text-[13px] font-medium text-[var(--ink)]">{bedragTekst(bedrag, item.invoice?.currency)}</span>
                   ) : item.invoice?.dueDate ? (
-                    <span className="shrink-0 text-[11px] text-[var(--muted)]">
+                    <span className="shrink-0 text-[12px] text-[var(--muted)]">
                       {datumKort(item.invoice.dueDate, timeZone)}
                     </span>
                   ) : null}

@@ -35,7 +35,7 @@ export function PageTitle({ eyebrow, title }: { eyebrow: string; title: string }
         {eyebrow}
       </p>
       <div className="mt-2 flex items-center justify-between gap-6">
-        <h1 className="min-w-0 text-[30px] leading-[1.05] font-bold tracking-[-0.03em] text-[var(--ink)] md:text-[36px]">
+        <h1 className="min-w-0 text-[26px] leading-[1.08] font-bold tracking-[-0.025em] text-[var(--ink)] md:text-[36px] md:leading-[1.05] md:tracking-[-0.03em]">
           {title}
         </h1>
       </div>

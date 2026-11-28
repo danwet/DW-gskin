@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { GLAS_BOOT } from "@/lib/glas-boot";
@@ -8,6 +8,16 @@ const geist = Geist({
   subsets: ["latin"],
   variable: "--font-geist",
 });
+
+/**
+ * `viewportFit: "cover"` laat de app tot in de veilige marges doorlopen; zonder
+ * dat is `env(safe-area-inset-bottom)` op iOS altijd 0.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "DW Gskin",

@@ -224,7 +224,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         onClick={() => setNieuweMail(true)}
         aria-label="Nieuwe mail"
         // btn-primary zet zelf `position: relative`; !fixed houdt de knop rechtsonder.
-        className="btn-primary focus-ring !fixed right-6 bottom-6 z-40 grid h-14 w-14 place-items-center rounded-full shadow-[var(--shadow)]"
+        // Onder het zijpaneel (z-40) en het lipje (z-50): als het paneel
+        // uitgeklapt is, valt dat over deze knop heen.
+        className="btn-primary focus-ring !fixed z-30 grid h-14 w-14 place-items-center rounded-full shadow-[var(--shadow)]"
+        // Op iOS valt de knop anders achter de home-indicator; de veilige marge
+        // komt er dus bij, met een minimum van de gewone 24 px.
+        style={{
+          right: "max(1.5rem, env(safe-area-inset-right))",
+          bottom: "max(1.5rem, calc(env(safe-area-inset-bottom) + 1rem))",
+        }}
       >
         {/* Nieuwe mail: een pen op een vel, geen plus. */}
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

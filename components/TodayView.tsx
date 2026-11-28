@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 
 import { AgendaPanel } from "./AgendaPanel";
 import { startOfLogicalDay } from "@/lib/day-boundary";
@@ -179,8 +179,27 @@ export function TodayView() {
   // mail itself is already archived.
   // Alles wat op declareren staat hoort in dat tabblad, ook als de factuur-
   // gegevens (nog) niet compleet zijn. Anders kan een kaart stil verdwijnen.
-  // Mobiel: de rechterkolom zit achter een zwart lipje aan de rand.
+  // Mobiel: de rechterkolom zit achter een zwart lipje aan de rand. De stand
+  // van het paneel is één motion value, zodat het lipje en het paneel samen
+  // met de vinger meebewegen in plaats van pas na het loslaten te springen.
   const [zijbalkOpen, setZijbalkOpen] = useState(false);
+  const sleep = useMotionValue(0);
+  const paneelRef = useRef<HTMLElement | null>(null);
+  const paneelX = useTransform(sleep, (waarde) => `calc(100% - ${waarde}px)`);
+  const sluierOpacity = useTransform(sleep, [0, 220], [0, 1]);
+  // Eén lipje voor beide standen: het schuift mee met het paneel en klapt op
+  // zijn plek om, in plaats van te verdwijnen en ergens anders terug te komen.
+  const lipX = useTransform(sleep, (waarde) => -waarde);
+
+  const openZijbalk = () => {
+    const breedte = paneelRef.current?.offsetWidth ?? 300;
+    setZijbalkOpen(true);
+    void animate(sleep, breedte, { type: "spring", stiffness: 420, damping: 38, mass: 0.9 });
+  };
+  const sluitZijbalk = () => {
+    setZijbalkOpen(false);
+    void animate(sleep, 0, { type: "spring", stiffness: 420, damping: 38, mass: 0.9 });
+  };
   const declareItems = inbox.items.filter((item) => item.declaration === "pending");
   const missedItems = visibleItems.filter((item) => item.classification === "unclassified");
 
@@ -197,18 +216,29 @@ export function TodayView() {
     </>
   );
 
-  /** Het lipje: gesloten aan de schermrand, open aan de rand van de balk. */
+  /**
+   * Het lipje: een tab tegen de schermrand met holle bochten naar de rand,
+   * zoals een iOS-zijbalk. In open toestand verdwijnen die bochten, want dan
+   * zit het lipje tegen het paneel aan.
+   */
   const lipjeKnoppen = (open: boolean) => (
-    <span
-      className="lipje-vlak flex h-16 w-[22px] touch-pan-y items-center justify-center rounded-l-md text-white/85"
-      // Aangehecht aan de balk is er geen schaduw nodig; die gaf een lichte
-      // naad op de plek waar lipje en vlak elkaar raken.
-      style={open ? { boxShadow: "none" } : undefined}
-    >
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        {open ? <path d="M9 5l7 7-7 7" /> : <path d="M15 5l-7 7 7 7" />}
-      </svg>
-    </span>
+    <svg width={34} height={142} viewBox="-2 -10 34 142" aria-hidden className="lipje-vlak touch-pan-y">
+      {/* Altijd dezelfde vorm: ook als het paneel open is blijft dit lipje
+          hetzelfde, alleen de punt wijst dan de andere kant op. De holle
+          bochten vallen dan over het paneel heen, in dezelfde kleur. */}
+      <path
+        d="M0 9 A9 9 0 0 1 9 0 L22 0 Q32 -1 32 -8 L32 132 Q32 125 22 124 L9 124 A9 9 0 0 1 0 115 Z"
+        fill="#202326"
+      />
+      <path
+        d={open ? "M13 53l7 9-7 9" : "M19 53l-7 9 7 9"}
+        fill="none"
+        stroke="rgba(255,255,255,0.85)"
+        strokeWidth={3.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 
   return (
@@ -252,72 +282,64 @@ export function TodayView() {
 
       {/* Mobiel: een zwart lipje aan de rechterrand, zoals iOS een beeld-in-beeld
           laat staan. Tikken opent dezelfde kolom als op de desktop. */}
-      {!zijbalkOpen ? (
+      <motion.button
+        type="button"
+        onClick={() => {
+          if (sleep.get() < 4) openZijbalk();
+          else if (zijbalkOpen) sluitZijbalk();
+        }}
+        aria-label={zijbalkOpen ? "Zijbalk sluiten" : "Open de zijbalk met agenda, bestellingen en de dag"}
+        drag={zijbalkOpen ? undefined : "x"}
+        dragConstraints={{ left: -320, right: 0 }}
+        dragElastic={0}
+        dragMomentum={false}
+        onDrag={(_, info) => sleep.set(Math.max(0, Math.min(320, -info.offset.x)))}
+        onDragEnd={(_, info) => {
+          const stand = sleep.get();
+          if (stand > 90 || info.velocity.x < -520) openZijbalk();
+          else void animate(sleep, 0, { type: "spring", stiffness: 480, damping: 40 });
+        }}
+        style={{ x: lipX }}
+        className="fixed top-1/2 right-0 z-50 -translate-y-1/2 touch-pan-y lg:hidden"
+      >
+        {lipjeKnoppen(zijbalkOpen)}
+      </motion.button>
+
+      <div className="lg:hidden">
         <motion.button
           type="button"
-          onClick={() => setZijbalkOpen(true)}
-          aria-label="Open de zijbalk met agenda, bestellingen en de dag"
+          aria-label="Sluiten"
+          onClick={sluitZijbalk}
+          style={{ opacity: sluierOpacity, pointerEvents: zijbalkOpen ? "auto" : "none" }}
+          className="fixed inset-0 z-40 bg-black/35 !cursor-default backdrop-blur-[2px]"
+        />
+        <motion.aside
+          ref={paneelRef}
+          role="dialog"
+          aria-hidden={!zijbalkOpen}
+          aria-label="Zijbalk"
           drag="x"
-          dragConstraints={{ left: -70, right: 0 }}
-          dragElastic={{ left: 0.4, right: 0 }}
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={{ left: 0, right: 0.6 }}
           dragMomentum={false}
-          onDragEnd={(_, info) => {
-            // Naar links vegen opent; een klein tikje blijft gewoon een tik.
-            if (info.offset.x < -34) setZijbalkOpen(true);
+          onDrag={(_, info) => {
+            const breedte = paneelRef.current?.offsetWidth ?? 300;
+            sleep.set(Math.max(0, Math.min(breedte, breedte + info.offset.x)));
           }}
-          className="fixed top-1/2 right-0 z-40 -translate-y-1/2 touch-pan-y lg:hidden"
+          onDragEnd={(_, info) => {
+            // Naar rechts wegvegen sluit hem, net als het lipje opent.
+            const breedte = paneelRef.current?.offsetWidth ?? 300;
+            if (info.offset.x > 70 || info.velocity.x > 520) sluitZijbalk();
+            else void animate(sleep, breedte, { type: "spring", stiffness: 420, damping: 38, mass: 0.9 });
+          }}
+          style={{ x: paneelX, pointerEvents: zijbalkOpen ? "auto" : "none" }}
+          className="zijvlak donker-paneel dark fixed inset-y-0 right-0 z-40 w-[74vw] max-w-[304px] touch-pan-y rounded-l-[22px] [&_h2]:!mt-5 [&_h2]:!text-[18px] [&_h2:first-of-type]:!mt-0 [&_p]:!text-[13px]"
         >
-          {lipjeKnoppen(false)}
-        </motion.button>
-      ) : null}
-
-      <AnimatePresence>
-        {zijbalkOpen ? (
-          <div className="lg:hidden">
-            <motion.button
-              key="zijbalk-sluier"
-              type="button"
-              aria-label="Sluiten"
-              onClick={() => setZijbalkOpen(false)}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              className="fixed inset-0 z-40 bg-black/35 !cursor-default backdrop-blur-[2px]"
-            />
-            <motion.aside
-              key="zijbalk"
-              role="dialog"
-              aria-label="Zijbalk"
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={{ left: 0, right: 0.6 }}
-              dragMomentum={false}
-              onDragEnd={(_, info) => {
-                // Naar rechts wegvegen sluit hem, net als het lipje opent.
-                if (info.offset.x > 60) setZijbalkOpen(false);
-              }}
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 420, damping: 38, mass: 0.9 }}
-              className="zijvlak donker-paneel dark fixed inset-y-0 right-0 z-50 w-[74vw] max-w-[304px] touch-pan-y rounded-l-[22px] [&_h2]:!mt-5 [&_h2]:!text-[18px] [&_h2:first-of-type]:!mt-0 [&_p]:!text-[13px]"
-            >
-              <button
-                type="button"
-                onClick={() => setZijbalkOpen(false)}
-                aria-label="Zijbalk sluiten"
-                className="focus-ring absolute top-1/2 -left-[21px] z-10 -translate-y-1/2 touch-pan-y"
-              >
-                {lipjeKnoppen(true)}
-              </button>
-              <div className="h-full overflow-y-auto px-4 pt-7 pb-10">
-              {zijbalk}
-              </div>
-            </motion.aside>
+          <div className="h-full overflow-y-auto px-4 pt-7 pb-10">
+            {zijbalk}
           </div>
-        ) : null}
-      </AnimatePresence>
+        </motion.aside>
+      </div>
     </div>
   );
 }

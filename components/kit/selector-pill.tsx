@@ -24,6 +24,15 @@ export type SelectieOptie<T extends string> = {
   badgeAlert?: boolean;
 };
 
+/**
+ * De inkt van een cijfer staat niet altijd precies in het midden van zijn vak.
+ * Gemeten in dit font: een losse "1" staat 0,3 px naar links, de rest zit
+ * binnen een tiende. Alleen die ene krijgt dus een correctie.
+ */
+function optischeNudge(waarde: string | undefined): number {
+  return waarde === "1" ? 0.3 : 0;
+}
+
 /** Vijf of zes kolommen krijgen een vaste maximumbreedte. */
 const VORM = {
   5: { max: "max-w-[15.5rem]", kolommen: "grid-cols-5" },
@@ -144,12 +153,20 @@ export function SelectorPill<T extends string>({
                             : "",
                       )}
                     >
-                      {/* Een halve pixel omlaag: de cijfers staan in dit font
-                          net boven het midden van het balletje. */}
-                      <span className="translate-y-[0.5px] tabular-nums md:hidden">
+                      {/* Inkt staat in dit font 0,03 em boven het midden van het
+                          vak; dat schuiven we terug. Een losse "1"
+                          heeft links meer wit dan rechts en schuift daarom
+                          iets op naar het midden. */}
+                      <span
+                        className="tabular-nums md:hidden"
+                        style={{ transform: `translateX(${optischeNudge(optie.badgeMobiel ?? optie.badge)}px) translateY(0.03em)` }}
+                      >
                         {optie.badgeMobiel ?? optie.badge}
                       </span>
-                      <span className="hidden translate-y-[0.5px] tabular-nums md:inline">
+                      <span
+                        className="hidden tabular-nums md:inline"
+                        style={{ transform: `translateX(${optischeNudge(optie.badge)}px) translateY(0.03em)` }}
+                      >
                         {optie.badge}
                       </span>
                     </span>
