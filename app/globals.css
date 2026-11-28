@@ -179,6 +179,13 @@
 }
 
 html,
+html {
+  /* Zijwaarts mag de pagina niet meebewegen; op iOS sleepte een veeg in een
+     sheet anders de hele inhoud mee. */
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
+}
+
 body {
   min-height: 100%;
   background-color: var(--page);

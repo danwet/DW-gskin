@@ -264,6 +264,15 @@ export function TodayView() {
   const sleepGesleept = useRef(false);
 
   const beginSleep = (event: React.PointerEvent) => {
+    const doel = event.target as Element | null;
+    // Ligt er een sheet bovenop? Dan is die leidend en doen lipje en paneel
+    // niet mee met slepen.
+    if (document.querySelector('[data-slot="dialog-content"]')) return;
+    // Ook niet slepen aan een knop of veld ín het paneel: die kaapte de
+    // pointer, waardoor de eerstvolgende veeg elders het paneel opende.
+    if (doel?.closest?.('button, a, input, textarea, select, [contenteditable]')) {
+      if (doel.closest('[aria-label="Zijbalk"]')) return;
+    }
     sleepSleep.current = { startX: event.clientX, startY: event.clientY, basis: sleep.get(), actief: true };
     sleepGesleept.current = false;
     (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);

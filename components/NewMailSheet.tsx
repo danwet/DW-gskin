@@ -280,7 +280,9 @@ export function NewMailSheet({ open, onClose }: { open: boolean; onClose: () => 
                 setTekst(event.currentTarget.innerText);
                 setHtml(event.currentTarget.innerHTML);
               }}
-              className="min-h-[120px] w-full bg-transparent pr-10 text-[14px] leading-6 text-[var(--ink)] outline-none [font-family:Helvetica,Arial,sans-serif] [&_a]:text-[var(--blue)] [&_a]:underline"
+              // Geen zijwaartse beweging: een veeg met de vinger mag de mailtekst
+              // niet opzij schuiven; lange regels breken af.
+              className="min-h-[120px] w-full overflow-x-hidden break-words bg-transparent pr-10 text-[14px] leading-6 text-[var(--ink)] touch-pan-y outline-none [font-family:Helvetica,Arial,sans-serif] [&_a]:text-[var(--blue)] [&_a]:underline"
             />
           </div>
 

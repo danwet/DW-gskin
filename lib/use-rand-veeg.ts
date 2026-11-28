@@ -30,6 +30,12 @@ export function useRandVeeg(kant: Kant, actie: () => void, zone = 18): void {
     const begin = (event: TouchEvent) => {
       const raak = event.touches[0];
       if (!raak) return;
+      // In een sheet (of ander dialoog) doet de randveeg niet mee.
+      const doel = event.target as Element | null;
+      if (doel?.closest?.('[role="dialog"], [data-slot="dialog-content"]')) {
+        start = null;
+        return;
+      }
       start = inZone(raak.clientX) ? { x: raak.clientX, y: raak.clientY, gedaan: false } : null;
     };
 
