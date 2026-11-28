@@ -1224,6 +1224,16 @@ html.glas-safari .glas-balk {
   }
 }
 
+/* Op mobiel schildert het app-vlak de veilige marge zelf met een dekkende
+   kleur. De filter dimt dat vlak mee, en het verwijderen van die filter dwingt
+   iOS de strook opnieuw te tekenen — een kleurwissel op alleen html deed dat
+   niet en daardoor bleef de strook na het sluiten donker. */
+@media (max-width: 767px) {
+  #app-inhoud {
+    background-color: var(--page);
+  }
+}
+
 /* De inhoud zelf dimmen met een filter: dat raakt alles in één keer, ook glas
    met backdrop-filter dat op iOS anders boven een gewone sluier blijft staan.
    Het paneel, de lade en de sheets hangen in een portal en blijven dus helder. */

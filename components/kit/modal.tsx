@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useDragControls, useMotionValue } from "framer-motion";
+import { animate, motion, useDragControls, useMotionValue } from "framer-motion";
 import { X } from "lucide-react";
 import {
   Dialog,
@@ -134,31 +134,56 @@ export function Modal({
 
     let startY: number | null = null;
     let startHoogte = 0;
+    // Netto beweging van deze aanraking; positief is omhoog (sheet groeit).
+    let bewogen = 0;
+
     const bijAanraak = (event: TouchEvent) => {
       startY = event.touches[0]?.clientY ?? null;
       startHoogte = hoogte.get();
+      bewogen = 0;
     };
+
     const bijBeweeg = (event: TouchEvent) => {
       const nu = event.touches[0]?.clientY ?? null;
       if (startY === null || nu === null) return;
+      bewogen = startY - nu;
       const doel = pastHoogte();
-      const volgende = Math.max(minHoogte, Math.min(doel, startHoogte + (startY - nu)));
+      // Iets meer dan 1 op 1: de sheet haalt de vinger in, wat het laat
+      // doorschieten in plaats van stug meeplakken.
+      const volgende = Math.max(minHoogte, Math.min(doel, startHoogte + bewogen * 1.25));
       const lijst = lijstRef.current;
       const bovenaan = !lijst || lijst.scrollTop <= 0;
       if (!bovenaan) return;
-      const kanGroeien = startY - nu > 0 ? hoogte.get() < doel - 0.5 : hoogte.get() > minHoogte + 0.5;
+      const kanGroeien = bewogen > 0 ? hoogte.get() < doel - 0.5 : hoogte.get() > minHoogte + 0.5;
       if (!kanGroeien) return;
       event.preventDefault();
       hoogte.set(volgende);
     };
 
+    // Bij loslaten glijdt de sheet door naar de hoogte waarop de onderste
+    // inhoud past, in plaats van halverwege de beweging te blijven staan.
+    const bijEinde = () => {
+      if (startY === null) return;
+      startY = null;
+      const lijst = lijstRef.current;
+      const bovenaan = !lijst || lijst.scrollTop <= 0;
+      if (!bovenaan || bewogen < 12) return;
+      const doel = pastHoogte();
+      if (hoogte.get() >= doel - 1) return;
+      void animate(hoogte, doel, { type: "spring", stiffness: 240, damping: 28, mass: 0.9 });
+    };
+
     vak.addEventListener("wheel", bijWiel, { passive: false });
     vak.addEventListener("touchstart", bijAanraak, { passive: true });
     vak.addEventListener("touchmove", bijBeweeg, { passive: false });
+    vak.addEventListener("touchend", bijEinde, { passive: true });
+    vak.addEventListener("touchcancel", bijEinde, { passive: true });
     return () => {
       vak.removeEventListener("wheel", bijWiel);
       vak.removeEventListener("touchstart", bijAanraak);
       vak.removeEventListener("touchmove", bijBeweeg);
+      vak.removeEventListener("touchend", bijEinde);
+      vak.removeEventListener("touchcancel", bijEinde);
     };
   }, [vasteHoogte, heeftVak, hoogte, minHoogte, maxHoogte]);
 
