@@ -184,6 +184,9 @@ html {
      sheet anders de hele inhoud mee. */
   overscroll-behavior-x: none;
   touch-action: pan-y;
+  /* Zonder kleur op het root-element schildert iOS de strook in de veilige
+     marge wit; body heeft de kleur, html niet. */
+  background-color: var(--page);
 }
 
 body {

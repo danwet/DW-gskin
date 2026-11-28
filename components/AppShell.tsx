@@ -249,16 +249,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           }}
           className="fixed inset-x-0 bottom-0 z-40 bg-black/30 !cursor-default"
         />
-        <motion.div
-          aria-hidden
-          style={{
-            opacity: ladeSluier,
-            pointerEvents: "none",
-            top: "calc(-1 * env(safe-area-inset-top) - 40px)",
-            height: "calc(100% + env(safe-area-inset-top) + 40px)",
-          }}
-          className="pointer-events-none fixed inset-x-0 bottom-0 z-40 backdrop-blur-[2px]"
-        />
+
         <motion.aside
           ref={(element) => {
             ladeRef.current = element;

@@ -439,19 +439,7 @@ export function TodayView() {
           }}
           className="fixed inset-x-0 bottom-0 z-40 bg-black/40 !cursor-default"
         />
-        {/* De blur op een eigen laag, los van de donkere tint. Safari zet
-            glasachtige elementen (de focus-selector, de kaarten) boven een laag
-            met backdrop-filter; de tint erboven dimt ze alsnog. */}
-        <motion.div
-          aria-hidden
-          style={{
-            opacity: sluierOpacity,
-            pointerEvents: "none",
-            top: "calc(-1 * env(safe-area-inset-top) - 40px)",
-            height: "calc(100% + env(safe-area-inset-top) + 40px)",
-          }}
-          className="fixed inset-x-0 bottom-0 z-40 backdrop-blur-[2px]"
-        />
+
         <motion.aside
           ref={paneelRef}
           role="dialog"
