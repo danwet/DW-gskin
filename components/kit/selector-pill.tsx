@@ -16,6 +16,10 @@ export type SelectieOptie<T extends string> = {
   titel?: string;
   /** Klein getal in een balletje achter het label. */
   badge?: string;
+  /** Label voor smalle schermen; valt terug op `label`. */
+  labelMobiel?: string;
+  /** Teller voor smalle schermen; valt terug op `badge`. */
+  badgeMobiel?: string;
   /** Nieuwe, ongelezen mail in deze categorie: het balletje wordt rood. */
   badgeAlert?: boolean;
 };
@@ -71,7 +75,7 @@ export function SelectorPill<T extends string>({
           GLAS_BALK,
           MORFING_BLUR,
           // overflow-VISIBLE: de opgetilde druppel (1,24×) mag niet afgeknipt worden.
-          "relative w-full min-w-0 overflow-visible rounded-full p-1",
+          "relative w-full min-w-0 overflow-visible rounded-full p-1 max-md:p-0.5",
           !vullend && vorm?.max,
           !vullend &&
             zes &&
@@ -100,6 +104,8 @@ export function SelectorPill<T extends string>({
                 onClick={() => onChange(optie.waarde)}
                 className={cn(
                   "segment-hover group relative t-meta h-8 min-w-0 whitespace-nowrap rounded-full transition-colors",
+                  // Op een telefoon is er minder ruimte: iets kleiner en strakker.
+                  "max-md:px-0.5 max-md:text-[10.5px]",
                   !vullend && zes && "cat-dicht",
                   // Alle labels even zwaar. De kleuren zijn omgedraaid ten
                   // opzichte van de eerste opzet: het actieve label staat op de
@@ -113,13 +119,16 @@ export function SelectorPill<T extends string>({
               >
                 {actief && <GlasDruppel layoutId={druppelId} className="inset-0" />}
                 <span className="relative z-10 inline-flex items-center gap-1.5">
-                  {optie.label}
-                  {optie.badge ? (
+                  {/* Op een smal scherm mag het label korter zijn: "Declareren"
+                      met een bedrag erachter past daar niet. */}
+                  <span className="md:hidden">{optie.labelMobiel ?? optie.label}</span>
+                  <span className="hidden md:inline">{optie.label}</span>
+                  {(optie.badgeMobiel ?? optie.badge) ? (
                     <span
                       className={cn(
                         // Een omtrek in plaats van een gevuld balletje: dat
                         // weegt visueel minder naast het label.
-                        "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border px-1.5 text-[10px] leading-none font-medium transition-colors",
+                        "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border px-1.5 text-[10px] leading-none font-medium transition-colors max-md:h-4 max-md:min-w-4 max-md:px-1 max-md:text-[9px]",
                         optie.badgeAlert
                           ? "border-[var(--dot-red)] text-[var(--dot-red)]"
                           // Inactief: bij hover licht de cirkel mee op met het
@@ -135,7 +144,14 @@ export function SelectorPill<T extends string>({
                             : "",
                       )}
                     >
-                      {optie.badge}
+                      {/* Een halve pixel omlaag: de cijfers staan in dit font
+                          net boven het midden van het balletje. */}
+                      <span className="translate-y-[0.5px] tabular-nums md:hidden">
+                        {optie.badgeMobiel ?? optie.badge}
+                      </span>
+                      <span className="hidden translate-y-[0.5px] tabular-nums md:inline">
+                        {optie.badge}
+                      </span>
                     </span>
                   ) : null}
                 </span>

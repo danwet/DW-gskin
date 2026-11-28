@@ -19,7 +19,7 @@ export function TopBar() {
   const undoable = Boolean(topBar?.undoable);
 
   return (
-    <div data-topbar-rij className="flex flex-wrap items-center gap-5">
+    <div data-topbar-rij className="flex items-center gap-3 md:gap-5">
       {/* Eén glas-eiland voor de drie bedieningen, zoals in macOS. */}
       <div className="glas-balk mx-auto flex items-center gap-1 rounded-full p-1">
         <button
@@ -102,7 +102,10 @@ export function TopBar() {
         />
       </div>
 
-      <WeatherChip />
+      {/* Op een telefoon is er naast het eiland geen ruimte voor het weer. */}
+      <div className="hidden sm:block">
+        <WeatherChip />
+      </div>
     </div>
   );
 }

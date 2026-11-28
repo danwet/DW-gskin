@@ -5,6 +5,7 @@ import { ontgrendelGeluid } from "@/lib/geluid";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { signOutOfDashboard } from "@/app/login/actions";
 import { useApp, type SyncProgressView } from "./AppProvider";
 import { DraftDialog } from "./DraftDialog";
@@ -13,6 +14,7 @@ import { NewMailSheet } from "./NewMailSheet";
 import { PaymentModal } from "./PaymentModal";
 import { SettingsDialog } from "./SettingsDialog";
 import { BrandMark } from "./BrandMark";
+import { MobielNavProvider } from "./mobiel-nav";
 
 const NAV = [
   { href: "/", label: "Focus", icon: "home" as const },
@@ -168,36 +170,53 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </>
       ) : null}
 
-      {/* Mobile top bar + drawer */}
-      <header className="glass-panel sticky top-0 z-30 flex items-center justify-between px-4 py-3 md:hidden">
-        <span className="glass-reflect" aria-hidden="true" />
-        <img src="/dw-mark.png" alt="DW" className="h-7 w-auto dark:invert" />
-        <button
-          type="button"
-          onClick={() => setMobileOpen((v) => !v)}
-          aria-label="Navigatie openen"
-          aria-expanded={mobileOpen}
-          aria-controls="mobile-sidebar"
-          className="glass-chip focus-ring grid h-7 w-7 place-items-center rounded-full text-[var(--ink)]"
-        >
-          <MenuIcon />
-        </button>
-      </header>
-      {mobileOpen ? (
-        <aside
-          id="mobile-sidebar"
-          className="glass-float fixed top-0 left-0 z-50 flex h-full w-[78vw] max-w-[300px] flex-col md:hidden"
-        >
-          {sidebar}
-        </aside>
-      ) : null}
+      {/* Mobiel: geen witte balk meer. Het menu-icoon en het eiland staan in de
+          paginakop; hier alleen de lade die daarvandaan opengaat. */}
+      <AnimatePresence>
+        {mobileOpen ? (
+          <div className="md:hidden">
+            <motion.button
+              key="mobiel-sluier"
+              type="button"
+              aria-label="Navigatie sluiten"
+              onClick={() => setMobileOpen(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="fixed inset-0 z-40 bg-black/25 !cursor-default backdrop-blur-[2px]"
+            />
+            <motion.aside
+              key="mobiel-menu"
+              id="mobile-sidebar"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={{ left: 0.6, right: 0 }}
+              dragMomentum={false}
+              onDragEnd={(_, info) => {
+                // Naar links wegvegen sluit het menu; tikken ernaast ook.
+                if (info.offset.x < -60) setMobileOpen(false);
+              }}
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 420, damping: 38, mass: 0.9 }}
+              className="glass-float fixed top-0 left-0 z-50 flex h-full w-[58vw] max-w-[206px] touch-pan-y flex-col !rounded-l-none rounded-r-lg"
+            >
+              {sidebar}
+            </motion.aside>
+          </div>
+        ) : null}
+      </AnimatePresence>
 
+      <MobielNavProvider value={{ open: mobileOpen, setOpen: setMobileOpen }}>
       <main className="min-w-0 flex-1 md:min-h-0 md:overflow-y-auto">
         {/* Ruimte die de oude bovenbalk innam, zodat elke pagina op dezelfde
             hoogte begint. De kop zelf zit in PageTitle. */}
-        <div className="h-5" aria-hidden="true" />
+        <div className="h-2 md:h-5" aria-hidden="true" />
         {children}
       </main>
+      </MobielNavProvider>
 
       {/* Nieuwe mail: grote glazen knop rechtsonder, altijd bereikbaar. */}
       <button
@@ -427,14 +446,6 @@ function GearIcon() {
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
       <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function MenuIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
-      <path d="M4 7h16M4 12h16M4 17h16" />
     </svg>
   );
 }

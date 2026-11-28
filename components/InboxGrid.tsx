@@ -9,6 +9,8 @@ import { opschonenHandtekening } from "@/lib/handtekening";
 import type { MailAssessment } from "@/lib/agent/types";
 import { InvoiceBlock, timeZoneOf, UrgencyPill } from "./AgentInbox";
 import { cn } from "@/lib/utils";
+import { declareLabel } from "@/lib/declare-label";
+import { MobieleLijst } from "./MobieleLijst";
 import { Modal } from "@/components/kit/modal";
 import { SelectorPill } from "@/components/kit/selector-pill";
 import { enqueueMailAction } from "@/lib/actie-wachtrij";
@@ -169,11 +171,28 @@ export function InboxGrid({
     return inTab.some((item) => ongelezen.has(item.conversationId));
   };
 
+  // Vegen over de lijst wisselt van focus: dat is op een telefoon sneller dan
+  // mikken op de selector bovenin.
+  const [veeg, setVeeg] = useState<{ dx: number; sleept: boolean }>({ dx: 0, sleept: false });
+  // De stand van de vinger in een ref: binnen één frame kunnen meerdere
+  // touchmove-meldingen komen, en dan loopt de state achter.
+  const veegDx = useRef(0);
+  const veegStart = useRef<{ x: number; y: number } | null>(null);
+  const tabOrde: (typeof tabs)[number]["id"][] = ["urgent", "later", "info", "declare"];
+  const wisselFocus = (richting: 1 | -1) => {
+    const nu = tabOrde.indexOf(activeTab);
+    const volgende = tabOrde[Math.min(tabOrde.length - 1, Math.max(0, nu + richting))];
+    if (volgende !== activeTab) setActiveTab(volgende);
+  };
+
   const selectorOpties = tabs.map((tab) => ({
     waarde: tab.id,
     label: tab.label,
     badge: String(tab.count),
-    titel: tab.label,
+    // Op mobiel is het bedrag te breed: daar telt het aantal mails.
+    labelMobiel: tab.id === "declare" ? "Declareren" : undefined,
+    badgeMobiel: tab.id === "declare" ? String(orderedDeclare.length) : undefined,
+    titel: tab.id === "declare" ? `Declareren · ${declareLabel}` : tab.label,
     badgeAlert: heeftNieuwe(tab.id),
   }));
   const activeCards =
@@ -224,7 +243,7 @@ export function InboxGrid({
 
   return (
     <section>
-      <div className="mb-12">
+      <div className="-mx-2 mb-5 md:mx-0 md:mb-12">
         <SelectorPill
           opties={selectorOpties}
           waarde={activeTab}
@@ -234,6 +253,48 @@ export function InboxGrid({
         />
       </div>
 
+      <div
+        className="touch-pan-y md:contents"
+        onTouchStart={(event) => {
+          const raak = event.touches[0];
+          veegStart.current = { x: raak.clientX, y: raak.clientY };
+          veegDx.current = 0;
+          setVeeg({ dx: 0, sleept: true });
+        }}
+        onTouchMove={(event) => {
+          const start = veegStart.current;
+          if (!start) return;
+          const raak = event.touches[0];
+          const dx = raak.clientX - start.x;
+          const dy = raak.clientY - start.y;
+          // Alleen horizontaal vegen; verticaal scrollen blijft scrollen.
+          if (Math.abs(dy) > Math.abs(dx)) {
+            veegStart.current = null;
+            veegDx.current = 0;
+            setVeeg({ dx: 0, sleept: false });
+            return;
+          }
+          veegDx.current = dx;
+          setVeeg({ dx, sleept: true });
+        }}
+        onTouchEnd={() => {
+          const dx = veegDx.current;
+          veegStart.current = null;
+          veegDx.current = 0;
+          setVeeg({ dx: 0, sleept: false });
+          if (Math.abs(dx) < 56) return;
+          wisselFocus(dx < 0 ? 1 : -1);
+        }}
+        onTouchCancel={() => {
+          veegStart.current = null;
+          veegDx.current = 0;
+          setVeeg({ dx: 0, sleept: false });
+        }}
+        style={{
+          transform: veeg.dx ? `translateX(${Math.round(veeg.dx * 0.28)}px)` : undefined,
+          transition: veeg.sleept ? "none" : "transform 160ms ease-out",
+        }}
+      >
       {loading ? (
         <div className="grid gap-x-3 gap-y-4 sm:grid-cols-2" aria-hidden="true">
           {[0, 1, 2, 3].map((index) => (
@@ -247,19 +308,37 @@ export function InboxGrid({
           <p className="text-[15px] font-medium text-[var(--ink)]">{emptyMessage}</p>
         </div>
       ) : (
-        <CardGrid
-          items={activeCards}
-          now={now}
-          timeZone={timeZone}
-          onDeclare={onDeclare}
-          onOpen={(item) => {
-            // Gelezen vanuit het overzicht: dan is hij geen nieuwe melding meer.
-            onSeen?.(item);
-            setSelected(item);
-          }}
-          onTrash={trashFromCard}
-        />
+        <>
+          {/* Mobiel: regels in plaats van kaarten; die zijn te groot om te
+              scannen op een telefoon. */}
+          <div className="md:hidden">
+            <MobieleLijst
+              items={activeCards}
+              now={now}
+              timeZone={timeZone}
+              onOpen={(item) => {
+                onSeen?.(item);
+                setSelected(item);
+              }}
+            />
+          </div>
+          <div className="hidden md:block">
+            <CardGrid
+              items={activeCards}
+              now={now}
+              timeZone={timeZone}
+              onDeclare={onDeclare}
+              onOpen={(item) => {
+                // Gelezen vanuit het overzicht: dan is hij geen nieuwe melding meer.
+                onSeen?.(item);
+                setSelected(item);
+              }}
+              onTrash={trashFromCard}
+            />
+          </div>
+        </>
       )}
+      </div>
 
       {selected ? (
         <InboxModal
@@ -380,17 +459,6 @@ function preparedLabel(item: MailAssessment): string {
   return "Actie voorbereid";
 }
 
-/** "Declareer € 151,38" — met bedrag, want dat is wat je gaat declareren. */
-function declareLabel(item: MailAssessment): string {
-  const bedrag = item.invoice?.amount;
-  if (bedrag == null) return "Declareer factuur";
-  const code = (item.invoice?.currency ?? "").toUpperCase();
-  const teken = code === "USD" ? "$" : code === "GBP" ? "£" : "€";
-  const getal = bedrag.toFixed(2).replace(".", ",");
-  // Non-breaking space: het bedrag mag nooit los van het teken op een nieuwe
-  // regel belanden.
-  return `Declareer ${teken}\u00A0${getal}`;
-}
 
 function ctaLabel(item: MailAssessment): string {
   if (item.declaration === "pending") return "Declareer";

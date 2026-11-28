@@ -929,6 +929,40 @@ html:not(.dark) .segment-hover:hover {
   opacity: 0;
 }
 
+/* Het lipje en de mobiele zijbalk: antraciet in plaats van zwart, met dezelfde
+   soort gloed als de donkere pagina, zodat ze bij het geheel horen. */
+.zijvlak {
+  background-color: #202326;
+  /* Horizontaal verloop: de linkerrand heeft daardoor over de hele hoogte
+     dezelfde kleur, zodat het lipje daar naadloos op aansluit. */
+  background-image: linear-gradient(90deg, #202326 0%, #292c2f 58%, #1d2023 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 40px -18px rgba(0, 0, 0, 0.75);
+}
+
+/* Het lipje houdt precies de kleur van die linkerrand. */
+.lipje-vlak {
+  background-color: #202326;
+  background-image: none;
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.6);
+}
+
+/* De mobiele zijbalk is een zwart vlak; de glasknoppen daarbinnen moeten dus
+   ook donker zijn. De gewone regels zijn op `html:not(.dark)` gescopet en
+   winnen anders van de donkere variant binnen een genest `.dark`. */
+/* Dubbele klassenaam: de gewone knopregels zijn op `html:not(.dark)` gescopet
+   en hebben anders net één punt meer specificiteit. */
+.donker-paneel.donker-paneel .btn-primary,
+.donker-paneel.donker-paneel .btn-secondary,
+.donker-paneel.donker-paneel .glas-chip {
+  background-color: rgba(255, 255, 255, 0.08);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f2f2f3;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
 /* Sticky title + shadow. */
 .kleef {
   background: var(--kleef-vlak, var(--bg));

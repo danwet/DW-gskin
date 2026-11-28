@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { AgendaPanel } from "./AgendaPanel";
 import { startOfLogicalDay } from "@/lib/day-boundary";
@@ -178,11 +179,40 @@ export function TodayView() {
   // mail itself is already archived.
   // Alles wat op declareren staat hoort in dat tabblad, ook als de factuur-
   // gegevens (nog) niet compleet zijn. Anders kan een kaart stil verdwijnen.
+  // Mobiel: de rechterkolom zit achter een zwart lipje aan de rand.
+  const [zijbalkOpen, setZijbalkOpen] = useState(false);
   const declareItems = inbox.items.filter((item) => item.declaration === "pending");
   const missedItems = visibleItems.filter((item) => item.classification === "unclassified");
 
+  const zijbalk = (
+    <>
+      <AgendaPanel />
+      <ShipmentsPanel items={inbox.items} />
+      <DaySummary
+        items={inbox.items}
+        dailyChanges={inbox.meta?.dailyChanges}
+        dailyPaid={inbox.meta?.dailyPaid}
+        dailyAnswered={inbox.meta?.dailyAnswered}
+      />
+    </>
+  );
+
+  /** Het lipje: gesloten aan de schermrand, open aan de rand van de balk. */
+  const lipjeKnoppen = (open: boolean) => (
+    <span
+      className="lipje-vlak flex h-16 w-[22px] touch-pan-y items-center justify-center rounded-l-md text-white/85"
+      // Aangehecht aan de balk is er geen schaduw nodig; die gaf een lichte
+      // naad op de plek waar lipje en vlak elkaar raken.
+      style={open ? { boxShadow: "none" } : undefined}
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        {open ? <path d="M9 5l7 7-7 7" /> : <path d="M15 5l-7 7 7 7" />}
+      </svg>
+    </span>
+  );
+
   return (
-    <div className="mx-auto max-w-[1180px] px-6 pt-9 pb-7 sm:px-8 sm:pb-8 md:pb-14">
+    <div className="mx-auto max-w-[1180px] px-6 pt-1 pb-7 max-md:pr-9 sm:px-8 sm:pb-8 md:pt-9 md:pb-14">
         {inbox.notice ? (
           <div className="glass-float fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-2xl px-4 py-2.5 text-[13px] text-[var(--ink)]">
             {inbox.notice}
@@ -214,19 +244,80 @@ export function TodayView() {
             <LegacyLoopsCard />
           </div>
         </div>
-        <div
-          className="mt-8 border-t border-[var(--line)] pt-6 lg:mt-0 lg:flex lg:flex-col lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8"
-        >
-          <AgendaPanel />
-          <ShipmentsPanel items={inbox.items} />
-          <DaySummary
-            items={inbox.items}
-            dailyChanges={inbox.meta?.dailyChanges}
-            dailyPaid={inbox.meta?.dailyPaid}
-            dailyAnswered={inbox.meta?.dailyAnswered}
-          />
+        {/* Desktop: de kolom rechts. Mobiel: diezelfde inhoud achter het lipje. */}
+        <div className="hidden lg:flex lg:flex-col lg:border-l lg:border-[var(--line)] lg:pl-8">
+          {zijbalk}
         </div>
       </div>
+
+      {/* Mobiel: een zwart lipje aan de rechterrand, zoals iOS een beeld-in-beeld
+          laat staan. Tikken opent dezelfde kolom als op de desktop. */}
+      {!zijbalkOpen ? (
+        <motion.button
+          type="button"
+          onClick={() => setZijbalkOpen(true)}
+          aria-label="Open de zijbalk met agenda, bestellingen en de dag"
+          drag="x"
+          dragConstraints={{ left: -70, right: 0 }}
+          dragElastic={{ left: 0.4, right: 0 }}
+          dragMomentum={false}
+          onDragEnd={(_, info) => {
+            // Naar links vegen opent; een klein tikje blijft gewoon een tik.
+            if (info.offset.x < -34) setZijbalkOpen(true);
+          }}
+          className="fixed top-1/2 right-0 z-40 -translate-y-1/2 touch-pan-y lg:hidden"
+        >
+          {lipjeKnoppen(false)}
+        </motion.button>
+      ) : null}
+
+      <AnimatePresence>
+        {zijbalkOpen ? (
+          <div className="lg:hidden">
+            <motion.button
+              key="zijbalk-sluier"
+              type="button"
+              aria-label="Sluiten"
+              onClick={() => setZijbalkOpen(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="fixed inset-0 z-40 bg-black/35 !cursor-default backdrop-blur-[2px]"
+            />
+            <motion.aside
+              key="zijbalk"
+              role="dialog"
+              aria-label="Zijbalk"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={{ left: 0, right: 0.6 }}
+              dragMomentum={false}
+              onDragEnd={(_, info) => {
+                // Naar rechts wegvegen sluit hem, net als het lipje opent.
+                if (info.offset.x > 60) setZijbalkOpen(false);
+              }}
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 420, damping: 38, mass: 0.9 }}
+              className="zijvlak donker-paneel dark fixed inset-y-0 right-0 z-50 w-[74vw] max-w-[304px] touch-pan-y rounded-l-[22px] [&_h2]:!mt-5 [&_h2]:!text-[18px] [&_h2:first-of-type]:!mt-0 [&_p]:!text-[13px]"
+            >
+              <button
+                type="button"
+                onClick={() => setZijbalkOpen(false)}
+                aria-label="Zijbalk sluiten"
+                className="focus-ring absolute top-1/2 -left-[21px] z-10 -translate-y-1/2 touch-pan-y"
+              >
+                {lipjeKnoppen(true)}
+              </button>
+              <div className="h-full overflow-y-auto px-4 pt-7 pb-10">
+              {zijbalk}
+              </div>
+            </motion.aside>
+          </div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
