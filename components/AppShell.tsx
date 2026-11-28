@@ -226,7 +226,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
       </MobielNavProvider>
 
-      {/* Nieuwe mail: grote glazen knop rechtsonder, altijd bereikbaar. */}
+      {/* Nieuwe mail: grote glazen knop rechtsonder. Alleen op het dashboard;
+          op de andere schermen hoort er geen schrijfknop te staan. */}
+      {pathname === "/" ? (
       <button
         type="button"
         onClick={() => setNieuweMail(true)}
@@ -248,6 +250,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z" />
         </svg>
       </button>
+      ) : null}
       <NewMailSheet open={nieuweMail} onClose={() => setNieuweMail(false)} />
       <SettingsDialog />
       <DraftDialog />
@@ -325,7 +328,7 @@ function SidebarContent({
               href={link.href}
               onClick={onNavigate}
               aria-current={active ? "page" : undefined}
-              className={`focus-ring relative flex items-center gap-3 py-2.5 pr-3 pl-5 text-[14px] whitespace-nowrap transition-colors ${
+              className={`focus-ring relative flex items-center gap-3 py-2.5 pr-3 pl-5 text-[14px] !font-semibold whitespace-nowrap transition-colors ${
                 active
                   // Zelfde glas als de actieknoppen (zoals "Kies bestand").
                   // Actief staat op de volle tekstkleur, de rest is gedempt;

@@ -75,7 +75,16 @@ export function MobieleLijst({
                 </span>
                 {actie || bedrag || item.invoice?.dueDate ? (
                   <span className="mt-1 flex items-baseline justify-between gap-3">
-                    <span className="truncate text-[14px] text-[var(--ink)]/80">{actie}</span>
+                    {/* Een pijltje voor de actie: het is iets wat je kunt
+                        doen, geen omschrijving. */}
+                    <span className="flex min-w-0 items-baseline gap-1.5">
+                      {actie ? (
+                        <span aria-hidden className="shrink-0 text-[14px] text-[var(--ink)]/50">
+                          →
+                        </span>
+                      ) : null}
+                      <span className="truncate text-[14px] text-[var(--ink)]/80">{actie}</span>
+                    </span>
                     {declaratie && bedrag ? (
                       <span className="shrink-0 text-[14px] font-medium text-[var(--ink)]">
                         {bedragTekst(bedrag, item.invoice?.currency)}

@@ -194,6 +194,19 @@ export function TodayView() {
   /** Schaduw van het paneel pas zodra het paneel echt in beeld komt. */
   const schaduwOpacity = useTransform(sleep, [0, 30], [0, 1]);
 
+  /**
+   * Op mobiel moet de zijbalk eerst dichtglijden voordat een agendascherm opent;
+   * anders schuift dat scherm open achter een paneel dat nog in beeld is.
+   */
+  const openVanuitZijbalk = (actie: () => void) => {
+    if (!zijbalkOpen) {
+      actie();
+      return;
+    }
+    sluitZijbalk();
+    window.setTimeout(actie, 380);
+  };
+
   const openZijbalk = () => {
     const breedte = paneelRef.current?.offsetWidth ?? 300;
     setZijbalkOpen(true);
@@ -208,7 +221,7 @@ export function TodayView() {
 
   const zijbalk = (
     <>
-      <AgendaPanel />
+      <AgendaPanel voorOpenen={openVanuitZijbalk} />
       <ShipmentsPanel items={inbox.items} />
       <DaySummary
         items={inbox.items}

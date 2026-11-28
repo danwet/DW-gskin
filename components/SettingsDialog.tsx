@@ -203,7 +203,7 @@ export function SettingsDialog() {
                   setNotice(null);
                 }}
                 aria-current={category === item.id ? "page" : undefined}
-                className={`focus-ring shrink-0 py-2.5 pr-3 pl-5 text-left text-[14px] whitespace-nowrap ${
+                className={`focus-ring shrink-0 py-2.5 pr-3 pl-5 text-left text-[14px] !font-semibold whitespace-nowrap ${
                   category === item.id
                     // Zelfde glas én dezelfde gedempte tint als het actieve
                     // menu-item en het actieve label in de focus-selectie.
@@ -488,7 +488,7 @@ function ConnectionsSection({
         <div className="rounded-2xl border border-[var(--line)] px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[14px] font-medium">Google Agenda</p>
+              <p className="text-[14px] font-semibold">Google Agenda</p>
               <p className="mt-0.5 text-[13px] text-[var(--muted)]">Agenda lezen via je Google-account.</p>
             </div>
             <Status dot={server?.calendar.configured === true} label={server?.calendar.configured ? "Gekoppeld" : "Niet geconfigureerd"} />
@@ -503,7 +503,7 @@ function ConnectionsSection({
         <div className="rounded-2xl border border-[var(--line)] px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[14px] font-medium">Gmail</p>
+              <p className="text-[14px] font-semibold">Gmail</p>
               <p className="mt-0.5 truncate text-[13px] text-[var(--muted)]">
                 {connection ? connection.email : "Alleen-lezen koppeling met je Gmail-inbox."}
               </p>
@@ -543,7 +543,7 @@ function ConnectionsSection({
         </div>
 
         <div className="rounded-2xl border border-[var(--line)] px-4 py-3">
-          <p className="text-[14px] font-medium">E-mailhandtekening</p>
+          <p className="text-[14px] font-semibold">E-mailhandtekening</p>
           <div className="mt-3">
             <textarea
               value={signature}
@@ -557,7 +557,7 @@ function ConnectionsSection({
                 er verstuurd wordt. */}
             {signature.trim() ? (
               <div className="mt-3 rounded-xl border border-[var(--line)] px-3 py-2">
-                <p className="text-[11px] font-medium tracking-[0.14em] text-[var(--muted)] uppercase">Voorbeeld</p>
+                <p className="text-[11px] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">Voorbeeld</p>
                 <div
                   className="handtekening mt-1 text-[14px] leading-6 text-[var(--ink)] [&_img]:max-w-[190px]"
                   dangerouslySetInnerHTML={{ __html: opschonenHandtekening(signature) }}
@@ -619,7 +619,7 @@ function ServerSection({
         </button>
 
         <div className="space-y-2 rounded-2xl border border-[var(--line)] px-4 py-3 text-[13px]">
-          <p className="text-[11px] font-medium tracking-[0.12em] text-[var(--muted)]">OPSLAG (SUPABASE)</p>
+          <p className="text-[11px] font-semibold tracking-[0.12em] text-[var(--muted)]">OPSLAG (SUPABASE)</p>
           <Status
             dot={server?.supabase.configured === true}
             label={server?.supabase.configured ? "Supabase geconfigureerd" : "Niet geconfigureerd — lokale bestanden"}
@@ -658,7 +658,7 @@ function ServerSection({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[12px] font-medium text-[var(--muted)]">{label}</span>
+      <span className="mb-1.5 block text-[12px] font-semibold text-[var(--muted)]">{label}</span>
       {children}
     </label>
   );
@@ -666,7 +666,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function Status({ dot, label }: { dot: boolean; label: string }) {
   return (
-    <span className="flex shrink-0 items-center gap-1.5 text-[13px] font-medium">
+    <span className="flex shrink-0 items-center gap-1.5 text-[13px] font-semibold">
       <span className={`h-1.5 w-1.5 rounded-full ${dot ? "bg-[var(--dot-green)]" : "bg-[var(--faint)]"}`} />
       {label}
     </span>
@@ -679,4 +679,4 @@ const areaClass = "veld-underline px-0 py-2 text-[15px] text-ink";
 
 // Zelfde knop als in de andere sheets en op de kaarten.
 const primaryClass =
-  "btn-primary focus-ring shrink-0 rounded-full px-4 py-2 text-[13px] font-medium disabled:opacity-60";
+  "btn-primary focus-ring shrink-0 rounded-full px-4 py-2 text-[13px] font-semibold disabled:opacity-60";

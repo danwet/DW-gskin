@@ -34,6 +34,15 @@ function datum(iso: string): string {
   return d.toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" });
 }
 
+/** Kort voor in de tabel: "27/11" — met een schuine streep, niet met een koppelteken. */
+function datumKort(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const dag = String(d.getDate()).padStart(2, "0");
+  const maand = String(d.getMonth() + 1).padStart(2, "0");
+  return `${dag}/${maand}`;
+}
+
 function tijd(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
@@ -110,7 +119,12 @@ export function HandledView() {
                 <th className="px-4 py-2.5 font-medium">Afzender</th>
                 <th className="px-4 py-2.5 font-medium">Onderwerp</th>
                 <th className="hidden px-4 py-2.5 font-medium md:table-cell">Soort</th>
-                <th className="px-4 py-2.5 text-right font-medium">Afgehandeld</th>
+                {/* Op mobiel heet deze kolom "Datum" en staat er 27/11; op
+                    desktop blijft het "Afgehandeld" met de volledige datum. */}
+                <th className="px-4 py-2.5 text-right font-medium">
+                  <span className="md:hidden">Datum</span>
+                  <span className="hidden md:inline">Afgehandeld</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -135,7 +149,8 @@ export function HandledView() {
                   </td>
                   <td className="hidden px-4 py-3 text-[13px] text-[var(--muted)] md:table-cell">{soortLabel(item)}</td>
                   <td className="px-4 py-3 text-right text-[13px] whitespace-nowrap text-[var(--muted)]">
-                    {datum(afgehandeldOp(item))}
+                    <span className="md:hidden">{datumKort(afgehandeldOp(item))}</span>
+                    <span className="hidden md:inline">{datum(afgehandeldOp(item))}</span>
                   </td>
                 </tr>
               ))}

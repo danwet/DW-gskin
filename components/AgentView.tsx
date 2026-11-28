@@ -8,6 +8,26 @@ import { useLiveMeta } from "./use-live-meta";
 import { PageTitle } from "./PageTitle";
 import { PAGINA_VAK } from "@/lib/page-layout";
 
+/** Pijltje achter de titel: omhoog als het blok open is, omlaag als het dicht is. */
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={open ? "mt-0.5 shrink-0 text-[var(--muted)]" : "mt-0.5 shrink-0 rotate-180 text-[var(--muted)]"}
+    >
+      <path d="M6 15l6-6 6 6" />
+    </svg>
+  );
+}
+
 function formatRunTime(iso: string | null | undefined): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("nl-NL", {
@@ -27,6 +47,8 @@ export function AgentView() {
   // De log volgt de hoogte van "Laatste run": even hoog, met eigen scroll.
   const laatsteRef = useRef<HTMLElement | null>(null);
   const [logHoogte, setLogHoogte] = useState<number | null>(null);
+  // "Log eerdere runs" is op mobiel standaard ingeklapt.
+  const [logOpen, setLogOpen] = useState(false);
   useEffect(() => {
     const vak = laatsteRef.current;
     if (!vak) return;
@@ -130,27 +152,42 @@ export function AgentView() {
             className="glass-panel flex min-h-0 flex-col rounded-[22px] p-5"
             style={logHoogte ? { height: logHoogte } : undefined}
           >
-            <div className="mb-4 flex items-start justify-between gap-3">
+            {/* Op een telefoon klapt dit blok in; de pijl geeft de stand aan. */}
+            <button
+              type="button"
+              onClick={() => setLogOpen((vorige) => !vorige)}
+              aria-expanded={logOpen}
+              className="focus-ring mb-4 flex w-full items-start justify-between gap-3 rounded-xl text-left lg:hidden"
+            >
+              <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Log eerdere runs</h2>
+              <span className="flex items-center gap-2">
+                <span className="pt-1 text-[13px] text-[var(--muted)]">{earlierRuns.length}</span>
+                <ChevronIcon open={logOpen} />
+              </span>
+            </button>
+            <div className="mb-4 hidden items-start justify-between gap-3 lg:flex">
               <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Log eerdere runs</h2>
               <span className="pt-1 text-[13px] text-[var(--muted)]">{earlierRuns.length}</span>
             </div>
-            {earlierRuns.length === 0 ? (
-              <p className="border-t border-[var(--line)] pt-3 text-[13px] text-[var(--muted)]">Geen eerdere runs.</p>
-            ) : (
-              <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto border-t border-[var(--line)] pt-3 pr-1">
-                {earlierRuns.map((run, index) => (
-                  <li key={`${run.at}-${index}`} className="flex items-start justify-between gap-3 text-[13px]">
-                    <span className="shrink-0 text-[var(--muted)]">{formatRunTime(run.at)}</span>
-                    <span className="min-w-0 text-right leading-5 text-[var(--muted)]">
-                      {run.ok ? "" : "mislukt · "}
-                      {run.conversations} gesprekken · {run.messages} berichten
-                      {run.skipped ? ` · ${run.skipped} overgeslagen` : ""}
-                      {run.error ? ` · ${run.error}` : ""}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <div className={logOpen ? "contents" : "hidden lg:contents"}>
+              {earlierRuns.length === 0 ? (
+                <p className="border-t border-[var(--line)] pt-3 text-[13px] text-[var(--muted)]">Geen eerdere runs.</p>
+              ) : (
+                <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto border-t border-[var(--line)] pt-3 pr-1">
+                  {earlierRuns.map((run, index) => (
+                    <li key={`${run.at}-${index}`} className="flex items-start justify-between gap-3 text-[13px]">
+                      <span className="shrink-0 text-[var(--muted)]">{formatRunTime(run.at)}</span>
+                      <span className="min-w-0 text-right leading-5 text-[var(--muted)]">
+                        {run.ok ? "" : "mislukt · "}
+                        {run.conversations} gesprekken · {run.messages} berichten
+                        {run.skipped ? ` · ${run.skipped} overgeslagen` : ""}
+                        {run.error ? ` · ${run.error}` : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </section>
         </div>
       </div>

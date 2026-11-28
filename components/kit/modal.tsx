@@ -283,7 +283,11 @@ export function Modal({
                     {kop}
                   </div>
                 )}
-                <div className="flex min-h-full flex-col gap-5 px-5 pb-2">{children}</div>
+                {/* Ook de inhoud van een sheet houdt onderaan ruimte vrij voor
+                    de home-indicator: daar staan vaak de knoppen. */}
+                <div className="flex min-h-full flex-col gap-5 px-5 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+                  {children}
+                </div>
               </div>
               {voet !== undefined && (
                 <div className="mx-[5%] flex shrink-0 justify-center px-5 pt-2 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
@@ -300,7 +304,8 @@ export function Modal({
                 }}
                 className={cn(
                   "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain",
-                  gecentreerd ? "gap-6 px-6 pt-16 pb-4 text-center" : "gap-4 px-5 pt-16 pb-4",
+                  "pb-[calc(1rem+env(safe-area-inset-bottom))]",
+                  gecentreerd ? "gap-6 px-6 pt-16 text-center" : "gap-4 px-5 pt-16",
                 )}
               >
                 {title !== "" || beschrijving !== undefined ? (
