@@ -50,6 +50,21 @@ function pasToe(): void {
   // nog de oude (donkere) waarde en dan blijft de strook donker staan. De
   // paginakleur staat als variabele klaar en is altijd goed.
   zetMeta(naarHex(getComputedStyle(wortel).getPropertyValue("--page").trim()));
+  forceerRepaint(wortel);
+}
+
+/**
+ * iOS werkt de strook in de veilige marge niet bij als alleen de
+ * achtergrondkleur verandert; een sheet doet dat wel omdat daar een element
+ * bovenop verhuist. Deze twee frame-truc dwingt dezelfde hertekening af.
+ */
+function forceerRepaint(wortel: HTMLElement): void {
+  wortel.style.transform = "translateZ(0)";
+  const einde = () => {
+    wortel.style.transform = "";
+  };
+  if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => requestAnimationFrame(einde));
+  else window.setTimeout(einde, 32);
 }
 
 /**
