@@ -5,6 +5,7 @@ import { Modal } from "@/components/kit/modal";
 import { PageTitle } from "@/components/PageTitle";
 import { useInbox } from "@/components/AgentInbox";
 import type { MailAssessment } from "@/lib/agent/types";
+import { PAGINA_VAK } from "@/lib/page-layout";
 
 type GesprekBericht = {
   id: string;
@@ -94,7 +95,7 @@ export function HandledView() {
   const antwoorden = (gesprek ?? []).filter((m) => m.fromMe);
 
   return (
-    <div className="mx-auto max-w-[1180px] px-6 pt-9 pb-7 sm:px-8 sm:pb-8 md:pb-14">
+    <div className={PAGINA_VAK}>
       <PageTitle eyebrow="Afgehandeld" title="Afgehandelde berichten" />
 
       {inbox.loading ? (

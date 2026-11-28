@@ -132,7 +132,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen md:flex md:h-screen md:overflow-hidden">
+    // Op mobiel is de pagina zelf niet scrollbaar: alleen `main` scrolt, en
+    // alleen als de inhoud hoger is dan het scherm. Zo kan de kop niet
+    // wegvegen op een scherm waar alles al past.
+    <div className="h-[100dvh] overflow-hidden md:flex md:h-screen">
       {/* Pinned sidebar (desktop) */}
       {pinned ? (
         <aside
@@ -210,7 +213,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </AnimatePresence>
 
       <MobielNavProvider value={{ open: mobileOpen, setOpen: setMobileOpen }}>
-      <main className="min-w-0 flex-1 md:min-h-0 md:overflow-y-auto">
+      <main className="h-full min-w-0 flex-1 overflow-y-auto overscroll-contain md:min-h-0 md:overflow-y-auto">
         {/* Ruimte die de oude bovenbalk innam, zodat elke pagina op dezelfde
             hoogte begint. De kop zelf zit in PageTitle. */}
         <div className="h-2 md:h-5" aria-hidden="true" />
@@ -361,7 +364,11 @@ function SidebarContent({
         </div>
 
         <form action={signOutOfDashboard} className="mt-2 px-1">
-          <button type="submit" className="focus-ring rounded-md text-[12px] font-medium text-[var(--muted)] hover:text-[var(--blue)]">
+          {/* Gecentreerd onder het accountblok, in de zijbalk en in de lade. */}
+          <button
+            type="submit"
+            className="focus-ring w-full rounded-md text-center text-[12px] font-medium text-[var(--muted)] hover:text-[var(--blue)]"
+          >
             Uitloggen
           </button>
         </form>

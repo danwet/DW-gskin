@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { timeZoneOf, useInbox } from "./AgentInbox";
 import { InboxCard, InboxModal } from "./InboxGrid";
+import { LijstPlaceholder, MobieleLijst } from "./MobieleLijst";
 import type { MailAssessment } from "@/lib/agent/types";
 import { PageTitle } from "./PageTitle";
+import { PAGINA_VAK } from "@/lib/page-layout";
 
 export function BewarenView() {
   const inbox = useInbox();
@@ -29,7 +31,7 @@ export function BewarenView() {
   }
 
   return (
-    <div className="mx-auto max-w-[1180px] px-6 pt-9 pb-7 sm:px-8 sm:pb-8 md:pb-14">
+    <div className={PAGINA_VAK}>
         {inbox.notice ? (
           <div className="glass-float fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-2xl px-4 py-2.5 text-[13px] text-[var(--ink)]">
             {inbox.notice}
@@ -38,7 +40,12 @@ export function BewarenView() {
       <PageTitle eyebrow="Bewaard" title="Belangrijke berichten" />
 
       {inbox.loading ? (
-        <p className="text-[14px] text-[var(--muted)]">Laden…</p>
+        <div aria-hidden="true">
+          <div className="md:hidden">
+            <LijstPlaceholder rijen={4} />
+          </div>
+          <p className="hidden text-[14px] text-[var(--muted)] md:block">Laden…</p>
+        </div>
       ) : inbox.error ? (
         <p className="text-[14px] text-[var(--muted)]">{inbox.error}</p>
       ) : saved.length === 0 ? (
@@ -55,7 +62,17 @@ export function BewarenView() {
                 </h2>
                 <span aria-hidden="true" className="h-px flex-1 bg-[var(--line)]" />
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Mobiel: dezelfde regels als op het dashboard; de maandindeling
+                  blijft. Op grotere schermen blijven de kaarten. */}
+              <div className="md:hidden">
+                <MobieleLijst
+                  items={group.items}
+                  now={now}
+                  timeZone={timeZone}
+                  onOpen={(item) => setSelected(item)}
+                />
+              </div>
+              <div className="hidden gap-3 md:grid sm:grid-cols-2 lg:grid-cols-3">
                 {group.items.map((item, index) => (
                   <InboxCard
                     key={item.conversationId}

@@ -6,6 +6,7 @@ import { useApp } from "./AppProvider";
 import { useInbox } from "./AgentInbox";
 import { useLiveMeta } from "./use-live-meta";
 import { PageTitle } from "./PageTitle";
+import { PAGINA_VAK } from "@/lib/page-layout";
 
 function formatRunTime(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -59,7 +60,7 @@ export function AgentView() {
   const active = connected;
 
   return (
-    <div className="mx-auto max-w-[1180px] px-6 pt-9 pb-7 sm:px-8 sm:pb-8">
+    <div className={PAGINA_VAK}>
       <PageTitle eyebrow="Agent" title="Mail agent" />
 
       <div className="space-y-4">

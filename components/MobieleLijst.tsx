@@ -49,7 +49,7 @@ export function MobieleLijst({
             <button
               type="button"
               onClick={() => onOpen(item)}
-              className="focus-ring flex w-full items-start gap-3 py-3.5 text-left active:bg-black/[0.04] dark:active:bg-white/[0.06]"
+              className="focus-ring flex w-full items-start gap-3 py-4 text-left active:bg-black/[0.04] dark:active:bg-white/[0.06]"
             >
               <span
                 aria-hidden
@@ -58,22 +58,22 @@ export function MobieleLijst({
               />
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline justify-between gap-3">
-                  <span className="truncate text-[15px] font-semibold text-[var(--ink)]">{item.from}</span>
-                  <span className="shrink-0 text-[12px] font-medium" style={{ color: TOON[toon] }}>
+                  <span className="truncate text-[16px] font-semibold text-[var(--ink)]">{item.from}</span>
+                  <span className="shrink-0 text-[13px] font-medium" style={{ color: TOON[toon] }}>
                     {urgentie.label}
                   </span>
                 </span>
-                <span className="mt-1 line-clamp-2 block text-[14px] leading-[1.35] text-[var(--muted)]">
+                <span className="mt-1 line-clamp-2 block text-[15px] leading-[1.35] text-[var(--muted)]">
                   {item.shortSubject || item.subject}
                 </span>
                 <span className="mt-1 flex items-baseline justify-between gap-3">
-                  <span className="truncate text-[13px] text-[var(--ink)]/80">
+                  <span className="truncate text-[14px] text-[var(--ink)]/80">
                     {declaratie ? declareLabel(item) : (item.nextAction ?? "")}
                   </span>
                   {declaratie && bedrag ? (
-                    <span className="shrink-0 text-[13px] font-medium text-[var(--ink)]">{bedragTekst(bedrag, item.invoice?.currency)}</span>
+                    <span className="shrink-0 text-[14px] font-medium text-[var(--ink)]">{bedragTekst(bedrag, item.invoice?.currency)}</span>
                   ) : item.invoice?.dueDate ? (
-                    <span className="shrink-0 text-[12px] text-[var(--muted)]">
+                    <span className="shrink-0 text-[13px] text-[var(--muted)]">
                       {datumKort(item.invoice.dueDate, timeZone)}
                     </span>
                   ) : null}
@@ -84,5 +84,23 @@ export function MobieleLijst({
         );
       })}
     </ul>
+  );
+}
+
+/** Plaatshouder in de vorm van de lijst, zodat er geen grote vlakken flitsen. */
+export function LijstPlaceholder({ rijen = 5 }: { rijen?: number }) {
+  return (
+    <div aria-hidden className="space-y-1">
+      {Array.from({ length: rijen }, (_, index) => (
+        <div key={index} className="flex items-start gap-3 py-3.5">
+          <span className="mt-1.5 h-2 w-2 shrink-0 animate-pulse rounded-full bg-[var(--line)]" />
+          <span className="min-w-0 flex-1 space-y-2">
+            <span className="block h-3 w-1/3 animate-pulse rounded bg-[var(--line)]" />
+            <span className="block h-2.5 w-2/3 animate-pulse rounded bg-[var(--line)] opacity-70" />
+            <span className="block h-2.5 w-1/2 animate-pulse rounded bg-[var(--line)] opacity-60" />
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }

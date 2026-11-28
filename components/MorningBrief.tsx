@@ -8,6 +8,7 @@ import { orderByCheckState } from "@/lib/settings";
 import { PageHeader } from "./PageHeader";
 import { useApp } from "./AppProvider";
 import { Card, CardHeading, Checkbox, DonePill } from "./ui";
+import { PAGINA_VAK } from "@/lib/page-layout";
 
 const tones = {
   blue: "var(--blue)",
@@ -152,7 +153,7 @@ export function MorningBrief() {
   }, [orderKey, ready, slideFocusId]);
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pt-1 pb-6 sm:px-8 sm:pt-2 sm:pb-8">
+    <div className={PAGINA_VAK}>
       <PageHeader />
 
       <Card className="mt-6 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">

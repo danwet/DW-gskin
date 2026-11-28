@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { isValidCalendarDate } from "@/lib/scan/validate";
 import { PageTitle } from "./PageTitle";
+import { PAGINA_VAK } from "@/lib/page-layout";
 
 type UploadResult = {
   scanId: string;
@@ -233,7 +234,7 @@ export function ScanView() {
   const field = (key: keyof FormState, value: string) => setForm((current) => (current ? { ...current, [key]: value } : current));
 
   return (
-    <div className="mx-auto max-w-[1180px] px-6 pt-9 pb-7 sm:px-8 sm:pb-8 md:pb-14">
+    <div className={`${PAGINA_VAK} flex flex-col max-md:min-h-[calc(100dvh-3.5rem)]`}>
       <PageTitle eyebrow="Uploaden" title="Hardcopy facturen" />
 
       {stage === "idle" || stage === "error" ? (
@@ -248,7 +249,9 @@ export function ScanView() {
             setDragging(false);
             onFiles(event.dataTransfer.files);
           }}
-          className={`glass-panel mx-auto mt-[200px] w-3/4 rounded-[24px] px-6 py-14 text-center ${dragging ? "ring-2 ring-[var(--blue)]" : ""}`}
+          // Op mobiel staat het vak in het midden van de pagina; op desktop
+          // blijft de vaste bovenmarge van 200 px.
+          className={`glass-panel mx-auto w-[86%] rounded-[24px] px-6 py-14 text-center max-md:my-auto md:mt-[200px] md:w-3/4 ${dragging ? "ring-2 ring-[var(--blue)]" : ""}`}
         >
           <p className="text-[17px] font-semibold text-[var(--ink)]">Sleep je ingescande factuur of factuurfoto hierheen</p>
           <p className="mt-1 text-[13px] text-[var(--muted)]">PDF, JPG of PNG · één document tegelijk · maximaal 15 MB</p>
@@ -296,7 +299,7 @@ export function ScanView() {
       {stage === "uploading" ? (
         // Dezelfde bovenmarge als het sleepvak: het vlak blijft staan waar het
         // staat terwijl de factuur wordt uitgelezen.
-        <section className="glass-panel mx-auto mt-[200px] w-3/4 rounded-[24px] px-6 py-14 text-center">
+        <section className="glass-panel mx-auto w-[86%] rounded-[24px] px-6 py-14 text-center max-md:my-auto md:mt-[200px] md:w-3/4">
           <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--blue)]" />
           <p className="mt-4 text-[15px] font-medium text-[var(--ink)]">Factuur wordt uitgelezen…</p>
           <p className="mt-1 text-[13px] text-[var(--muted)]">Dit kan even duren.</p>

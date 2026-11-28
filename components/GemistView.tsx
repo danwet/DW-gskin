@@ -2,13 +2,14 @@
 
 import { useInbox } from "./AgentInbox";
 import { PageTitle } from "./PageTitle";
+import { PAGINA_VAK } from "@/lib/page-layout";
 
 export function GemistView() {
   const { items, loading, error } = useInbox();
   const missed = items.filter((item) => item.classification === "unclassified");
 
   return (
-    <div className="mx-auto max-w-[880px] px-6 pt-9 pb-7 sm:px-8 sm:pb-8 md:pb-14">
+    <div className={`${PAGINA_VAK} max-w-[880px]`}>
       <PageTitle eyebrow="Gemist" title="Gemist" />
 
       {loading ? (

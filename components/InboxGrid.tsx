@@ -10,7 +10,7 @@ import type { MailAssessment } from "@/lib/agent/types";
 import { InvoiceBlock, timeZoneOf, UrgencyPill } from "./AgentInbox";
 import { cn } from "@/lib/utils";
 import { declareLabel } from "@/lib/declare-label";
-import { MobieleLijst } from "./MobieleLijst";
+import { LijstPlaceholder, MobieleLijst } from "./MobieleLijst";
 import { AnimatePresence, motion } from "framer-motion";
 import { Modal } from "@/components/kit/modal";
 import { SelectorPill } from "@/components/kit/selector-pill";
@@ -316,17 +316,8 @@ export function InboxGrid({
         // Op mobiel geen kaarten als plaatshouder: die zijn groot en wit, en
         // dan zie je eerst een laag vlakken voordat de lijst verschijnt.
         <div aria-hidden="true">
-          <div className="space-y-1 md:hidden">
-            {[0, 1, 2, 3, 4].map((index) => (
-              <div key={index} className="flex items-start gap-3 py-3.5">
-                <span className="mt-1.5 h-2 w-2 shrink-0 animate-pulse rounded-full bg-[var(--line)]" />
-                <span className="min-w-0 flex-1 space-y-2">
-                  <span className="block h-3 w-1/3 animate-pulse rounded bg-[var(--line)]" />
-                  <span className="block h-2.5 w-2/3 animate-pulse rounded bg-[var(--line)] opacity-70" />
-                  <span className="block h-2.5 w-1/2 animate-pulse rounded bg-[var(--line)] opacity-60" />
-                </span>
-              </div>
-            ))}
+          <div className="md:hidden">
+            <LijstPlaceholder rijen={5} />
           </div>
           <div className="hidden gap-x-3 gap-y-4 sm:grid-cols-2 md:grid">
             {[0, 1, 2, 3].map((index) => (
@@ -360,7 +351,9 @@ export function InboxGrid({
                 initial="binnen"
                 animate="rust"
                 exit="uit"
-                transition={{ type: "spring", stiffness: 520, damping: 42, mass: 0.85 }}
+                // Een gladde overgang zonder terugvering: bij een veer met deze
+                // afstand sloeg de lijst aan het eind zichtbaar terug.
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               >
                 <MobieleLijst
                   items={activeCards}

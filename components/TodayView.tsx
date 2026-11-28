@@ -12,6 +12,7 @@ import { InboxGrid } from "./InboxGrid";
 import { LegacyLoopsCard } from "./LegacyLoopsCard";
 import { ShipmentDialog, type TrailStep } from "./ShipmentDialog";
 import { TodayHeader } from "./TodayHeader";
+import { PAGINA_VAK } from "@/lib/page-layout";
 
 const GMAIL_NOTICES: Record<string, { tone: "ok" | "warn"; text: string }> = {
   connected: { tone: "ok", text: "Gmail is gekoppeld. De eerste import start automatisch." },
@@ -190,6 +191,8 @@ export function TodayView() {
   // Eén lipje voor beide standen: het schuift mee met het paneel en klapt op
   // zijn plek om, in plaats van te verdwijnen en ergens anders terug te komen.
   const lipX = useTransform(sleep, (waarde) => -waarde);
+  /** Schaduw van het paneel pas zodra het paneel echt in beeld komt. */
+  const schaduwOpacity = useTransform(sleep, [0, 30], [0, 1]);
 
   const openZijbalk = () => {
     const breedte = paneelRef.current?.offsetWidth ?? 300;
@@ -222,16 +225,16 @@ export function TodayView() {
    * zit het lipje tegen het paneel aan.
    */
   const lipjeKnoppen = (open: boolean) => (
-    <svg width={34} height={142} viewBox="-2 -10 34 142" aria-hidden className="lipje-vlak touch-pan-y">
+    <svg width={34} height={122} viewBox="-2 -10 34 122" aria-hidden className="lipje-vlak touch-pan-y">
       {/* Altijd dezelfde vorm: ook als het paneel open is blijft dit lipje
           hetzelfde, alleen de punt wijst dan de andere kant op. De holle
           bochten vallen dan over het paneel heen, in dezelfde kleur. */}
       <path
-        d="M0 9 A9 9 0 0 1 9 0 L22 0 Q32 -1 32 -8 L32 132 Q32 125 22 124 L9 124 A9 9 0 0 1 0 115 Z"
+        d="M0 9 A9 9 0 0 1 9 0 L22 0 Q32 -1 32 -8 L32 112 Q32 105 22 104 L9 104 A9 9 0 0 1 0 95 Z"
         fill="#202326"
       />
       <path
-        d={open ? "M13 53l7 9-7 9" : "M19 53l-7 9 7 9"}
+        d={open ? "M13 45l7 9-7 9" : "M19 45l-7 9 7 9"}
         fill="none"
         stroke="rgba(255,255,255,0.85)"
         strokeWidth={3.2}
@@ -242,7 +245,7 @@ export function TodayView() {
   );
 
   return (
-    <div className="mx-auto max-w-[1180px] px-6 pt-1 pb-7 max-md:pr-9 sm:px-8 sm:pb-8 md:pt-9 md:pb-14">
+    <div className={PAGINA_VAK}>
         {inbox.notice ? (
           <div className="glass-float fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-2xl px-4 py-2.5 text-[13px] text-[var(--ink)]">
             {inbox.notice}
@@ -335,7 +338,15 @@ export function TodayView() {
           style={{ x: paneelX, pointerEvents: zijbalkOpen ? "auto" : "none" }}
           className="zijvlak donker-paneel dark fixed inset-y-0 right-0 z-40 w-[74vw] max-w-[304px] touch-pan-y rounded-l-[22px] [&_h2]:!mt-5 [&_h2]:!text-[18px] [&_h2:first-of-type]:!mt-0 [&_p]:!text-[13px]"
         >
-          <div className="h-full overflow-y-auto px-4 pt-7 pb-10">
+          {/* De schaduw zit op een eigen laag die meeschuift met de stand van het
+              paneel: ingeklapt valt hij weg, anders zag je een schaduwband langs
+              de schermrand zonder dat er iets te zien was. */}
+          <motion.div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-l-[22px]"
+            style={{ opacity: schaduwOpacity, boxShadow: "-10px 0 30px -18px rgba(0,0,0,0.35)" }}
+          />
+          <div className="h-full overflow-y-auto pt-7 pr-6 pb-10 pl-8 [&_.truncate]:!whitespace-normal">
             {zijbalk}
           </div>
         </motion.aside>
